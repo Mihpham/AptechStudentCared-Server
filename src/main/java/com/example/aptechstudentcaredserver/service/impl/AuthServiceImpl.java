@@ -7,6 +7,9 @@ import com.example.aptechstudentcaredserver.entity.Role;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.entity.UserDetail;
 import com.example.aptechstudentcaredserver.exception.DuplicateException;
+import com.example.aptechstudentcaredserver.exception.EmailFormatException;
+import com.example.aptechstudentcaredserver.exception.InvalidCredentialsException;
+import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.RoleRepository;
 import com.example.aptechstudentcaredserver.repository.UserRepository;
 import com.example.aptechstudentcaredserver.service.AuthService;
@@ -83,13 +86,13 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse loginUser(AuthRequest authRequest)  {
+    public AuthResponse loginUser(AuthRequest authRequest) {
         String email = authRequest.getEmail();
         String password = authRequest.getPassword();
 
         // Validate email format
         if (!isValidEmailFormat(email)) {
-            return new AuthResponse(null, "Email format is invalid.", null);
+            throw new EmailFormatException("Email format is invalid.");
         }
 
         // Check if user exists
@@ -97,12 +100,12 @@ public class AuthServiceImpl implements AuthService {
         try {
             userDetails = jwtService.loadUserByUsername(email);
         } catch (UsernameNotFoundException e) {
-            return new AuthResponse(null, "Email not found.", null);
+            throw new NotFoundException("Email not found.");
         }
 
         // Validate password
         if (!passwordEncoder.matches(password, userDetails.getPassword())) {
-            return new AuthResponse(null, "Invalid password.", null);
+            throw new InvalidCredentialsException("Invalid password.");
         }
 
         try {
@@ -110,7 +113,7 @@ public class AuthServiceImpl implements AuthService {
                     new UsernamePasswordAuthenticationToken(email, password)
             );
         } catch (BadCredentialsException e) {
-            return new AuthResponse(null, "Invalid credentials.", null);
+            throw new InvalidCredentialsException("Invalid credentials.");
         }
 
         // Generate JWT
@@ -122,8 +125,8 @@ public class AuthServiceImpl implements AuthService {
 
         return new AuthResponse(jwt, "Login successful!", role);
     }
-
     private boolean isValidEmailFormat(String email) {
         return email != null && email.matches("^[A-Za-z0-9+_.-]+@(.+)$");
     }
+
 }
