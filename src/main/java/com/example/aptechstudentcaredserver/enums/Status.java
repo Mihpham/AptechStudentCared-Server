@@ -1,4 +1,4 @@
-package com.example.aptechstudentcaredserver.entity;
+package com.example.aptechstudentcaredserver.enums;
 
 public enum Status {
     /**

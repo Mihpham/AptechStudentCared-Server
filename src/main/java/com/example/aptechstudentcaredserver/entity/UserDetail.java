@@ -24,4 +24,9 @@ public class UserDetail {
     @OneToOne
     @JoinColumn(name = "user_id")
     private User user;
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "parent_id")
+    private Parent parent;
+
 }
