@@ -3,6 +3,8 @@ package com.example.aptechstudentcaredserver.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 @Entity
 @Table(name = "parents")
@@ -10,11 +12,8 @@ public class Parent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    @Column(name = "first_name", length = 255, nullable = false)
-    private String firstName;
-
-    @Column(name = "last_name", length = 255, nullable = false)
-    private String lastName;
+    @Column(name = "full_name", length = 255, nullable = false)
+    private String fullName;
 
     @Column(name = "email", length = 255, nullable = false)
     private String email;
@@ -27,5 +26,13 @@ public class Parent {
 
     @OneToOne(mappedBy = "parent")
     private UserDetail userDetails;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
 }

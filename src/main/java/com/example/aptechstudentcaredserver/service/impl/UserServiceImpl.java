@@ -21,7 +21,6 @@ public class UserServiceImpl implements UserService {
             User u = user.get();
             UserResponse userResponse = new UserResponse(
                     u.getId(),
-                    u.getUsername(),
                     u.getEmail(),
                     u.getUserDetail().getFullName(),
                     u.getUserDetail().getPhone(),
