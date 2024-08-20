@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -14,12 +15,8 @@ public class Evaluation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     @ManyToOne
-    @JoinColumn(name = "evaluator_id", nullable = false)
-    private User evaluator;
-
-    @ManyToOne
-    @JoinColumn(name = "evaluatee_id") // Tên cột khóa ngoại
-    private User evaluatee;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
@@ -34,4 +31,11 @@ public class Evaluation {
 
     @Column(name = "score", precision = 5, scale = 2)
     private BigDecimal score;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+
+
 }

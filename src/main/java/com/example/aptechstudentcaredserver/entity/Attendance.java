@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "attendance")
+@Table(name = "attendances")
 public class Attendance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,12 +20,23 @@ public class Attendance {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "checkin", nullable = false)
-    private LocalDateTime checkin;
+    @Column(name = "checkin1", nullable = false)
+    private LocalDateTime checkin1;
+    @Column(name = "checkin2", nullable = false)
+    private LocalDateTime checkin2;
 
     @Column(name = "attendance", length = 255)
-    private String attendance;
+    private String attendance1;
+    @Column(name = "attendance2", length = 255)
+    private String attendance2;
+
 
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+
+
 }

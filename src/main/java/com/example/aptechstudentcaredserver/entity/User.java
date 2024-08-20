@@ -1,5 +1,6 @@
 package com.example.aptechstudentcaredserver.entity;
 
+import com.example.aptechstudentcaredserver.enums.Status;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -7,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -18,11 +21,8 @@ public class User  {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-
-    private String username;
-    private String password;
     private String email;
-
+    private String password;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
     private Role role;
@@ -52,11 +52,8 @@ public class User  {
     @OneToMany(mappedBy = "user")
     private List<Attendance> attendances;
 
-    @OneToMany(mappedBy = "evaluator")
+    @OneToMany(mappedBy = "user")
     private List<Evaluation> evaluationsAsEvaluator;
-
-    @OneToMany(mappedBy = "evaluatee")
-    private List<Evaluation> evaluationsAsEvaluatee;
 
     @OneToMany(mappedBy = "user")
     private List<HomeworkScore> homeworkScores;
@@ -69,4 +66,17 @@ public class User  {
 
     @OneToMany(mappedBy = "user")
     private List<Schedule> schedules;
+
+    @Enumerated(EnumType.STRING)
+    private Status status;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+
 }
