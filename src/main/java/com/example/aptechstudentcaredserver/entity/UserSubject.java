@@ -12,6 +12,7 @@ public class UserSubject {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -19,6 +20,7 @@ public class UserSubject {
     @ManyToOne
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -26,6 +28,5 @@ public class UserSubject {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
 
 }

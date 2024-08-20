@@ -35,7 +35,7 @@ public class Schedule {
 
     @ManyToOne
     @JoinColumn(name = "class_id", nullable = false)
-    private Classes classes;
+    private Class classes;
 
 
 

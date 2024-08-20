@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Entity
@@ -13,15 +14,12 @@ public class Subject {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
     @Column(name = "subject_name", length = 255, nullable = false)
     private String subjectName;
 
-    @ManyToOne
-    @JoinColumn(name = "course_id", nullable = false)
-    private Course course;
-
-    @OneToMany(mappedBy = "subject")
-    private List<UserSubject> userSubjects;
+    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UserSubject> userSubjects;
 
     @OneToMany(mappedBy = "subject")
     private List<Schedule> schedules;
@@ -34,8 +32,10 @@ public class Subject {
 
     @OneToMany(mappedBy = "subject")
     private List<HomeworkScore> homeworkScores;
-    @OneToMany(mappedBy = "subject")
-    private List<CourseSubject> courseSubjects;
+
+    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<CourseSubject> courseSubjects;
+
     @OneToMany(mappedBy = "subject")
     private List<Evaluation> evaluations;
 
@@ -46,6 +46,5 @@ public class Subject {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
 
 }

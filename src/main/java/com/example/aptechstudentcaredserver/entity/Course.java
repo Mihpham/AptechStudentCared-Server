@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 @Data
 @Entity
@@ -13,6 +13,7 @@ public class Course {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
     @Column(name = "course_name", length = 255, nullable = false)
     private String courseName;
 
@@ -22,18 +23,12 @@ public class Course {
     @Column(name = "class_schedule", length = 255)
     private String classSchedule;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UserCourse> userCourses;
 
-    @OneToMany(mappedBy = "course")
-    private List<Subject> subjects;
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<CourseSubject> courseSubjects;
 
-    @OneToMany(mappedBy = "course")
-    private List<UserCourse> userCourses;
-
-    @OneToMany(mappedBy = "course")
-    private List<CourseSubject> courseSubject;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", nullable = false, updatable = false)

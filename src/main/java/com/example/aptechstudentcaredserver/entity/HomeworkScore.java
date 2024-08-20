@@ -13,6 +13,7 @@ public class HomeworkScore{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -23,6 +24,7 @@ public class HomeworkScore{
 
     @Column(name = "score", precision = 5, scale = 2)
     private BigDecimal score;
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

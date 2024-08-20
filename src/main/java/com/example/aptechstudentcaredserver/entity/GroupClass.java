@@ -8,18 +8,19 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "class_members")
-public class ClassMember{
+@Table(name = "group_classes")
+public class GroupClass {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
     @ManyToOne
     @JoinColumn(name = "class_id",nullable = false)
-    private Classes classEntity;
-
+    private Class classes;
 
     @Column(name = "joined_date", nullable = false)
     private LocalDateTime joinedDate;

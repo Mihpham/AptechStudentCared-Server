@@ -10,20 +10,16 @@ import java.util.Set;
 @Data
 @Entity
 @Table(name = "classes")
-public class Classes {
+public class Class {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private int id;
 
     @Column(name = "class_name", length = 255, nullable = false)
     private String className;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @OneToMany(mappedBy = "classEntity")
-    private Set<ClassMember> classMembers;
+    
+    @OneToMany(mappedBy = "classes")
+    private Set<GroupClass> groupClasses;
 
     @OneToMany(mappedBy = "classes")
     private List<Schedule> schedules;

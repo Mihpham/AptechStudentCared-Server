@@ -13,6 +13,7 @@ public class StudentPerformance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -33,10 +34,12 @@ public class StudentPerformance {
     @Column(name = "final_score", precision = 5, scale = 2)
     private BigDecimal finalScore;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "attendance_id", nullable = false)
+    private Attendance attendance;
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-
 
 }

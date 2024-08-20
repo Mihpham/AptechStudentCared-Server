@@ -1,16 +1,14 @@
 package com.example.aptechstudentcaredserver.entity;
 
 import com.example.aptechstudentcaredserver.enums.Status;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -23,6 +21,7 @@ public class User  {
     private int id;
     private String email;
     private String password;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
     private Role role;
@@ -34,17 +33,16 @@ public class User  {
             optional = false
     )
     private UserDetail userDetail;
-    @OneToMany(mappedBy = "user")
-    private List<UserSubject> userSubjects;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UserSubject> userSubjects;
 
     @OneToMany(mappedBy = "user")
     private List<StudentPerformance> studentPerformances;
 
-    @OneToMany(mappedBy = "user")
-    private List<ClassMember> classMembers;
 
-    @OneToMany(mappedBy = "user")
-    private List<Classes> classes;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<GroupClass> groupClasses;
 
     @OneToMany(mappedBy = "user")
     private List<ExamDetail> examDetails;
@@ -58,11 +56,8 @@ public class User  {
     @OneToMany(mappedBy = "user")
     private List<HomeworkScore> homeworkScores;
 
-    @OneToMany(mappedBy = "user")
-    private List<UserCourse> userCourses;
-
-    @OneToMany(mappedBy = "user")
-    private List<Course> courses;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UserCourse> userCourses;
 
     @OneToMany(mappedBy = "user")
     private List<Schedule> schedules;
@@ -77,6 +72,5 @@ public class User  {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
 
 }
