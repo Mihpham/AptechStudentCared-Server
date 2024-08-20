@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.service.impl;
 import com.example.aptechstudentcaredserver.bean.request.AuthRequest;
 import com.example.aptechstudentcaredserver.bean.request.RegisterUserRequest;
 import com.example.aptechstudentcaredserver.bean.response.AuthResponse;
+import com.example.aptechstudentcaredserver.entity.Parent;
 import com.example.aptechstudentcaredserver.entity.Role;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.entity.UserDetail;
@@ -10,7 +11,9 @@ import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.EmailFormatException;
 import com.example.aptechstudentcaredserver.exception.InvalidCredentialsException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
+import com.example.aptechstudentcaredserver.repository.ParentRepository;
 import com.example.aptechstudentcaredserver.repository.RoleRepository;
+import com.example.aptechstudentcaredserver.repository.UserDetailRepository;
 import com.example.aptechstudentcaredserver.repository.UserRepository;
 import com.example.aptechstudentcaredserver.service.AuthService;
 import com.example.aptechstudentcaredserver.service.JwtService;
@@ -24,6 +27,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -33,15 +38,16 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final ParentRepository parentRepository;
+    private final UserDetailRepository userDetailRepository;
+
 
     @Override
-    public AuthResponse registerUser(RegisterUserRequest registerUserRequest) {
-        // Check if the email already exists
+    public AuthResponse registerUser(RegisterUserRequest registerUserRequest  ) {
         User existingUser = userRepository.findByEmail(registerUserRequest.getEmail());
         if (existingUser != null) {
             throw new DuplicateException("Email is already exists with another account");
         }
-
         String roleName = registerUserRequest.getRoleName().toUpperCase();
         Role role = roleRepository.findByRoleName(roleName);
         if (role == null) {
@@ -50,59 +56,70 @@ public class AuthServiceImpl implements AuthService {
             roleRepository.save(role);
         }
 
+        // User creation
         User user = new User();
         user.setEmail(registerUserRequest.getEmail());
         user.setPassword(passwordEncoder.encode(registerUserRequest.getPassword()));
         user.setRole(role);
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
 
+        // Create UserDetail
         UserDetail userDetail = new UserDetail();
         userDetail.setFullName(registerUserRequest.getFullName());
         userDetail.setPhone(registerUserRequest.getPhone());
         userDetail.setAddress(registerUserRequest.getAddress());
         userDetail.setUser(user);
+        
+        // Handle Parent association
+        if ("admin".equalsIgnoreCase(roleName)) {
+            userDetail.setParent(null);
+        } else {
+            Parent parent = new Parent();
+            parent.setFullName("Parent Name");
+            parent.setEmail("parent@example.com");
+            parent.setPhone("123456789");
+            parent.setAddress("123 Parent St");
 
+            parent.setCreatedAt(LocalDateTime.now());
+            parent.setUpdatedAt(LocalDateTime.now());
+            parentRepository.save(parent);
+
+            userDetail.setParent(parent);
+        }
+        userDetailRepository.save(userDetail);
         user.setUserDetail(userDetail);
-
         userRepository.save(user);
-
-        // Authenticate user
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 registerUserRequest.getEmail(),
                 registerUserRequest.getPassword()
         );
         authenticationManager.authenticate(authenticationToken);
-
-        // Generate JWT
         UserDetails userDetails = jwtService.loadUserByUsername(registerUserRequest.getEmail());
         String jwt = jwtService.generateToken(userDetails);
-
-        // Get user role
         String roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .findFirst()
                 .orElse("USER");
+
         return new AuthResponse(jwt, "Registration successful!", roles);
     }
+
 
     @Override
     public AuthResponse loginUser(AuthRequest authRequest) {
         String email = authRequest.getEmail();
         String password = authRequest.getPassword();
-
-        // Validate email format
         if (!isValidEmailFormat(email)) {
             throw new EmailFormatException("Email format is invalid.");
         }
-
-        // Check if user exists
         UserDetails userDetails;
         try {
             userDetails = jwtService.loadUserByUsername(email);
         } catch (UsernameNotFoundException e) {
             throw new NotFoundException("Email not found.");
         }
-
-        // Validate password
         if (!passwordEncoder.matches(password, userDetails.getPassword())) {
             throw new InvalidCredentialsException("Invalid password.");
         }
@@ -114,8 +131,6 @@ public class AuthServiceImpl implements AuthService {
         } catch (BadCredentialsException e) {
             throw new InvalidCredentialsException("Invalid credentials.");
         }
-
-        // Generate JWT
         final String jwt = jwtService.generateToken(userDetails);
         String role = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
