@@ -19,4 +19,8 @@ public class CourseSubject {
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
 
+    @ManyToOne
+    @JoinColumn(name = "semester_id", nullable = false)
+    private Semester semester;
+
 }

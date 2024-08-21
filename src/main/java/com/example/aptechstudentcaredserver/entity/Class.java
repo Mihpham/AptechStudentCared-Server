@@ -17,7 +17,7 @@ public class Class {
 
     @Column(name = "class_name", length = 255, nullable = false)
     private String className;
-    
+
     @OneToMany(mappedBy = "classes")
     private Set<GroupClass> groupClasses;
 
