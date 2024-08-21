@@ -7,6 +7,7 @@ import com.example.aptechstudentcaredserver.entity.Parent;
 import com.example.aptechstudentcaredserver.entity.Role;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.entity.UserDetail;
+import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.EmailFormatException;
 import com.example.aptechstudentcaredserver.exception.InvalidCredentialsException;
@@ -63,6 +64,7 @@ public class AuthServiceImpl implements AuthService {
         user.setRole(role);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
+        user.setStatus(Status.ACTIVE);
         userRepository.save(user);
 
         // Create UserDetail
