@@ -21,7 +21,11 @@ public class UserDetail {
 
     private String phone;
     private String address;
+    private String gender;
     private String image;
+
+    @Column(name = "date_of_birth")
+    private String dob;
 
     @Column(name = "role_number")
     private String roleNumber;

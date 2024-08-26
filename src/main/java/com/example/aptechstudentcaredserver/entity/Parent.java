@@ -22,8 +22,15 @@ public class Parent {
     @Column(name = "phone", length = 20)
     private String phone;
 
+    @Column(name = "student_relation", length = 20)
+    private String studentRelation;
+
     @Column(name = "address", columnDefinition = "TEXT")
     private String address;
+
+    private String gender;
+    private String job;
+
 
     @OneToOne(mappedBy = "parent")
     private UserDetail userDetails;

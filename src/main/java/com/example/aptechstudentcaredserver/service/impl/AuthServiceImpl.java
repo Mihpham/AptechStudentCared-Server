@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.service.impl;
 import com.example.aptechstudentcaredserver.bean.request.AuthRequest;
 import com.example.aptechstudentcaredserver.bean.request.RegisterUserRequest;
 import com.example.aptechstudentcaredserver.bean.response.AuthResponse;
+import com.example.aptechstudentcaredserver.entity.Parent;
 import com.example.aptechstudentcaredserver.entity.Role;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.entity.UserDetail;
@@ -45,14 +46,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse registerUser(RegisterUserRequest registerUserRequest  ) {
         User existingUser = userRepository.findByEmail(registerUserRequest.getEmail());
-
         if (existingUser != null) {
             throw new DuplicateException("Email is already exists with another account");
         }
-
         String roleName = registerUserRequest.getRoleName().toUpperCase();
         Role role = roleRepository.findByRoleName(roleName);
-
         if (role == null) {
             role = new Role();
             role.setRoleName(roleName);
@@ -76,7 +74,22 @@ public class AuthServiceImpl implements AuthService {
         userDetail.setAddress(registerUserRequest.getAddress());
         userDetail.setUser(user);
 
+        // Handle Parent association
+        if ("admin".equalsIgnoreCase(roleName)) {
+            userDetail.setParent(null);
+        } else {
+            Parent parent = new Parent();
+            parent.setFullName("Parent Name");
+            parent.setEmail("parent@example.com");
+            parent.setPhone("123456789");
+            parent.setAddress("123 Parent St");
 
+            parent.setCreatedAt(LocalDateTime.now());
+            parent.setUpdatedAt(LocalDateTime.now());
+            parentRepository.save(parent);
+
+            userDetail.setParent(parent);
+        }
         userDetailRepository.save(userDetail);
         user.setUserDetail(userDetail);
         userRepository.save(user);
@@ -84,7 +97,6 @@ public class AuthServiceImpl implements AuthService {
                 registerUserRequest.getEmail(),
                 registerUserRequest.getPassword()
         );
-
         authenticationManager.authenticate(authenticationToken);
         UserDetails userDetails = jwtService.loadUserByUsername(registerUserRequest.getEmail());
         String jwt = jwtService.generateToken(userDetails);
@@ -95,6 +107,7 @@ public class AuthServiceImpl implements AuthService {
 
         return new AuthResponse(jwt, "Registration successful!", roles);
     }
+
 
     @Override
     public AuthResponse loginUser(AuthRequest authRequest) {
