@@ -3,7 +3,6 @@ package com.example.aptechstudentcaredserver.service.impl;
 import com.example.aptechstudentcaredserver.bean.request.AuthRequest;
 import com.example.aptechstudentcaredserver.bean.request.RegisterUserRequest;
 import com.example.aptechstudentcaredserver.bean.response.AuthResponse;
-import com.example.aptechstudentcaredserver.entity.Parent;
 import com.example.aptechstudentcaredserver.entity.Role;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.entity.UserDetail;
@@ -39,12 +38,11 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final ParentRepository parentRepository;
     private final UserDetailRepository userDetailRepository;
 
 
     @Override
-    public AuthResponse registerUser(RegisterUserRequest registerUserRequest  ) {
+    public AuthResponse registerUser(RegisterUserRequest registerUserRequest) {
         User existingUser = userRepository.findByEmail(registerUserRequest.getEmail());
         if (existingUser != null) {
             throw new DuplicateException("Email is already exists with another account");
@@ -75,21 +73,10 @@ public class AuthServiceImpl implements AuthService {
         userDetail.setUser(user);
 
         // Handle Parent association
-        if ("admin".equalsIgnoreCase(roleName)) {
+        if ("admin".equalsIgnoreCase(roleName) || "sro".equalsIgnoreCase(roleName) || "teacher".equalsIgnoreCase(roleName)) {
             userDetail.setParent(null);
-        } else {
-            Parent parent = new Parent();
-            parent.setFullName("Parent Name");
-            parent.setEmail("parent@example.com");
-            parent.setPhone("123456789");
-            parent.setAddress("123 Parent St");
-
-            parent.setCreatedAt(LocalDateTime.now());
-            parent.setUpdatedAt(LocalDateTime.now());
-            parentRepository.save(parent);
-
-            userDetail.setParent(parent);
         }
+
         userDetailRepository.save(userDetail);
         user.setUserDetail(userDetail);
         userRepository.save(user);
@@ -141,6 +128,7 @@ public class AuthServiceImpl implements AuthService {
 
         return new AuthResponse(jwt, "Login successful!", role);
     }
+
     private boolean isValidEmailFormat(String email) {
         return email != null && email.matches("^[A-Za-z0-9+_.-]+@(.+)$");
     }
