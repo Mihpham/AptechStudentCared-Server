@@ -22,7 +22,7 @@ public class UserDetail {
     private String address;
     @Column(name = "role_number")
     private String roleNumber;
-
+    private String image;
     @OneToOne
     @JoinColumn(name = "user_id")
     private User user;

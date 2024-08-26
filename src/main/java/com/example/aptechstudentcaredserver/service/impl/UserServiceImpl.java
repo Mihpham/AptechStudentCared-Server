@@ -22,11 +22,9 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserResponse> findAllUser() {
         List<User> users = userRepository.findAll();
-
         if (users.isEmpty()) {
             throw new NotFoundException("No users found. Please add users to the system and try again.");
         }
-
         return users.stream()
                 .map(this::convertToUserResponse)
                 .collect(Collectors.toList());
@@ -56,13 +54,21 @@ public class UserServiceImpl implements UserService {
     }
 
     private UserResponse convertToUserResponse(User user) {
+        List<String> classNames = user.getGroupClasses().stream()
+                .map(groupClass -> groupClass.getClasses().getClassName())
+                .collect(Collectors.toList());
         return new UserResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getUserDetail().getFullName(),
                 user.getUserDetail().getPhone(),
                 user.getUserDetail().getAddress(),
-                user.getRole().getRoleName()
+                user.getRole().getRoleName(),
+                classNames,
+                String.valueOf(user.getStatus()),
+                user.getUserDetail().getRoleNumber(),
+                user.getUserDetail().getImage()
         );
     }
+
 }
