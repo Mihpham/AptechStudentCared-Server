@@ -156,5 +156,22 @@ public class StudentServiceImpl implements StudentService {
 
         return response;
     }
+
+    @Override
+    public StudentResponse updateStudent(int studentId, StudentRequest studentRq) {
+        return null;
+    }
+
+    @Override
+    public void deleteStudent(int studentId) {
+        // Ensure the student exists before attempting to delete
+        if (!userRepository.existsById(studentId)) {
+            throw new NotFoundException("Student not found with id " + studentId);
+        }
+        // Delete the student from the repository
+        userRepository.deleteById(studentId);
+    }
+
+
 }
 

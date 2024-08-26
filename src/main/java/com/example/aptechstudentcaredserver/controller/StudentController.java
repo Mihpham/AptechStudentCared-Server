@@ -30,4 +30,11 @@ public class StudentController {
         StudentResponse studentResponse = studentService.findStudentById(id);
         return ResponseEntity.ok(studentResponse);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteStudent(@PathVariable("id") int id) {
+        studentService.deleteStudent(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }
