@@ -18,11 +18,17 @@ public class UserDetail {
 
     @Column(name = "full_name")
     private String fullName;
+
     private String phone;
     private String address;
+    private String gender;
+    private String image;
+
+    @Column(name = "date_of_birth")
+    private String dob;
+
     @Column(name = "role_number")
     private String roleNumber;
-    private String image;
     @OneToOne
     @JoinColumn(name = "user_id")
     private User user;
