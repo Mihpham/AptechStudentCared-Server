@@ -20,6 +20,8 @@ public class UserDetail {
     private String fullName;
     private String phone;
     private String address;
+    @Column(name = "role_number")
+    private String roleNumber;
 
     @OneToOne
     @JoinColumn(name = "user_id")
