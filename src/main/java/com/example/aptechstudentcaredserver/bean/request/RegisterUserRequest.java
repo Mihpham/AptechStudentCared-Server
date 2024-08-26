@@ -19,10 +19,4 @@ public class RegisterUserRequest {
     private String address;
     private String roleName;
 
-    // parent
-    private String parentFullName;
-    private String parentEmail;
-    private String parentPhone;
-    private String parentAddress;
-
 }

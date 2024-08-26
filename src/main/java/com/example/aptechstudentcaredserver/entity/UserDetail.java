@@ -18,8 +18,11 @@ public class UserDetail {
 
     @Column(name = "full_name")
     private String fullName;
+
     private String phone;
     private String address;
+    private String image;
+
     @Column(name = "role_number")
     private String roleNumber;
 
