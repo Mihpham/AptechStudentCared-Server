@@ -2,6 +2,7 @@ package com.example.aptechstudentcaredserver.bean.response;
 
 import com.example.aptechstudentcaredserver.entity.GroupClass;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,6 +11,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class UserResponse {
     private int id;
     private String email;
