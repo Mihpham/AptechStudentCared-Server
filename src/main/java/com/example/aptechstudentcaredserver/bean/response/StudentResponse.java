@@ -10,5 +10,8 @@ public class StudentResponse {
     private String fullName;
     private String email;
     private String className;
+    private String rollNumber;
+    private String phone;
+    private String status;
     private List<String> courses;
 }

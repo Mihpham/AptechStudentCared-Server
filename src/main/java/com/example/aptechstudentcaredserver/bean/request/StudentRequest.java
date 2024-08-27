@@ -1,6 +1,7 @@
 package com.example.aptechstudentcaredserver.bean.request;
 
 import lombok.Data;
+import java.util.Set;
 
 @Data
 public class StudentRequest {
@@ -14,7 +15,8 @@ public class StudentRequest {
     private String phoneNumber;
     private String email;
     private String address;
-    private String course;
+    private Set<String> courses;
+    private String status;
     private String parentFullName;
     private String studentRelation;
     private String parentPhone;
