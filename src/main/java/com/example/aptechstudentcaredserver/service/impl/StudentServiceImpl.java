@@ -10,6 +10,7 @@ import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
 import com.example.aptechstudentcaredserver.service.StudentService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -85,11 +86,36 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public void deleteStudent(int studentId) {
-        if (!userRepository.existsById(studentId)) {
-            throw new NotFoundException("Student not found with id " + studentId);
+        // Tìm User theo studentId
+        User user = userRepository.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Student not found with id " + studentId));
+
+        // Xóa các bản ghi trong UserCourse
+        List<UserCourse> userCourses = userCourseRepository.findByUserId(studentId);
+        userCourseRepository.deleteAll(userCourses);
+
+        // Xóa bản ghi trong GroupClass
+        GroupClass groupClass = groupClassRepository.findByUserId(studentId)
+                .orElseThrow(() -> new NotFoundException("Group class not found for user id " + studentId));
+        groupClassRepository.delete(groupClass);
+
+        // Cập nhật hoặc xóa bản ghi trong Parent
+        UserDetail userDetail = user.getUserDetail();
+        if (userDetail != null && userDetail.getParent() != null) {
+            Parent parent = userDetail.getParent();
+            userDetail.setParent(null); // Xóa liên kết với Parent
+            userDetailRepository.save(userDetail); // Cập nhật UserDetail
+
+            // Xóa Parent nếu không còn liên kết với bất kỳ User nào khác
+            if (parentRepository.findById(parent.getId()).isPresent()) {
+                parentRepository.delete(parent);
+            }
         }
+
+        // Xóa User
         userRepository.deleteById(studentId);
     }
+
 
 
     private User findUserById(int studentId) {
