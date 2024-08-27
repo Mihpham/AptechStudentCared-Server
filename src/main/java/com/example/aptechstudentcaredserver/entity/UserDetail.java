@@ -27,8 +27,9 @@ public class UserDetail {
     @Column(name = "date_of_birth")
     private String dob;
 
-    @Column(name = "role_number")
-    private String roleNumber;
+    @Column(name = "roll_number")
+    private String rollNumber;
+
     @OneToOne
     @JoinColumn(name = "user_id")
     private User user;

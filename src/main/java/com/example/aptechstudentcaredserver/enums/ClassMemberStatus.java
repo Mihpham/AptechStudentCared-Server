@@ -1,7 +1,9 @@
 package com.example.aptechstudentcaredserver.enums;
 
 public enum ClassMemberStatus {
-    ACTIVE,
-    DELETE
+    STUDYING,
+    GRADUATED,
+    DROPPED,
+    DELAY
 
 }

@@ -49,7 +49,7 @@ public class UserMapper {
                 throw new NotFoundException("User role name is null");
             }
 
-            String roleNumber = user.getUserDetail() != null ? user.getUserDetail().getRoleNumber() : null;
+            String roleNumber = user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : null;
             if (roleNumber == null) {
                 throw new NotFoundException("User role number is null");
             }

@@ -7,12 +7,19 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/students")
 public class StudentController {
     private final StudentService studentService;
 
+    @GetMapping
+    public ResponseEntity<List<StudentResponse>> getAllStudents() {
+        List<StudentResponse> students = studentService.findAllStudent();
+        return ResponseEntity.ok(students);
+    }
 
     @PostMapping("/add")
     public ResponseEntity<String> addStudent(@RequestBody StudentRequest studentRq) {
@@ -31,10 +38,18 @@ public class StudentController {
         return ResponseEntity.ok(studentResponse);
     }
 
+    @PutMapping("/{studentId}")
+    public ResponseEntity<StudentResponse> updateStudent(
+            @PathVariable int studentId,
+            @RequestBody StudentRequest studentRequest) {
+        StudentResponse updatedStudent = studentService.updateStudent(studentId, studentRequest);
+        return ResponseEntity.ok(updatedStudent);
+    }
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteStudent(@PathVariable("id") int id) {
+    public ResponseEntity<String> deleteStudent(@PathVariable("id") int id) {
         studentService.deleteStudent(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok("Student deleted successfully");
     }
 
 }
