@@ -35,5 +35,3 @@ src/main/resources/application.properties
 target/classes/application.properties
 db_school.sql
 .idea
-src/main/resources/application.properties
-src/main/resources/application.properties
