@@ -20,6 +20,9 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+/**
+ * Các bài kiểm tra cho lớp AuthController.
+ */
 @Slf4j
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -36,10 +39,11 @@ public class AuthControllerTest {
     private AuthResponse authAdminResponse;
     private AuthResponse authUserResponse;
 
+    /**
+     * Khởi tạo dữ liệu mẫu trước mỗi bài kiểm tra.
+     */
     @BeforeEach
     void initData() {
-        // Khởi tạo dữ liệu mẫu trước mỗi bài kiểm tra
-
         // Dữ liệu cho người dùng với role "user"
         requestUser = RegisterUserRequest.builder()
                 .email("hoi.bt.2156@gmail.com")
@@ -73,87 +77,91 @@ public class AuthControllerTest {
                 .build();
     }
 
+    /**
+     * Kiểm tra kịch bản đăng ký thành công cho người dùng với role "admin".
+     * <p>
+     * Phương thức này giả lập việc đăng ký thành công và kiểm tra phản hồi từ server.
+     * </p>
+     */
     @Test
     void registerAdmin_validRequest_success() throws Exception {
-        // Kiểm tra kịch bản đăng ký thành công cho người dùng với role "admin"
-
-        // GIVEN: Cài đặt dữ liệu đầu vào và phản hồi mong đợi
         ObjectMapper objectMapper = new ObjectMapper();
         String content = objectMapper.writeValueAsString(requestAdmin);
         Mockito.when(authService.registerUser(ArgumentMatchers.any()))
                 .thenReturn(authAdminResponse);  // Giả lập phản hồi từ AuthService
 
-        // WHEN: Thực hiện yêu cầu POST đến endpoint "/auth/signup"
         mockMvc.perform(MockMvcRequestBuilders
                         .post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(content))
-                // THEN: Kiểm tra phản hồi nhận được
-                .andExpect(MockMvcResultMatchers.status().isCreated())
+                .andExpect(MockMvcResultMatchers.status().isCreated())  // Kiểm tra mã trạng thái HTTP 201
                 .andExpect(MockMvcResultMatchers.jsonPath("$.message")
-                        .value("Registration successful!"))
+                        .value("Registration successful!"))  // Kiểm tra thông báo phản hồi
                 .andExpect(MockMvcResultMatchers.jsonPath("$.role")
-                        .value("admin"));
+                        .value("admin"));  // Kiểm tra vai trò của người dùng
     }
 
+    /**
+     * Kiểm tra kịch bản đăng ký thất bại khi email không hợp lệ.
+     * <p>
+     * Phương thức này thiết lập một email không hợp lệ và kiểm tra phản hồi lỗi từ server.
+     * </p>
+     */
     @Test
     void registerAdmin_invalidEmailRequest_Fail() throws Exception {
-        // Kiểm tra kịch bản đăng ký thất bại khi email không hợp lệ
-
         requestAdmin.setEmail(""); // Cài đặt email không hợp lệ
 
-        // GIVEN: Cài đặt dữ liệu đầu vào
         ObjectMapper objectMapper = new ObjectMapper();
         String content = objectMapper.writeValueAsString(requestAdmin);
 
-        // WHEN: Thực hiện yêu cầu POST đến endpoint "/auth/signup"
+        // Thực hiện yêu cầu POST và kiểm tra phản hồi lỗi
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                         .post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(content))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())  // Kiểm tra mã trạng thái HTTP 400
                 .andReturn();
 
-        // THEN: In ra nội dung phản hồi để debug
+        // In ra nội dung phản hồi để debug
         String responseContent = result.getResponse().getContentAsString();
         System.out.println("Response content: " + responseContent);
 
-        // THEN: Kiểm tra phản hồi nhận được
         mockMvc.perform(MockMvcRequestBuilders
                         .post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(content))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())  // Kiểm tra mã trạng thái HTTP 400
                 .andExpect(MockMvcResultMatchers.jsonPath("$.type")
-                        .value("about:blank"))
+                        .value("about:blank"))  // Kiểm tra loại lỗi
                 .andExpect(MockMvcResultMatchers.jsonPath("$.title")
-                        .value("Bad Request"))
+                        .value("Bad Request"))  // Kiểm tra tiêu đề lỗi
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status")
-                        .value(400))
+                        .value(400))  // Kiểm tra mã trạng thái lỗi
                 .andExpect(MockMvcResultMatchers.jsonPath("$.detail")
-                        .value("Invalid request content."));
+                        .value("Invalid request content."));  // Kiểm tra chi tiết lỗi
     }
 
+    /**
+     * Kiểm tra kịch bản đăng ký thành công cho người dùng với role "user".
+     * <p>
+     * Phương thức này giả lập việc đăng ký thành công và kiểm tra phản hồi từ server.
+     * </p>
+     */
     @Test
     void registerUser_validRequest_success() throws Exception {
-        // Kiểm tra kịch bản đăng ký thành công cho người dùng với role "user"
-
-        // GIVEN: Cài đặt dữ liệu đầu vào và phản hồi mong đợi
         ObjectMapper objectMapper = new ObjectMapper();
         String content = objectMapper.writeValueAsString(requestUser);
         Mockito.when(authService.registerUser(ArgumentMatchers.any()))
                 .thenReturn(authUserResponse);  // Giả lập phản hồi từ AuthService
 
-        // WHEN: Thực hiện yêu cầu POST đến endpoint "/auth/signup"
         mockMvc.perform(MockMvcRequestBuilders
                         .post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(content))
-                // THEN: Kiểm tra phản hồi nhận được
-                .andExpect(MockMvcResultMatchers.status().isCreated())
+                .andExpect(MockMvcResultMatchers.status().isCreated())  // Kiểm tra mã trạng thái HTTP 201
                 .andExpect(MockMvcResultMatchers.jsonPath("$.message")
-                        .value("Registration successful!"))
+                        .value("Registration successful!"))  // Kiểm tra thông báo phản hồi
                 .andExpect(MockMvcResultMatchers.jsonPath("$.role")
-                        .value("user"));
+                        .value("user"));  // Kiểm tra vai trò của người dùng
     }
 }
