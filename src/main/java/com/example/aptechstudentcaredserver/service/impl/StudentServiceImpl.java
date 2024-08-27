@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,107 +35,105 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public List<StudentResponse> findAllStudent() {
-        // Retrieve all users with the role "Student"
-        List<User> users = userRepository.findByRoleRoleName("Student");
-
-        // Map the list of User entities to a list of StudentResponse DTOs
-        return users.stream().map(user -> {
-            // Find the group class for the user
-            GroupClass groupClass = groupClassRepository.findByUserId(user.getId())
-                    .orElseThrow(() -> new NotFoundException("Group class not found for user id " + user.getId()));
-
-            // Find the class associated with the group class
-            Class studentClass = groupClass.getClasses();
-
-            // Find the courses associated with the user
-            List<UserCourse> userCourses = userCourseRepository.findByUserId(user.getId());
-            List<String> courses = userCourses.stream()
-                    .map(userCourse -> userCourse.getCourse().getCourseName())
-                    .collect(Collectors.toList());
-
-            // Create and return the StudentResponse DTO
-            StudentResponse response = new StudentResponse();
-            response.setUserId(user.getId());
-            response.setFullName(user.getUserDetail().getFullName());
-            response.setEmail(user.getEmail());
-            response.setClassName(studentClass.getClassName());
-            response.setCourses(courses);
-            response.setRollNumber(user.getUserDetail().getRollNumber()); // Set roll number
-            response.setPhone(user.getUserDetail().getPhone()); // Set phone
-            response.setStatus(groupClass.getStatus().name()); // Use status from GroupClass
-
-            return response;
-        }).collect(Collectors.toList());
+        List<User> users = userRepository.findByRoleRoleName("STUDENT");
+        return users.stream()
+                .map(user -> convertToStudentResponse(user, findGroupClassByUserId(user.getId())))
+                .collect(Collectors.toList());
     }
-
 
     @Override
     public StudentResponse findStudentById(int studentId) {
-        // Find the user by ID
-        User user = userRepository.findById(studentId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
-        // Get the user's class
-        GroupClass groupClass = groupClassRepository.findByUserId(studentId)
-                .orElseThrow(() -> new NotFoundException("Group class not found"));
-
-        Class studentClass = groupClass.getClasses();
-
-        // Get the user's courses
-        List<UserCourse> userCourses = userCourseRepository.findByUserId(studentId);
-        List<String> courses = userCourses.stream()
-                .map(userCourse -> userCourse.getCourse().getCourseName())
-                .collect(Collectors.toList());
-
-        // Create StudentResponse DTO
-        StudentResponse response = new StudentResponse();
-        response.setUserId(user.getId());
-        response.setFullName(user.getUserDetail().getFullName());
-        response.setEmail(user.getEmail());
-        response.setClassName(studentClass.getClassName());
-        response.setCourses(courses);
-        response.setRollNumber(user.getUserDetail().getRollNumber()); // Set roll number
-        response.setPhone(user.getUserDetail().getPhone()); // Set phone
-        response.setStatus(user.getStatus().name()); // Convert enum to String
-
-        return response;
+        User user = findUserById(studentId);
+        GroupClass groupClass = findGroupClassByUserId(studentId);
+        return convertToStudentResponse(user, groupClass);
     }
 
     @Override
     public void createStudent(StudentRequest studentRq) {
-        // Check if class exists, create if not
-        Class studentClass = classRepository.findByClassName(studentRq.getClassName());
-        if (studentClass == null) {
-            studentClass = new Class();
-            studentClass.setClassName(studentRq.getClassName());
-            studentClass.setCreatedAt(LocalDateTime.now());
-            studentClass.setUpdatedAt(LocalDateTime.now());
-            classRepository.save(studentClass);
-        }
-
-        // Check if role exists
-        Role role = roleRepository.findByRoleName("Student");
-        if (role == null) {
-            role = new Role();
-            role.setRoleName("Student");
-            roleRepository.save(role);
-        }
-
+        Class studentClass = findOrCreateClass(studentRq.getClassName());
+        Role role = findOrCreateRole("STUDENT");
         String email = emailGeneratorService.generateUniqueEmail(studentRq.getFullName());
 
-        // Create new User
+        User user = createUser(studentRq, role, email);
+        userRepository.save(user);
+
+        UserDetail userDetail = createUserDetail(studentRq, user);
+        userDetailRepository.save(userDetail);
+
+        createOrUpdateParent(studentRq, userDetail);
+        createUserCourses(studentRq, user);
+        createGroupClass(studentClass, user);
+    }
+
+    @Override
+    public StudentResponse updateStudent(int studentId, StudentRequest studentRq) {
+        User user = findUserById(studentId);
+        UserDetail userDetail = user.getUserDetail();
+
+        updateUserDetails(user, userDetail, studentRq);
+        updateClass(studentId, studentRq);
+        updateCourses(studentId, studentRq);
+        updateGroupClassStatus(studentId, studentRq);
+        updateParentDetails(userDetail, studentRq);
+
+        userRepository.save(user);
+        userDetailRepository.save(userDetail);
+
+        GroupClass groupClass = findGroupClassByUserId(studentId);
+        return convertToStudentResponse(user, groupClass);
+    }
+
+    @Override
+    public void deleteStudent(int studentId) {
+        if (!userRepository.existsById(studentId)) {
+            throw new NotFoundException("Student not found with id " + studentId);
+        }
+        userRepository.deleteById(studentId);
+    }
+
+
+    private User findUserById(int studentId) {
+        return userRepository.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("User not found with id " + studentId));
+    }
+
+    private GroupClass findGroupClassByUserId(int studentId) {
+        return groupClassRepository.findByUserId(studentId)
+                .orElseThrow(() -> new NotFoundException("Group class not found for user id " + studentId));
+    }
+
+    private Class findOrCreateClass(String className) {
+        return Optional.ofNullable(classRepository.findByClassName(className))
+                .orElseGet(() -> {
+                    Class studentClass = new Class();
+                    studentClass.setClassName(className);
+                    studentClass.setCreatedAt(LocalDateTime.now());
+                    studentClass.setUpdatedAt(LocalDateTime.now());
+                    return classRepository.save(studentClass);
+                });
+    }
+
+    private Role findOrCreateRole(String roleName) {
+        return Optional.ofNullable(roleRepository.findByRoleName(roleName))
+                .orElseGet(() -> {
+                    Role role = new Role();
+                    role.setRoleName(roleName);
+                    return roleRepository.save(role);
+                });
+    }
+
+    private User createUser(StudentRequest studentRq, Role role, String email) {
         User user = new User();
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode("@123456789"));
-        user.setRole(role); // Set role as Role entity
+        user.setRole(role);
         user.setStatus(Status.ACTIVE);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
+        return user;
+    }
 
-        // Save User
-        userRepository.save(user);
-
-        // Create new UserDetail
+    private UserDetail createUserDetail(StudentRequest studentRq, User user) {
         UserDetail userDetail = new UserDetail();
         userDetail.setRollNumber(studentRq.getRollNumber());
         userDetail.setFullName(studentRq.getFullName());
@@ -143,37 +142,40 @@ public class StudentServiceImpl implements StudentService {
         userDetail.setPhone(studentRq.getPhoneNumber());
         userDetail.setAddress(studentRq.getAddress());
         userDetail.setUser(user);
+        return userDetail;
+    }
 
-        // Check if parent exists
-        Parent parent = new Parent();
-        parent.setFullName(studentRq.getParentFullName()); // Updated field name
-        parent.setPhone(studentRq.getParentPhone());
-        parent.setGender(studentRq.getParentGender());
-        parent.setStudentRelation(studentRq.getStudentRelation());
-        parent.setJob(studentRq.getParentJob());
-        parent.setCreatedAt(LocalDateTime.now());
+    private void createOrUpdateParent(StudentRequest studentRq, UserDetail userDetail) {
+        Parent parent = Optional.ofNullable(userDetail.getParent()).orElseGet(() -> {
+            Parent newParent = new Parent();
+            newParent.setCreatedAt(LocalDateTime.now());
+            return newParent;
+        });
+
+        if (studentRq.getParentFullName() != null) parent.setFullName(studentRq.getParentFullName());
+        if (studentRq.getParentPhone() != null) parent.setPhone(studentRq.getParentPhone());
+        if (studentRq.getParentGender() != null) parent.setGender(studentRq.getParentGender());
+        if (studentRq.getStudentRelation() != null) parent.setStudentRelation(studentRq.getStudentRelation());
+        if (studentRq.getParentJob() != null) parent.setJob(studentRq.getParentJob());
+
         parent.setUpdatedAt(LocalDateTime.now());
-        if (parent != null) {
-            parentRepository.save(parent); // Ensure parent is saved
-            userDetail.setParent(parent);
-        }
+        parentRepository.save(parent);
+        userDetail.setParent(parent);
+    }
 
-        // Save UserDetail
-        userDetailRepository.save(userDetail);
-
-        // Create and save UserCourses
+    private void createUserCourses(StudentRequest studentRq, User user) {
         if (studentRq.getCourses() != null) {
-            for (String courseName : studentRq.getCourses()) {
-                Course course = courseRepository.findByCourseName(courseName.trim());
-                if (course == null) {
-                    course = new Course();
-                    course.setCourseName(courseName.trim());
-                    course.setCourseCode("C" + (courseRepository.count() + 1)); // Generate a simple course code
-                    course.setClassSchedule("TBD"); // You can adjust this
-                    course.setCreatedAt(LocalDateTime.now());
-                    course.setUpdatedAt(LocalDateTime.now());
-                    courseRepository.save(course);
-                }
+            studentRq.getCourses().forEach(courseName -> {
+                Course course = Optional.ofNullable(courseRepository.findByCourseName(courseName.trim()))
+                        .orElseGet(() -> {
+                            Course newCourse = new Course();
+                            newCourse.setCourseName(courseName.trim());
+                            newCourse.setCourseCode("C" + (courseRepository.count() + 1));
+                            newCourse.setClassSchedule("TBD");
+                            newCourse.setCreatedAt(LocalDateTime.now());
+                            newCourse.setUpdatedAt(LocalDateTime.now());
+                            return courseRepository.save(newCourse);
+                        });
 
                 UserCourse userCourse = new UserCourse();
                 userCourse.setUser(user);
@@ -182,142 +184,82 @@ public class StudentServiceImpl implements StudentService {
                 userCourse.setEndDate(LocalDateTime.now().plusMonths(6));
                 userCourse.setCreatedAt(LocalDateTime.now());
                 userCourse.setUpdatedAt(LocalDateTime.now());
-
                 userCourseRepository.save(userCourse);
-            }
+            });
         }
+    }
 
-        // Create GroupClass
+    private void createGroupClass(Class studentClass, User user) {
         GroupClass groupClass = new GroupClass();
         groupClass.setUser(user);
         groupClass.setClasses(studentClass);
         groupClass.setJoinedDate(LocalDateTime.now());
         groupClass.setStatus(ClassMemberStatus.STUDYING);
-
-        // Save GroupClass
         groupClassRepository.save(groupClass);
     }
 
+    private void updateUserDetails(User user, UserDetail userDetail, StudentRequest studentRq) {
+        if (studentRq.getFullName() != null) userDetail.setFullName(studentRq.getFullName());
+        if (studentRq.getEmail() != null) user.setEmail(studentRq.getEmail());
+        if (studentRq.getRollNumber() != null) userDetail.setRollNumber(studentRq.getRollNumber());
+        if (studentRq.getPhoneNumber() != null) userDetail.setPhone(studentRq.getPhoneNumber());
+    }
 
-
-    @Override
-    public StudentResponse updateStudent(int studentId, StudentRequest studentRq) {
-        // Find the user by ID
-        User user = userRepository.findById(studentId)
-                .orElseThrow(() -> new NotFoundException("User not found with id " + studentId));
-
-        // Retrieve UserDetail and other associated entities
-        UserDetail userDetail = user.getUserDetail();
-
-        // Update user details
-        if (studentRq.getFullName() != null) {
-            userDetail.setFullName(studentRq.getFullName());
-        }
-        if (studentRq.getEmail() != null) {
-            user.setEmail(studentRq.getEmail());
-        }
-        if (studentRq.getRollNumber() != null) {
-            userDetail.setRollNumber(studentRq.getRollNumber());
-        }
-        if (studentRq.getPhoneNumber() != null) {
-            userDetail.setPhone(studentRq.getPhoneNumber());
-        }
-
-        // Update the class if needed
+    private void updateClass(int studentId, StudentRequest studentRq) {
         if (studentRq.getClassName() != null) {
-            Class studentClass = classRepository.findByClassName(studentRq.getClassName());
-            if (studentClass == null) {
-                studentClass = new Class();
-                studentClass.setClassName(studentRq.getClassName());
-                studentClass.setCreatedAt(LocalDateTime.now());
-                studentClass.setUpdatedAt(LocalDateTime.now());
-                classRepository.save(studentClass);
-            }
-
-            // Update GroupClass with the new class
-            GroupClass groupClass = groupClassRepository.findByUserId(studentId)
-                    .orElseThrow(() -> new NotFoundException("Group class not found for user id " + studentId));
+            Class studentClass = findOrCreateClass(studentRq.getClassName());
+            GroupClass groupClass = findGroupClassByUserId(studentId);
             groupClass.setClasses(studentClass);
             groupClassRepository.save(groupClass);
         }
+    }
 
-        // Update courses
+    private void updateCourses(int studentId, StudentRequest studentRq) {
         if (studentRq.getCourses() != null) {
-            // Remove existing courses
             List<UserCourse> userCourses = userCourseRepository.findByUserId(studentId);
             if (!userCourses.isEmpty()) {
                 userCourseRepository.deleteAll(userCourses);
             }
-
-            // Add new courses
-            for (String courseName : studentRq.getCourses()) {
-                Course course = courseRepository.findByCourseName(courseName.trim());
-                if (course == null) {
-                    course = new Course();
-                    course.setCourseName(courseName.trim());
-                    course.setCourseCode("C" + (courseRepository.count() + 1)); // Generate a simple course code
-                    course.setClassSchedule("TBD"); // You can adjust this
-                    course.setCreatedAt(LocalDateTime.now());
-                    course.setUpdatedAt(LocalDateTime.now());
-                    courseRepository.save(course);
-                }
-
-                UserCourse userCourse = new UserCourse();
-                userCourse.setUser(user);
-                userCourse.setCourse(course);
-                userCourse.setStartDate(LocalDateTime.now());
-                userCourse.setEndDate(LocalDateTime.now().plusMonths(6));
-                userCourse.setCreatedAt(LocalDateTime.now());
-                userCourse.setUpdatedAt(LocalDateTime.now());
-
-                userCourseRepository.save(userCourse);
-            }
+            createUserCourses(studentRq, findUserById(studentId));
         }
+    }
 
-        // Update GroupClass status
+    private void updateGroupClassStatus(int studentId, StudentRequest studentRq) {
         if (studentRq.getStatus() != null) {
-            GroupClass groupClass = groupClassRepository.findByUserId(studentId)
-                    .orElseThrow(() -> new NotFoundException("Group class not found for user id " + studentId));
+            GroupClass groupClass = findGroupClassByUserId(studentId);
             groupClass.setStatus(ClassMemberStatus.valueOf(studentRq.getStatus()));
             groupClassRepository.save(groupClass);
         }
-
-        // Save updated User and UserDetail
-        userRepository.save(user);
-        userDetailRepository.save(userDetail);
-
-        // Prepare StudentResponse DTO
-        GroupClass groupClass = groupClassRepository.findByUserId(studentId)
-                .orElseThrow(() -> new NotFoundException("Group class not found for user id " + studentId));
-        StudentResponse response = new StudentResponse();
-        response.setUserId(user.getId());
-        response.setFullName(userDetail.getFullName());
-        response.setEmail(user.getEmail());
-        response.setClassName(groupClass.getClasses().getClassName());
-        response.setCourses(userCourseRepository.findByUserId(studentId).stream()
-                .map(userCourse -> userCourse.getCourse().getCourseName())
-                .collect(Collectors.toList()));
-        response.setRollNumber(userDetail.getRollNumber());
-        response.setPhone(userDetail.getPhone());
-        response.setStatus(groupClass.getStatus().name());
-
-        return response;
     }
 
-
-
-
-
-
-    @Override
-    public void deleteStudent(int studentId) {
-        // Ensure the student exists before attempting to delete
-        if (!userRepository.existsById(studentId)) {
-            throw new NotFoundException("Student not found with id " + studentId);
+    private void updateParentDetails(UserDetail userDetail, StudentRequest studentRq) {
+        if (studentRq.getParentFullName() != null || studentRq.getParentPhone() != null ||
+                studentRq.getParentGender() != null || studentRq.getStudentRelation() != null ||
+                studentRq.getParentJob() != null) {
+            createOrUpdateParent(studentRq, userDetail);
         }
-        // Delete the student from the repository
-        userRepository.deleteById(studentId);
+    }
+
+    private StudentResponse convertToStudentResponse(User user, GroupClass groupClass) {
+        if (user == null || groupClass == null) {
+            return new StudentResponse(); // return object empty if need
+        }
+
+        Class studentClass = groupClass.getClasses();
+        List<String> courses = userCourseRepository.findByUserId(user.getId()).stream()
+                .map(userCourse -> userCourse.getCourse().getCourseName())
+                .collect(Collectors.toList());
+
+        return new StudentResponse(
+                user.getId(),
+                user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getFullName() : null,
+                user.getEmail(),
+                studentClass != null ? studentClass.getClassName() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
+                courses,
+                groupClass.getStatus() != null ? groupClass.getStatus().name() : null
+        );
     }
 
 }
-
