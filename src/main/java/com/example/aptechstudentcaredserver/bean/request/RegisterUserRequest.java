@@ -20,6 +20,7 @@ public class RegisterUserRequest {
     private String phone;
     private String address;
     private String roleName;
+    private String image;
     
 
 }

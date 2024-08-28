@@ -70,6 +70,11 @@ public class AuthServiceImpl implements AuthService {
         userDetail.setFullName(registerUserRequest.getFullName());
         userDetail.setPhone(registerUserRequest.getPhone());
         userDetail.setAddress(registerUserRequest.getAddress());
+        userDetail.setImage(
+                (registerUserRequest.getImage() != null && !registerUserRequest.getImage().isEmpty())
+                        ? registerUserRequest.getImage()
+                        : null
+        );
         userDetail.setUser(user);
 
         // Handle Parent association
