@@ -34,9 +34,9 @@ public class StudentController {
     }
 
 
-    @GetMapping("/{id}")
-    public ResponseEntity<StudentResponse> getStudentInfo(@PathVariable("id") int id) {
-        StudentResponse studentResponse = studentService.findStudentById(id);
+    @GetMapping("/{studentId}")
+    public ResponseEntity<StudentResponse> getStudentInfo(@PathVariable("studentId") int studentId) {
+        StudentResponse studentResponse = studentService.findStudentById(studentId);
         return ResponseEntity.ok(studentResponse);
     }
 
@@ -48,9 +48,9 @@ public class StudentController {
         return ResponseEntity.ok(updatedStudent);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteStudent(@PathVariable("id") int id) {
-        studentService.deleteStudent(id);
+    @DeleteMapping("/{studentId}")
+    public ResponseEntity<String> deleteStudent(@PathVariable("studentId") int studentId) {
+        studentService.deleteStudent(studentId);
         return ResponseEntity.ok("Student deleted successfully");
     }
 

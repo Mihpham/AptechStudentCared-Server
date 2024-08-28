@@ -21,6 +21,5 @@ public class StudentRequest {
     private String studentRelation;
     private String parentPhone;
     private String parentGender;
-    private String parentJob;
 
 }

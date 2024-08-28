@@ -18,6 +18,11 @@ public class StudentResponse {
     private String phoneNumber;
     private List<String> courses;
     private String status;
+    private String parentFullName;
+    private String studentRelation;
+    private String parentPhone;
+    private String parentGender;
+
 
 
 }

@@ -23,7 +23,6 @@ public class Parent {
     private String studentRelation;
 
     private String gender;
-    private String job;
 
     @OneToOne(mappedBy = "parent")
     private UserDetail userDetails;

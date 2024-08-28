@@ -10,7 +10,6 @@ import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
 import com.example.aptechstudentcaredserver.service.StudentService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -117,7 +116,6 @@ public class StudentServiceImpl implements StudentService {
     }
 
 
-
     private User findUserById(int studentId) {
         return userRepository.findById(studentId)
                 .orElseThrow(() -> new NotFoundException("User not found with id " + studentId));
@@ -182,7 +180,6 @@ public class StudentServiceImpl implements StudentService {
         if (studentRq.getParentPhone() != null) parent.setPhone(studentRq.getParentPhone());
         if (studentRq.getParentGender() != null) parent.setGender(studentRq.getParentGender());
         if (studentRq.getStudentRelation() != null) parent.setStudentRelation(studentRq.getStudentRelation());
-        if (studentRq.getParentJob() != null) parent.setJob(studentRq.getParentJob());
 
         parent.setUpdatedAt(LocalDateTime.now());
         parentRepository.save(parent);
@@ -260,8 +257,8 @@ public class StudentServiceImpl implements StudentService {
 
     private void updateParentDetails(UserDetail userDetail, StudentRequest studentRq) {
         if (studentRq.getParentFullName() != null || studentRq.getParentPhone() != null ||
-                studentRq.getParentGender() != null || studentRq.getStudentRelation() != null ||
-                studentRq.getParentJob() != null) {
+                studentRq.getParentGender() != null || studentRq.getStudentRelation() != null
+        ) {
             createOrUpdateParent(studentRq, userDetail);
         }
     }
@@ -284,7 +281,12 @@ public class StudentServiceImpl implements StudentService {
                 studentClass != null ? studentClass.getClassName() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
                 courses,
-                groupClass.getStatus() != null ? groupClass.getStatus().name() : null
+                groupClass.getStatus() != null ? groupClass.getStatus().name() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getParent().getFullName() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getParent().getStudentRelation() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getParent().getPhone() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getParent().getGender() : null
+
         );
     }
 
