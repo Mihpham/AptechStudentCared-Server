@@ -4,7 +4,6 @@ import com.example.aptechstudentcaredserver.bean.response.UserResponse;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.entity.UserDetail;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
-import com.example.aptechstudentcaredserver.mapper.UserMapper;
 import com.example.aptechstudentcaredserver.repository.UserRepository;
 import com.example.aptechstudentcaredserver.service.UserService;
 import com.example.aptechstudentcaredserver.util.JwtUtil;
@@ -13,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,35 +28,14 @@ public class UserServiceImpl implements UserService {
             return Collections.emptyList(); // Return empty list if no users found
         }
         return users.stream()
-                .map(user -> {
-                    try {
-                        // Validate and fix user data if necessary before mapping
-                        User validatedUser = validateUser(user);
-                        return UserMapper.convertToUserResponse(validatedUser);
-                    } catch (NotFoundException e) {
-                        // Log the error and handle it based on your requirements
-                        System.err.println("Error mapping user to response: " + e.getMessage());
-                        return null; // or handle as needed
-                    }
-                })
-                .filter(userResponse -> userResponse != null) // Remove any null responses
+                .map(this::convertUserToUserResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     public UserResponse findUserById(int id) {
         return userRepository.findById(id)
-                .map(user -> {
-                    try {
-                        // Validate and fix user data if necessary before mapping
-                        User validatedUser = validateUser(user);
-                        return UserMapper.convertToUserResponse(validatedUser);
-                    } catch (NotFoundException e) {
-                        // Log the error and handle it based on your requirements
-                        System.err.println("Error mapping user to response: " + e.getMessage());
-                        throw new NotFoundException("User found but could not be mapped: " + e.getMessage());
-                    }
-                })
+                .map(this::convertUserToUserResponse)
                 .orElseThrow(() -> new NotFoundException("User not found with id: " + id));
     }
 
@@ -64,15 +43,7 @@ public class UserServiceImpl implements UserService {
     public UserResponse findUserResponseFromToken(String token) {
         User user = findUserFromToken(token);
         if (user != null) {
-            try {
-                // Validate and fix user data if necessary before mapping
-                User validatedUser = validateUser(user);
-                return UserMapper.convertToUserResponse(validatedUser);
-            } catch (NotFoundException e) {
-                // Log the error and handle it based on your requirements
-                System.err.println("Error mapping user to response: " + e.getMessage());
-                throw new NotFoundException("User found but could not be mapped: " + e.getMessage());
-            }
+            return convertUserToUserResponse(user);
         }
         throw new NotFoundException("User not found for token");
     }
@@ -87,22 +58,32 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Validate and provide default values for the User entity to prevent mapping issues.
+     * Convert User entity to UserResponse.
      *
-     * @param user The User entity to validate
-     * @return The validated User entity
+     * @param user The User entity to convert
+     * @return The UserResponse object
      */
-    private User validateUser(User user) {
-        if (user.getUserDetail() == null) {
-            user.setUserDetail(new UserDetail());
-        }
-        UserDetail userDetail = user.getUserDetail();
-        if (userDetail.getRollNumber() == null) {
-            userDetail.setRollNumber("N/A");
-        }
-        if (userDetail.getImage() == null) {
-            userDetail.setImage("avatar.jpg");
-        }
-        return user;
+    private UserResponse convertUserToUserResponse(User user) {
+        // Validate and fix UserDetail if necessary
+        UserDetail userDetail = Optional.ofNullable(user.getUserDetail()).orElse(new UserDetail());
+
+        // Build UserResponse
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(Optional.ofNullable(userDetail.getFullName()).orElse("N/A"))
+                .phone(Optional.ofNullable(userDetail.getPhone()).orElse("N/A"))
+                .address(Optional.ofNullable(userDetail.getAddress()).orElse("N/A"))
+                .roleName(Optional.ofNullable(user.getRole()).map(role -> role.getRoleName()).orElse("N/A"))
+                .classes(Optional.ofNullable(user.getGroupClasses()).orElse(Collections.emptyList())
+                        .stream()
+                        .map(groupClass -> Optional.ofNullable(groupClass.getClasses())
+                                .map(classes -> classes.getClassName())
+                                .orElse("N/A"))
+                        .collect(Collectors.toList()))
+                .status(String.valueOf(user.getStatus()))
+                .roleNumber(Optional.ofNullable(userDetail.getRollNumber()).orElse("N/A"))
+                .image(Optional.ofNullable(userDetail.getImage()).orElse("https://static.vecteezy.com/system/resources/previews/043/900/708/non_2x/user-profile-icon-illustration-vector.jpg"))
+                .build();
     }
 }
