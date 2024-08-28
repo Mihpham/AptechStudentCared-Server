@@ -160,7 +160,11 @@ public class StudentServiceImpl implements StudentService {
     private UserDetail createUserDetail(StudentRequest studentRq, User user) {
         UserDetail userDetail = new UserDetail();
         userDetail.setRollNumber(studentRq.getRollNumber());
-        userDetail.setImage("avatar.jpg");
+        userDetail.setImage(
+                (studentRq.getImage() != null && !studentRq.getImage().isEmpty())
+                        ? studentRq.getImage()
+                        : null
+        );
         userDetail.setFullName(studentRq.getFullName());
         userDetail.setGender(studentRq.getGender());
         userDetail.setDob(studentRq.getDob());
