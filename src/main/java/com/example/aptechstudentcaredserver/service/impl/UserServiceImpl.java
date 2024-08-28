@@ -25,7 +25,7 @@ public class UserServiceImpl implements UserService {
     public List<UserResponse> findAllUser() {
         List<User> users = userRepository.findAll();
         if (users.isEmpty()) {
-            return Collections.emptyList(); // Return empty list if no users found
+            return Collections.emptyList();
         }
         return users.stream()
                 .map(this::convertUserToUserResponse)
@@ -67,23 +67,29 @@ public class UserServiceImpl implements UserService {
         // Validate and fix UserDetail if necessary
         UserDetail userDetail = Optional.ofNullable(user.getUserDetail()).orElse(new UserDetail());
 
+        // Ensure that required fields are not null
+        String fullName = Optional.ofNullable(userDetail.getFullName()).orElse("N/A");
+        String phone = Optional.ofNullable(userDetail.getPhone()).orElse("N/A");
+        String address = Optional.ofNullable(userDetail.getAddress()).orElse("N/A");
+        String roleNumber = Optional.ofNullable(userDetail.getRollNumber()).orElse("N/A");
+        String image = Optional.ofNullable(userDetail.getImage()).orElse("https://static.vecteezy.com/system/resources/previews/043/900/708/non_2x/user-profile-icon-illustration-vector.jpg");
+
         // Build UserResponse
         return UserResponse.builder()
                 .id(user.getId())
-                .email(user.getEmail())
-                .fullName(Optional.ofNullable(userDetail.getFullName()).orElse("N/A"))
-                .phone(Optional.ofNullable(userDetail.getPhone()).orElse("N/A"))
-                .address(Optional.ofNullable(userDetail.getAddress()).orElse("N/A"))
+                .email(Optional.ofNullable(user.getEmail()).orElse("N/A"))
+                .fullName(fullName)
+                .phone(phone)
+                .address(address)
                 .roleName(Optional.ofNullable(user.getRole()).map(role -> role.getRoleName()).orElse("N/A"))
                 .classes(Optional.ofNullable(user.getGroupClasses()).orElse(Collections.emptyList())
                         .stream()
-                        .map(groupClass -> Optional.ofNullable(groupClass.getClasses())
-                                .map(classes -> classes.getClassName())
-                                .orElse("N/A"))
+                        .map(groupClass -> Optional.ofNullable(groupClass.getClasses().getClassName()).orElse("N/A"))
                         .collect(Collectors.toList()))
-                .status(String.valueOf(user.getStatus()))
-                .roleNumber(Optional.ofNullable(userDetail.getRollNumber()).orElse("N/A"))
-                .image(Optional.ofNullable(userDetail.getImage()).orElse("https://static.vecteezy.com/system/resources/previews/043/900/708/non_2x/user-profile-icon-illustration-vector.jpg"))
+                .status(Optional.ofNullable(user.getStatus()).map(Enum::name).orElse("N/A"))
+                .roleNumber(roleNumber)
+                .image(image)
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 }
