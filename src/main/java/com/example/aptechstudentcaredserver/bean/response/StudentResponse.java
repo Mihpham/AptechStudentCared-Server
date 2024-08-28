@@ -11,9 +11,11 @@ import java.util.List;
 @NoArgsConstructor
 public class StudentResponse {
     private int userId;
+    private String image;
     private String rollNumber;
     private String fullName;
     private String email;
+    private String address;
     private String className;
     private String phoneNumber;
     private List<String> courses;
@@ -22,7 +24,5 @@ public class StudentResponse {
     private String studentRelation;
     private String parentPhone;
     private String parentGender;
-
-
 
 }

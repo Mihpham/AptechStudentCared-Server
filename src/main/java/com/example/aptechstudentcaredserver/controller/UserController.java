@@ -19,8 +19,12 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<List<UserResponse>> getAllUsers() {
-        List<UserResponse> users = userService.findAllUser();
-        return new ResponseEntity<>(users,HttpStatus.OK);
+        try {
+            List<UserResponse> users = userService.findAllUser();
+            return new ResponseEntity<>(users, HttpStatus.OK);
+        } catch (RuntimeException e) {
+             return  new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 
     @GetMapping("/{id}")

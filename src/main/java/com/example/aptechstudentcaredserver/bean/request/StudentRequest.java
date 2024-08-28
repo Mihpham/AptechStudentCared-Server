@@ -6,6 +6,7 @@ import java.util.Set;
 @Data
 public class StudentRequest {
 
+    private String image;
     private String rollNumber;
     private String fullName;
     private String password;

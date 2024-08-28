@@ -160,6 +160,7 @@ public class StudentServiceImpl implements StudentService {
     private UserDetail createUserDetail(StudentRequest studentRq, User user) {
         UserDetail userDetail = new UserDetail();
         userDetail.setRollNumber(studentRq.getRollNumber());
+        userDetail.setImage("avatar.jpg");
         userDetail.setFullName(studentRq.getFullName());
         userDetail.setGender(studentRq.getGender());
         userDetail.setDob(studentRq.getDob());
@@ -223,6 +224,7 @@ public class StudentServiceImpl implements StudentService {
 
     private void updateUserDetails(User user, UserDetail userDetail, StudentRequest studentRq) {
         if (studentRq.getFullName() != null) userDetail.setFullName(studentRq.getFullName());
+        if (studentRq.getImage() != null) userDetail.setImage(studentRq.getImage());
         if (studentRq.getEmail() != null) user.setEmail(studentRq.getEmail());
         if (studentRq.getRollNumber() != null) userDetail.setRollNumber(studentRq.getRollNumber());
         if (studentRq.getPhoneNumber() != null) userDetail.setPhone(studentRq.getPhoneNumber());
@@ -275,9 +277,11 @@ public class StudentServiceImpl implements StudentService {
 
         return new StudentResponse(
                 user.getId(),
+                user.getUserDetail() != null ? user.getUserDetail().getImage() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getFullName() : null,
                 user.getEmail(),
+                user.getUserDetail() != null ? user.getUserDetail().getAddress() : null,
                 studentClass != null ? studentClass.getClassName() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
                 courses,
