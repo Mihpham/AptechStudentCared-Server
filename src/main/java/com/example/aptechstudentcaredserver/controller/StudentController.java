@@ -4,6 +4,7 @@ import com.example.aptechstudentcaredserver.bean.request.StudentRequest;
 import com.example.aptechstudentcaredserver.bean.response.StudentResponse;
 import com.example.aptechstudentcaredserver.service.StudentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +26,8 @@ public class StudentController {
     public ResponseEntity<String> addStudent(@RequestBody StudentRequest studentRq) {
         try {
             studentService.createStudent(studentRq);
-            return ResponseEntity.ok("Student added successfully");
+            return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .body("{\"message\": \"Student added successfully\"}");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
