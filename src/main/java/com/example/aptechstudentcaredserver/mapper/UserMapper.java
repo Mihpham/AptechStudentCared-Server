@@ -1,85 +1,60 @@
-//package com.example.aptechstudentcaredserver.mapper;
-//
-//import com.example.aptechstudentcaredserver.bean.response.UserResponse;
-//import com.example.aptechstudentcaredserver.entity.User;
-//import com.example.aptechstudentcaredserver.exception.NotFoundException;
-//
-//import java.util.Collections;
-//import java.util.List;
-//import java.util.stream.Collectors;
-//
-//
-//public class UserMapper {
-//
-//        /**
-//         * Chuyển đổi đối tượng User thành UserResponse.
-//         *
-//         * @param user Đối tượng User cần chuyển đổi
-//         * @return Đối tượng UserResponse
-//         * @throws NotFoundException Nếu các thuộc tính quan trọng của User là null
-//         */
-//        public static UserResponse convertToUserResponse(User user) {
-//            if (user == null) {
-//                throw new NotFoundException("User is null");
-//            }
-//
-//            // Kiểm tra các thuộc tính của User và ném ngoại lệ nếu chúng là null
-//            String email = user.getEmail();
-//            if (email == null) {
-//                throw new NotFoundException("User email is null");
-//            }
-//
-//            String fullName = user.getUserDetail() != null ? user.getUserDetail().getFullName() : null;
-//            if (fullName == null) {
-//                throw new NotFoundException("User full name is null");
-//            }
-//
-//            String phone = user.getUserDetail() != null ? user.getUserDetail().getPhone() : null;
-//            if (phone == null) {
-//                throw new NotFoundException("User phone is null");
-//            }
-//
-//            String address = user.getUserDetail() != null ? user.getUserDetail().getAddress() : null;
-//            if (address == null) {
-//                throw new NotFoundException("User address is null");
-//            }
-//
-//            String roleName = user.getRole() != null ? user.getRole().getRoleName() : null;
-//            if (roleName == null) {
-//                throw new NotFoundException("User role name is null");
-//            }
-//
-//            String roleNumber = user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : null;
-//            if (roleNumber == null) {
-//                throw new NotFoundException("User role number is null");
-//            }
-//
-//            String image = user.getUserDetail() != null ? user.getUserDetail().getImage() : null;
-//            if (image == null) {
-//                throw new NotFoundException("User image is null");
-//            }
-//
-//            List<String> classNames = user.getGroupClasses() != null ?
-//                    user.getGroupClasses().stream()
-//                            .map(groupClass -> groupClass.getClasses() != null ? groupClass.getClasses().getClassName() : null)
-//                            .filter(className -> className != null)
-//                            .collect(Collectors.toList()) :
-//                    Collections.emptyList();
-//
-//            // Tạo đối tượng UserResponse sau khi kiểm tra tất cả các giá trị
-//            return new UserResponse(
-//                    user.getId(),
-//                    email,
-//                    fullName,
-//                    phone,
-//                    address,
-//                    roleName,
-//                    classNames,
-//                    String.valueOf(user.getStatus()),
-//                    roleNumber,
-//                    image,
-//                    createdAt
-//            );
-//        }
-//    }
-//
+package com.example.aptechstudentcaredserver.mapper;
+
+import com.example.aptechstudentcaredserver.bean.response.UserResponse;
+import com.example.aptechstudentcaredserver.entity.User;
+import com.example.aptechstudentcaredserver.entity.UserDetail;
+import com.example.aptechstudentcaredserver.exception.NotFoundException;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+public class UserMapper {
+
+    /**
+     * Convert User entity to UserResponse.
+     *
+     * @param user The User entity to convert
+     * @return The UserResponse object
+     */
+    public static UserResponse convertToUserResponse(User user) {
+        if (user == null) {
+            throw new NotFoundException("User is null");
+        }
+
+        // Validate and fix UserDetail if necessary
+        UserDetail userDetail = Optional.ofNullable(user.getUserDetail()).orElse(new UserDetail());
+
+        // Ensure that required fields are not null
+        String email = Optional.ofNullable(user.getEmail()).orElseThrow(() -> new NotFoundException("User email is null"));
+        String fullName = Optional.ofNullable(userDetail.getFullName()).orElse("N/A");
+        String phone = Optional.ofNullable(userDetail.getPhone()).orElse("N/A");
+        String address = Optional.ofNullable(userDetail.getAddress()).orElse("N/A");
+        String roleName = Optional.ofNullable(user.getRole()).map(role -> role.getRoleName()).orElse("N/A");
+        String roleNumber = Optional.ofNullable(userDetail.getRollNumber()).orElse("N/A");
+        String image = Optional.ofNullable(userDetail.getImage()).orElse("https://static.vecteezy.com/system/resources/previews/043/900/708/non_2x/user-profile-icon-illustration-vector.jpg");
+        LocalDateTime createdAt = Optional.ofNullable(user.getCreatedAt()).orElse(LocalDateTime.now());
+
+        List<String> classNames = Optional.ofNullable(user.getGroupClasses()).orElse(Collections.emptyList())
+                .stream()
+                .map(groupClass -> Optional.ofNullable(groupClass.getClasses()).map(classes -> classes.getClassName()).orElse("N/A"))
+                .collect(Collectors.toList());
+
+        // Build UserResponse using builder
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(email)
+                .fullName(fullName)
+                .phone(phone)
+                .address(address)
+                .roleName(roleName)
+                .classes(classNames)
+                .status(Optional.ofNullable(user.getStatus()).map(Enum::name).orElse("N/A"))
+                .roleNumber(roleNumber)
+                .image(image)
+                .createdAt(createdAt)
+                .build();
+    }
+}
