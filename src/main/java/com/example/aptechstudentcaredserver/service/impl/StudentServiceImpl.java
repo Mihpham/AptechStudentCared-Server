@@ -167,7 +167,7 @@ public class StudentServiceImpl implements StudentService {
         );
         userDetail.setFullName(studentRq.getFullName());
         userDetail.setGender(studentRq.getGender());
-        userDetail.setDob(LocalDateTime.parse(studentRq.getDob()));
+        userDetail.setDob(studentRq.getDob());
         userDetail.setPhone(studentRq.getPhoneNumber());
         userDetail.setAddress(studentRq.getAddress());
         userDetail.setUser(user);
@@ -288,7 +288,7 @@ public class StudentServiceImpl implements StudentService {
                 user.getUserDetail() != null ? user.getUserDetail().getAddress() : null,
                 studentClass != null ? studentClass.getClassName() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getGender() : null,
-                user.getUserDetail() != null ? (user.getUserDetail().getDob()) : null,
+                user.getUserDetail() != null ? user.getUserDetail().getDob() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
                 courses,
                 groupClass.getStatus() != null ? groupClass.getStatus().name() : null,

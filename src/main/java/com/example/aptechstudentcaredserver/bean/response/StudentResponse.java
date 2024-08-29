@@ -19,7 +19,7 @@ public class StudentResponse {
     private String address;
     private String className;
     private String gender;
-    private LocalDateTime dob;
+    private String dob;
     private String phoneNumber;
     private List<String> courses;
     private String status;

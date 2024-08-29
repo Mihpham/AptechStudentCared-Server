@@ -27,7 +27,7 @@ public class UserDetail {
     private String image;
 
     @Column(name = "date_of_birth")
-    private LocalDateTime dob;
+    private String dob;
 
     @Column(name = "roll_number")
     private String rollNumber;
