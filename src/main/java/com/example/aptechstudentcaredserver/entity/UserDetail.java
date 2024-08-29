@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "user_details")
 @Data
@@ -25,7 +27,7 @@ public class UserDetail {
     private String image;
 
     @Column(name = "date_of_birth")
-    private String dob;
+    private LocalDateTime dob;
 
     @Column(name = "roll_number")
     private String rollNumber;
