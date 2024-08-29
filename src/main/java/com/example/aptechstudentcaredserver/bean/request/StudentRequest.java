@@ -1,12 +1,14 @@
 package com.example.aptechstudentcaredserver.bean.request;
 
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.Set;
 
 @Data
 public class StudentRequest {
 
-    private String image;
+    private MultipartFile image;
     private String rollNumber;
     private String fullName;
     private String password;

@@ -8,6 +8,7 @@ import com.example.aptechstudentcaredserver.enums.ClassMemberStatus;
 import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.*;
+import com.example.aptechstudentcaredserver.service.CloudinaryService;
 import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
 import com.example.aptechstudentcaredserver.service.StudentService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +36,7 @@ public class StudentServiceImpl implements StudentService {
     private final ParentRepository parentRepository;
     private final GroupClassRepository groupClassRepository;
     private final EmailGeneratorService emailGeneratorService;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     public List<StudentResponse> findAllStudent() {
@@ -162,11 +165,13 @@ public class StudentServiceImpl implements StudentService {
     private UserDetail createUserDetail(StudentRequest studentRq, User user) {
         UserDetail userDetail = new UserDetail();
         userDetail.setRollNumber(studentRq.getRollNumber());
-        userDetail.setImage(
-                (studentRq.getImage() != null && !studentRq.getImage().isEmpty())
-                        ? studentRq.getImage()
-                        : null
-        );
+        try {
+            String imageUrl = cloudinaryService.uploadToCloudinary(studentRq.getImage());
+            userDetail.setImage(imageUrl);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to upload image to Cloudinary", e);
+        }
         userDetail.setFullName(studentRq.getFullName());
         userDetail.setGender(studentRq.getGender());
         userDetail.setDob(studentRq.getDob());
@@ -230,7 +235,13 @@ public class StudentServiceImpl implements StudentService {
 
     private void updateUserDetails(User user, UserDetail userDetail, StudentRequest studentRq) {
         if (studentRq.getFullName() != null) userDetail.setFullName(studentRq.getFullName());
-        if (studentRq.getImage() != null) userDetail.setImage(studentRq.getImage());
+        try {
+            String imageUrl = cloudinaryService.uploadToCloudinary(studentRq.getImage());
+            if (studentRq.getImage() != null) userDetail.setImage(imageUrl);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to upload image to Cloudinary", e);
+        }
         if (studentRq.getEmail() != null) user.setEmail(studentRq.getEmail());
         if (studentRq.getRollNumber() != null) userDetail.setRollNumber(studentRq.getRollNumber());
         if (studentRq.getPhoneNumber() != null) userDetail.setPhone(studentRq.getPhoneNumber());

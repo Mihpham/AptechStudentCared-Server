@@ -5,6 +5,7 @@ import com.example.aptechstudentcaredserver.bean.response.StudentResponse;
 import com.example.aptechstudentcaredserver.service.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,8 +23,8 @@ public class StudentController {
         return ResponseEntity.ok(students);
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<String> addStudent(@RequestBody StudentRequest studentRq) {
+    @PostMapping(value = "/add", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> addStudent(@ModelAttribute StudentRequest studentRq) {
         try {
             studentService.createStudent(studentRq);
             return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "application/json")
@@ -43,7 +44,7 @@ public class StudentController {
     @PutMapping("/{studentId}")
     public ResponseEntity<StudentResponse> updateStudent(
             @PathVariable int studentId,
-            @RequestBody StudentRequest studentRequest) {
+            @ModelAttribute StudentRequest studentRequest) {
         StudentResponse updatedStudent = studentService.updateStudent(studentId, studentRequest);
         return ResponseEntity.ok(updatedStudent);
     }
