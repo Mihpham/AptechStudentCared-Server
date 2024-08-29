@@ -28,7 +28,6 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final UserService userService;
     private final JwtService jwtService;
     private final JwtUtil jwtUtil;
 
@@ -66,13 +65,13 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtService, jwtUtil, userService);
+        return new JwtAuthenticationFilter(jwtUtil, jwtService);
     }
 
     @Bean
     public AuthenticationManager authenticationManager() {
         DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
-        daoAuthenticationProvider.setUserDetailsService(jwtService);
+        daoAuthenticationProvider.setUserDetailsService(jwtService); // JwtService implements UserDetailsService
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
         return new ProviderManager(daoAuthenticationProvider);
     }
@@ -82,3 +81,4 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
+

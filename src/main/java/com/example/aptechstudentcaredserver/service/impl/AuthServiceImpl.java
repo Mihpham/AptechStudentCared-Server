@@ -11,7 +11,6 @@ import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.EmailFormatException;
 import com.example.aptechstudentcaredserver.exception.InvalidCredentialsException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
-import com.example.aptechstudentcaredserver.repository.ParentRepository;
 import com.example.aptechstudentcaredserver.repository.RoleRepository;
 import com.example.aptechstudentcaredserver.repository.UserDetailRepository;
 import com.example.aptechstudentcaredserver.repository.UserRepository;
