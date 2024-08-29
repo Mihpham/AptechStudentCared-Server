@@ -30,6 +30,7 @@ public class StudentMapper {
                 user.getEmail(),
                 userDetail != null ? userDetail.getAddress() : null,
                 studentClass != null ? studentClass.getClassName() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getGender() : null,
                 userDetail != null ? userDetail.getPhone() : null,
                 courses,
                 groupClass.getStatus() != null ? groupClass.getStatus().name() : null,

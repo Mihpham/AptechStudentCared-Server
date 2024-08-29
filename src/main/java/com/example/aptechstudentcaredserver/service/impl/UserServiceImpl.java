@@ -72,6 +72,7 @@ public class UserServiceImpl implements UserService {
         String phone = Optional.ofNullable(userDetail.getPhone()).orElse("N/A");
         String address = Optional.ofNullable(userDetail.getAddress()).orElse("N/A");
         String roleNumber = Optional.ofNullable(userDetail.getRollNumber()).orElse("N/A");
+        String gender = Optional.ofNullable(userDetail.getGender()).orElse("N/A");
         String image = Optional.ofNullable(userDetail.getImage()).orElse("https://static.vecteezy.com/system/resources/previews/043/900/708/non_2x/user-profile-icon-illustration-vector.jpg");
 
         // Build UserResponse
@@ -88,6 +89,7 @@ public class UserServiceImpl implements UserService {
                         .collect(Collectors.toList()))
                 .status(Optional.ofNullable(user.getStatus()).map(Enum::name).orElse("N/A"))
                 .roleNumber(roleNumber)
+                .gender(gender)
                 .image(image)
                 .createdAt(user.getCreatedAt())
                 .build();
