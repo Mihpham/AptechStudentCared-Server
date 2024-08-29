@@ -1,7 +1,6 @@
 package com.example.aptechstudentcaredserver.config;
 
 import com.example.aptechstudentcaredserver.service.JwtService;
-import com.example.aptechstudentcaredserver.service.UserService;
 import com.example.aptechstudentcaredserver.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
