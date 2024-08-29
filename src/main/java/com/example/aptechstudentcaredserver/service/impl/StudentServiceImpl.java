@@ -287,6 +287,7 @@ public class StudentServiceImpl implements StudentService {
                 user.getEmail(),
                 user.getUserDetail() != null ? user.getUserDetail().getAddress() : null,
                 studentClass != null ? studentClass.getClassName() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getGender() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
                 courses,
                 groupClass.getStatus() != null ? groupClass.getStatus().name() : null,
