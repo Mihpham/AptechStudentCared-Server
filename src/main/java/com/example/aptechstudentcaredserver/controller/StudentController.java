@@ -51,7 +51,8 @@ public class StudentController {
     @DeleteMapping("/{studentId}")
     public ResponseEntity<String> deleteStudent(@PathVariable("studentId") int studentId) {
         studentService.deleteStudent(studentId);
-        return ResponseEntity.ok("Student deleted successfully");
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .body("{\"message\": \"Student deleted successfully\"}");
     }
 
 }

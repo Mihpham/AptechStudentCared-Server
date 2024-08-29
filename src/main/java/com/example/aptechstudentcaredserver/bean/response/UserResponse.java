@@ -1,6 +1,5 @@
 package com.example.aptechstudentcaredserver.bean.response;
 
-import com.example.aptechstudentcaredserver.entity.GroupClass;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
