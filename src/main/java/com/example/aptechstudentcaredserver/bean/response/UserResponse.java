@@ -1,11 +1,11 @@
 package com.example.aptechstudentcaredserver.bean.response;
 
-import com.example.aptechstudentcaredserver.entity.GroupClass;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -23,4 +23,5 @@ public class UserResponse {
     private String status;
     private String roleNumber;
     private String image;
+    private LocalDateTime createdAt;
 }
