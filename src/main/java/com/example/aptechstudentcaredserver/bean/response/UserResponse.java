@@ -23,7 +23,6 @@ public class UserResponse {
     private List<String> classes;
     private String status;
     private String roleNumber;
-    private String gender;
     private String image;
     private LocalDateTime createdAt;
 }
