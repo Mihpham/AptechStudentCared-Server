@@ -1,2 +1,7 @@
-package com.example.aptechstudentcaredserver.service;public class StudentServiceTest {
+package com.example.aptechstudentcaredserver.service;
+
+
+class StudentServiceTest {
+
+
 }
