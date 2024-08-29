@@ -10,7 +10,6 @@ import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
 import com.example.aptechstudentcaredserver.service.StudentService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -117,7 +116,6 @@ public class StudentServiceImpl implements StudentService {
     }
 
 
-
     private User findUserById(int studentId) {
         return userRepository.findById(studentId)
                 .orElseThrow(() -> new NotFoundException("User not found with id " + studentId));
@@ -162,6 +160,11 @@ public class StudentServiceImpl implements StudentService {
     private UserDetail createUserDetail(StudentRequest studentRq, User user) {
         UserDetail userDetail = new UserDetail();
         userDetail.setRollNumber(studentRq.getRollNumber());
+        userDetail.setImage(
+                (studentRq.getImage() != null && !studentRq.getImage().isEmpty())
+                        ? studentRq.getImage()
+                        : null
+        );
         userDetail.setFullName(studentRq.getFullName());
         userDetail.setGender(studentRq.getGender());
         userDetail.setDob(studentRq.getDob());
@@ -182,7 +185,6 @@ public class StudentServiceImpl implements StudentService {
         if (studentRq.getParentPhone() != null) parent.setPhone(studentRq.getParentPhone());
         if (studentRq.getParentGender() != null) parent.setGender(studentRq.getParentGender());
         if (studentRq.getStudentRelation() != null) parent.setStudentRelation(studentRq.getStudentRelation());
-        if (studentRq.getParentJob() != null) parent.setJob(studentRq.getParentJob());
 
         parent.setUpdatedAt(LocalDateTime.now());
         parentRepository.save(parent);
@@ -226,6 +228,7 @@ public class StudentServiceImpl implements StudentService {
 
     private void updateUserDetails(User user, UserDetail userDetail, StudentRequest studentRq) {
         if (studentRq.getFullName() != null) userDetail.setFullName(studentRq.getFullName());
+        if (studentRq.getImage() != null) userDetail.setImage(studentRq.getImage());
         if (studentRq.getEmail() != null) user.setEmail(studentRq.getEmail());
         if (studentRq.getRollNumber() != null) userDetail.setRollNumber(studentRq.getRollNumber());
         if (studentRq.getPhoneNumber() != null) userDetail.setPhone(studentRq.getPhoneNumber());
@@ -260,8 +263,8 @@ public class StudentServiceImpl implements StudentService {
 
     private void updateParentDetails(UserDetail userDetail, StudentRequest studentRq) {
         if (studentRq.getParentFullName() != null || studentRq.getParentPhone() != null ||
-                studentRq.getParentGender() != null || studentRq.getStudentRelation() != null ||
-                studentRq.getParentJob() != null) {
+                studentRq.getParentGender() != null || studentRq.getStudentRelation() != null
+        ) {
             createOrUpdateParent(studentRq, userDetail);
         }
     }
@@ -278,13 +281,20 @@ public class StudentServiceImpl implements StudentService {
 
         return new StudentResponse(
                 user.getId(),
+                user.getUserDetail() != null ? user.getUserDetail().getImage() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getFullName() : null,
                 user.getEmail(),
+                user.getUserDetail() != null ? user.getUserDetail().getAddress() : null,
                 studentClass != null ? studentClass.getClassName() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
                 courses,
-                groupClass.getStatus() != null ? groupClass.getStatus().name() : null
+                groupClass.getStatus() != null ? groupClass.getStatus().name() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getParent().getFullName() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getParent().getStudentRelation() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getParent().getPhone() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getParent().getGender() : null
+
         );
     }
 

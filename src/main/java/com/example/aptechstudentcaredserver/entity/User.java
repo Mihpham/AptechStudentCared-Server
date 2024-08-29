@@ -42,7 +42,7 @@ public class User  {
 
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<GroupClass> groupClasses;
+    private List<GroupClass> groupClasses;
 
     @OneToMany(mappedBy = "user")
     private List<ExamDetail> examDetails;

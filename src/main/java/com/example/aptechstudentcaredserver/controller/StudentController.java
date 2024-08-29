@@ -4,6 +4,7 @@ import com.example.aptechstudentcaredserver.bean.request.StudentRequest;
 import com.example.aptechstudentcaredserver.bean.response.StudentResponse;
 import com.example.aptechstudentcaredserver.service.StudentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,16 +26,17 @@ public class StudentController {
     public ResponseEntity<String> addStudent(@RequestBody StudentRequest studentRq) {
         try {
             studentService.createStudent(studentRq);
-            return ResponseEntity.ok("Student added successfully");
+            return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .body("{\"message\": \"Student added successfully\"}");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
 
-    @GetMapping("/{id}")
-    public ResponseEntity<StudentResponse> getStudentInfo(@PathVariable("id") int id) {
-        StudentResponse studentResponse = studentService.findStudentById(id);
+    @GetMapping("/{studentId}")
+    public ResponseEntity<StudentResponse> getStudentInfo(@PathVariable("studentId") int studentId) {
+        StudentResponse studentResponse = studentService.findStudentById(studentId);
         return ResponseEntity.ok(studentResponse);
     }
 
@@ -46,9 +48,9 @@ public class StudentController {
         return ResponseEntity.ok(updatedStudent);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteStudent(@PathVariable("id") int id) {
-        studentService.deleteStudent(id);
+    @DeleteMapping("/{studentId}")
+    public ResponseEntity<String> deleteStudent(@PathVariable("studentId") int studentId) {
+        studentService.deleteStudent(studentId);
         return ResponseEntity.ok("Student deleted successfully");
     }
 

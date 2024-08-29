@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface UserService {
     List<UserResponse> findAllUser();
-    UserResponse findUserById (int id);
+    UserResponse findUserById(int id);
     User findUserFromToken(String token);
     UserResponse findUserResponseFromToken(String token);
 

@@ -5,4 +5,5 @@ public enum ClassMemberStatus {
     GRADUATED,
     DROPPED,
     DELAY
+
 }
