@@ -2,8 +2,6 @@ package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
-import com.example.aptechstudentcaredserver.entity.Class;
-import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.service.ClassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,19 +14,19 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("api/classes")
 public class ClassController {
-    private  final ClassService classService;
+    private final ClassService classService;
 
 
     @GetMapping
-    public ResponseEntity<List<ClassResponse>> findAllClass(){
+    public ResponseEntity<List<ClassResponse>> findAllClass() {
         List<ClassResponse> classResponses = classService.findAllClass();
         return new ResponseEntity<>(classResponses, HttpStatus.OK);
     }
 
     @GetMapping("/{classId}")
-    public ResponseEntity<ClassResponse>findClassById(@PathVariable int classId){
+    public ResponseEntity<ClassResponse> findClassById(@PathVariable int classId) {
         ClassResponse classResponse = classService.findClassById(classId);
-        return new ResponseEntity<>(classResponse,HttpStatus.OK);
+        return new ResponseEntity<>(classResponse, HttpStatus.OK);
     }
 
 
@@ -41,19 +39,16 @@ public class ClassController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
     @PutMapping("/{classId}")
-    public ResponseEntity<ClassResponse> updateClass(@RequestBody ClassRequest classRequest,@PathVariable int classId) {
-        try {
-           ClassResponse updateClass =  classService.updateClass(classId,classRequest);
-            return new ResponseEntity<>(updateClass,HttpStatus.ACCEPTED);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+    public ResponseEntity<ClassResponse> updateClass(@RequestBody ClassRequest classRequest, @PathVariable int classId) {
+        ClassResponse updateClass = classService.updateClass(classId, classRequest);
+        return new ResponseEntity<>(updateClass, HttpStatus.ACCEPTED);
     }
 
     @DeleteMapping("/{classId}")
     public ResponseEntity<String> deleteClass(@PathVariable int classId) {
-            classService.deleteClass(classId);
-            return new ResponseEntity<>("Delete successfully", HttpStatus.OK);
+        classService.deleteClass(classId);
+        return new ResponseEntity<>("Delete successfully", HttpStatus.OK);
     }
 }
