@@ -1,11 +1,16 @@
-package com.example.aptechstudentcaredserver.bean.request;
+package com.example.aptechstudentcaredserver.bean.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
 @Data
-public class ClassRequest {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ClassResponse {
+    private int id;
     private String className;
     private String center;
     private String hour;

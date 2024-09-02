@@ -7,4 +7,12 @@ public enum Status {
     ACTIVE, DELETE,
 
 
+    // status of class
+    STUDYING,FINISHED,CANCEL,SCHEDULED
+
+
+
+
+
+
 }
