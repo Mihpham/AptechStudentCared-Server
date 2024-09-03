@@ -23,6 +23,9 @@ public class Course {
     @Column(name = "class_schedule", length = 255)
     private String classSchedule;
 
+    @Column(name = "course_comp_time", nullable = false)
+    private int courseCompTime;
+
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<UserCourse> userCourses;
 
