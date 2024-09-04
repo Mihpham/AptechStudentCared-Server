@@ -17,6 +17,9 @@ public class Subject {
 
     @Column(name = "subject_name", length = 255, nullable = false)
     private String subjectName;
+    private String subjectCode;
+    private int totalHours;
+
 
     @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<UserSubject> userSubjects;
