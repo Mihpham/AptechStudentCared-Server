@@ -11,6 +11,7 @@ import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
 import com.example.aptechstudentcaredserver.service.StudentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class StudentServiceImpl implements StudentService {
+
     private final UserRepository userRepository;
     private final UserDetailRepository userDetailRepository;
     private final ClassRepository classRepository;
