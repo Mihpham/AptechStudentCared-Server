@@ -14,7 +14,7 @@ public class CourseResponse {
     private String courseName;
     private String courseCode;
     private String classSchedule;
-    private Timestamp courseCompTime;
+    private String courseCompTime;
 //    private Set<UserCourseResponse> userCourses;
 //    private Set<CourseSubjectResponse> courseSubjects;
 }
