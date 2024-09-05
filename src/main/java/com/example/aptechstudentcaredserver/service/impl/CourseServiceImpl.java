@@ -58,7 +58,7 @@ public class CourseServiceImpl implements CourseService {
     public void createCourse(CourseRequest courseRequest) {
         try {
             if (courseRequest.getCourseName() == null || courseRequest.getCourseName().isEmpty()) {
-                throw new IllegalArgumentException("Subject name cannot be null or empty.");
+                throw new IllegalArgumentException("Course name cannot be null or empty.");
             }
 
             Course course = new Course();
