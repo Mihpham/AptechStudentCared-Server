@@ -1,8 +1,10 @@
 package com.example.aptechstudentcaredserver.entity;
 
+import com.example.aptechstudentcaredserver.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -17,6 +19,18 @@ public class Class {
 
     @Column(name = "class_name", length = 255, nullable = false)
     private String className;
+
+    private String center;
+
+    private String hour;
+
+    private String days;
+
+    @Column(name = "Admission_Date")
+    private LocalDate admissionDate;
+
+    @Enumerated(EnumType.STRING)
+    private Status status;
 
     @OneToMany(mappedBy = "classes")
     private Set<GroupClass> groupClasses;
