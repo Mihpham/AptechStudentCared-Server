@@ -179,7 +179,6 @@ public class CourseServiceImpl implements CourseService {
         return convertToCourseResponse(course);
     }
 
-    @Transactional
     @Override
     public void deleteCourse(int courseId) {
         // Tìm khóa học theo ID
