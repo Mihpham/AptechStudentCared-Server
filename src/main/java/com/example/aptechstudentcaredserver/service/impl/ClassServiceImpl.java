@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.service.impl;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.entity.Class;
+import com.example.aptechstudentcaredserver.enums.DayOfWeeks;
 import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.ClassRepository;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -49,10 +51,11 @@ public class ClassServiceImpl implements ClassService {
         }
 
         Class newClass = new Class();
+
         newClass.setClassName(classRequest.getClassName());
         newClass.setCenter(classRequest.getCenter());
         newClass.setHour(classRequest.getHour());
-        newClass.setDays(classRequest.getDays());
+        newClass.setDays(parseDays(classRequest.getDays()));
         newClass.setAdmissionDate(classRequest.getAdmissionDate());
         newClass.setStatus(Status.STUDYING);
         newClass.setCreatedAt(LocalDateTime.now());
@@ -60,6 +63,19 @@ public class ClassServiceImpl implements ClassService {
 
         classRepository.save(newClass);
     }
+
+    private List<DayOfWeeks> parseDays(String daysString) {
+        String[] daysArray = daysString.split(",");
+        List<DayOfWeeks> dayOfWeeksList = new ArrayList<>();
+
+        for (String dayStr : daysArray) {
+            int dayValue = Integer.parseInt(dayStr.trim()); // Trim any spaces
+            dayOfWeeksList.add(DayOfWeeks.fromValue(dayValue));
+        }
+
+        return dayOfWeeksList;
+    }
+
 
     @Override
     public ClassResponse updateClass(int classId, ClassRequest classRequest) {
@@ -69,7 +85,7 @@ public class ClassServiceImpl implements ClassService {
         existingClass.setClassName(classRequest.getClassName());
         existingClass.setCenter(classRequest.getCenter());
         existingClass.setHour(classRequest.getHour());
-        existingClass.setDays(classRequest.getDays());
+        existingClass.setDays(parseDays(classRequest.getDays()));
         existingClass.setAdmissionDate(classRequest.getAdmissionDate());
         existingClass.setStatus(Status.valueOf(classRequest.getStatus()));
 
@@ -87,12 +103,18 @@ public class ClassServiceImpl implements ClassService {
     }
 
     private ClassResponse convertToClassResponse(Class classEntity) {
+        String days = classEntity.getDays() != null ?
+                classEntity.getDays().stream()
+                        .map(DayOfWeeks::name)  // Convert enum to its name (e.g., "MONDAY")
+                        .collect(Collectors.joining(","))
+                : null;
+
         return new ClassResponse(
                 classEntity.getId(),
                 classEntity.getClassName(),
                 classEntity.getCenter(),
                 classEntity.getHour(),
-                classEntity.getDays(),
+                days,
                 classEntity.getAdmissionDate(),
                 classEntity.getStatus() != null ? classEntity.getStatus().name() : null
         );
