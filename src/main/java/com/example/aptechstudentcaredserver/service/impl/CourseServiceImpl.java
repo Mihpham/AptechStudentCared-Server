@@ -182,8 +182,20 @@ public class CourseServiceImpl implements CourseService {
     @Transactional
     @Override
     public void deleteCourse(int courseId) {
-        
+        // Tìm khóa học theo ID
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NotFoundException("Course with ID " + courseId + " not found"));
+
+        // Xóa các liên kết giữa khóa học và các môn học
+        List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(courseId);
+        if (!courseSubjects.isEmpty()) {
+            courseSubjectRepository.deleteAll(courseSubjects);
+        }
+
+        // Xóa khóa học
+        courseRepository.delete(course);
     }
+
 
     private CourseResponse convertToCourseResponse(Course course) {
         // Lấy danh sách các môn học liên quan đến khóa học này
