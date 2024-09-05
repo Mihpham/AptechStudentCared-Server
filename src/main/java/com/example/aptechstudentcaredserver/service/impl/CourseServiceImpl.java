@@ -52,6 +52,8 @@ public class CourseServiceImpl implements CourseService {
         course.setUpdatedAt(LocalDateTime.now());
 
         addSubjectsToCourse(course, courseRequest.getSubjectsPerSemester());
+
+        courseRepository.save(course);
     }
 
     private void addSubjectsToCourse(Course course, Map<Integer, List<Integer>> subjectsPerSemester) {
