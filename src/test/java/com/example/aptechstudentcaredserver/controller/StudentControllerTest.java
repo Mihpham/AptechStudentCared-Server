@@ -7,14 +7,10 @@ import com.example.aptechstudentcaredserver.service.StudentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-//import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-//import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,17 +19,8 @@ import java.util.Set;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-import com.example.aptechstudentcaredserver.bean.request.SubjectRequest;
-import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
-import com.example.aptechstudentcaredserver.exception.NotFoundException;
-import com.example.aptechstudentcaredserver.service.SubjectService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -215,16 +202,40 @@ class StudentControllerTest {
 
     // Test case cho API getStudentInfo với ID hợp lệ
     @Test
+    @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
     void getStudentInfo_existingStudentId_shouldReturnStudent() throws Exception {
-        StudentResponse studentResponse = new StudentResponse(1, "image1.png", "S001", "John Doe", "john@example.com", "123 Street", "Class 1", "Male", "1234567890", Arrays.asList("Math", "Science"), "Active", "Jane Doe", "Mother", "0987654321", "Female");
+        // Tạo một đối tượng StudentResponse giả định với đầy đủ thông tin
+        StudentResponse studentResponse = new StudentResponse(1, "image1.png", "S001", "John Doe",
+                "john@example.com", "123 Street", "Class 1", "Male", "01/01/2000",
+                "1234567890", Arrays.asList("Math", "Science"), "Active",
+                "Jane Doe", "Mother", "0987654321", "Female");
 
+        // Khi gọi đến studentService.findStudentById(1), trả về đối tượng studentResponse
         when(studentService.findStudentById(1)).thenReturn(studentResponse);
 
+        // Kiểm tra request và phản hồi
         mockMvc.perform(get("/api/students/1")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.fullName").value("John Doe"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.userId").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.image").value("image1.png"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.rollNumber").value("S001"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.fullName").value("John Doe"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.email").value("john@example.com"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.address").value("123 Street"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.className").value("Class 1"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.gender").value("Male"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.dob").value("01/01/2000"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.phoneNumber").value("1234567890"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.courses[0]").value("Math"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.courses[1]").value("Science"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("Active"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.parentFullName").value("Jane Doe"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.studentRelation").value("Mother"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.parentPhone").value("0987654321"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.parentGender").value("Female"));
     }
+
 
     // Test case cho API getStudentInfo với ID không tồn tại
     @Test
@@ -238,7 +249,9 @@ class StudentControllerTest {
 
     // Test case cho API updateStudent với ID hợp lệ
     @Test
+    @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
     void updateStudent_existingStudentId_shouldUpdateAndReturnStudent() throws Exception {
+        // Create a StudentRequest object with update information
         StudentRequest studentRequest = StudentRequest.builder()
                 .image("image.png")
                 .rollNumber("S001")
@@ -258,18 +271,59 @@ class StudentControllerTest {
                 .parentGender("Female")
                 .build();
 
-        StudentResponse updatedStudent = new StudentResponse(1, "image.png", "S001", "John Doe Updated", "john@example.com", "123 Street Updated", "Class 1", "Male", "1234567890", Arrays.asList("Math", "Science"), "Active", "Jane Doe", "Mother", "0987654321", "Female");
+        // Create a StudentResponse object with updated information
+        StudentResponse studentResponse = new StudentResponse(1, "image.png", "S001", "John Doe Updated",
+                "john@example.com", "123 Street Updated", "Class 1", "Male", "2000-01-01",
+                "1234567890", Arrays.asList("Math", "Science"), "Active",
+                "Jane Doe", "Mother", "0987654321", "Female");
 
-        when(studentService.updateStudent(eq(1), any(StudentRequest.class))).thenReturn(updatedStudent);
+        // Mock the updateStudent method
+        when(studentService.updateStudent(eq(1), any(StudentRequest.class))).thenReturn(studentResponse);
 
+        // Perform PUT request and check all fields in the response
         mockMvc.perform(put("/api/students/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"rollNumber\": \"S001\", \"fullName\": \"John Doe Updated\", \"email\": \"john@example.com\", \"phoneNumber\": \"1234567890\" }"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.fullName").value("John Doe Updated"));
+                        .content("{"
+                                + "\"image\": \"image.png\","
+                                + "\"rollNumber\": \"S001\","
+                                + "\"fullName\": \"John Doe Updated\","
+                                + "\"password\": \"password\","
+                                + "\"gender\": \"Male\","
+                                + "\"className\": \"Class 1\","
+                                + "\"dob\": \"2000-01-01\","
+                                + "\"phoneNumber\": \"1234567890\","
+                                + "\"email\": \"john@example.com\","
+                                + "\"address\": \"123 Street Updated\","
+                                + "\"courses\": [\"Math\", \"Science\"],"
+                                + "\"status\": \"Active\","
+                                + "\"parentFullName\": \"Jane Doe\","
+                                + "\"studentRelation\": \"Mother\","
+                                + "\"parentPhone\": \"0987654321\","
+                                + "\"parentGender\": \"Female\""
+                                + "}"))
+                .andExpect(status().isOk()) // Check HTTP 200 response
+                .andExpect(MockMvcResultMatchers.jsonPath("$.userId").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.image").value("image.png"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.rollNumber").value("S001"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.fullName").value("John Doe Updated"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.email").value("john@example.com"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.address").value("123 Street Updated"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.phoneNumber").value("1234567890"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.dob").value("2000-01-01"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.gender").value("Male"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.className").value("Class 1"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.courses[0]").value("Math"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.courses[1]").value("Science"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("Active"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.parentFullName").value("Jane Doe"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.studentRelation").value("Mother"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.parentPhone").value("0987654321"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.parentGender").value("Female"));
 
+        // Verify that updateStudent() was called exactly once
         verify(studentService, times(1)).updateStudent(eq(1), any(StudentRequest.class));
     }
+
 
     // Test case cho API updateStudent với ID không tồn tại
     @Test
