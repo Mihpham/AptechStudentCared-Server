@@ -118,7 +118,7 @@ public class SubjectServiceImpl implements SubjectService {
         response.setId(subject.getId());
         response.setSubjectName(subject.getSubjectName());
         response.setSubjectCode(subject.getSubjectCode());
-        subject.setTotalHours(subject.getTotalHours());
+        response.setTotalHours(subject.getTotalHours());
         response.setCreatedAt(subject.getCreatedAt());
         response.setUpdatedAt(subject.getUpdatedAt());
 
