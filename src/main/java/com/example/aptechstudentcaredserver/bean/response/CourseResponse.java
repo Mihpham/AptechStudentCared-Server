@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -15,6 +17,5 @@ public class CourseResponse {
     private String courseCode;
     private String classSchedule;
     private String courseCompTime;
-//    private Set<UserCourseResponse> userCourses;
-//    private Set<CourseSubjectResponse> courseSubjects;
+    private List<SubjectResponse> subjects; // Thêm trường để chứa danh sách môn học
 }

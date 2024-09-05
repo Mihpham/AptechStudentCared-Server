@@ -2,6 +2,7 @@ package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.CourseRequest;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
+import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
 import com.example.aptechstudentcaredserver.entity.Course;
 import com.example.aptechstudentcaredserver.entity.CourseSubject;
 import com.example.aptechstudentcaredserver.entity.Semester;
@@ -14,14 +15,12 @@ import com.example.aptechstudentcaredserver.repository.SemesterRepository;
 import com.example.aptechstudentcaredserver.repository.SubjectRepository;
 import com.example.aptechstudentcaredserver.service.CourseService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,38 +32,55 @@ public class CourseServiceImpl implements CourseService {
     private final CourseSubjectRepository courseSubjectRepository;
 
     @Override
-    public List<CourseResponse> getAllCourses() {
-        try {
-            List<Course> courses = courseRepository.findAll();
-            if (courses.isEmpty()) {
-                throw new EmptyListException("No course found.");
-            }
-            return courseRepository.findAll().stream()
-                    .map(this::convertToCourseResponse)
-                    .collect(Collectors.toList());
-        } catch (EmptyListException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to retrieve course.", e);
-        }
-    }
-
-    @Override
     public CourseResponse getCourseById(int courseId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new NotFoundException("Course not found"));
-        return convertToCourseResponse(course);
+
+        // Lấy danh sách các môn học liên quan đến khóa học này
+        List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(courseId);
+        List<SubjectResponse> subjectResponses = courseSubjects.stream()
+                .map(cs -> {
+                    Subject subject = cs.getSubject();
+                    return new SubjectResponse(
+                            subject.getId(),
+                            subject.getSubjectName(),
+                            subject.getSubjectCode(),
+                            subject.getTotalHours(),
+                            subject.getCreatedAt(),
+                            subject.getUpdatedAt()
+                    );
+                })
+                .collect(Collectors.toList());
+
+        return new CourseResponse(
+                course.getId(),
+                course.getCourseName(),
+                course.getCourseCode(),
+                course.getClassSchedule(),
+                course.getCourseCompTime(),
+                subjectResponses
+        );
+    }
+
+    @Override
+    public List<CourseResponse> getAllCourses() {
+        List<Course> courses = courseRepository.findAll();
+        if (courses.isEmpty()) {
+            throw new EmptyListException("No course found.");
+        }
+        return courses.stream()
+                .map(this::convertToCourseResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
     public void createCourse(CourseRequest request) {
-        // Step 1: Save Course
+        // Save Course
         Course course = new Course();
         course.setCourseName(request.getCourseName());
         course.setCourseCode(request.getCourseCode());
         course.setClassSchedule(request.getClassSchedule());
         course.setCourseCompTime(request.getCourseCompTime());
-
 
         LocalDateTime now = LocalDateTime.now();
         course.setCreatedAt(now);
@@ -75,19 +91,19 @@ public class CourseServiceImpl implements CourseService {
         // Initialize default semesters
         initializeDefaultSemesters();
 
-        // Step 2: Process Semesters and Subjects
+        // Process Semesters and Subjects
         for (Map.Entry<String, List<String>> entry : request.getSemesters().entrySet()) {
             String semesterKey = entry.getKey();
             List<String> subjectNames = entry.getValue();
 
             // Get or Create Semester
             Semester semester = semesterRepository.findByName(semesterKey)
-                    .orElseGet(() -> createSemester(semesterKey));
+                    .orElseThrow(() -> new NotFoundException("Semester " + semesterKey + " not found"));
 
             for (String subjectName : subjectNames) {
-                // Get or Create Subject
+                // Check if Subject exists
                 Subject subject = subjectRepository.findBySubjectName(subjectName)
-                        .orElseGet(() -> createSubject(subjectName));
+                        .orElseThrow(() -> new NotFoundException("Subject " + subjectName + " not found"));
 
                 CourseSubject courseSubject = new CourseSubject();
                 courseSubject.setCourse(course);
@@ -110,47 +126,10 @@ public class CourseServiceImpl implements CourseService {
     private Semester createSemester(String name) {
         Semester semester = new Semester();
         semester.setName(name);
-        semester.setStartDate("2024-01-01"); // Replace with your default start date
-        semester.setEndDate("2024-06-30");   // Replace with your default end date
+        semester.setStartDate("2024-01-01"); // Default start date
+        semester.setEndDate("2024-06-30");   // Default end date
         return semesterRepository.save(semester);
     }
-    private Subject createSubject(String name) {
-        Subject subject = new Subject();
-        subject.setSubjectName(name);
-        subject.setSubjectCode("DEFAULT_CODE"); // Replace with default or generate codes
-        subject.setTotalHours(0); // Replace with default or calculated hours
-        subject.setCreatedAt(LocalDateTime.now());
-        subject.setUpdatedAt(LocalDateTime.now());
-        return subjectRepository.save(subject);
-    }
-
-//    @Override
-//    public CourseResponse updateCourse(int courseId, CourseRequest courseRequest) {
-//        try {
-//            Course course = courseRepository.findById(courseId)
-//                    .orElseThrow(() -> new NotFoundException("Course with " + courseId + " not found"));
-//
-//            course.setCourseName(courseRequest.getCourseName());
-//            course.setCourseCode(courseRequest.getCourseCode());
-//            course.setCourseCompTime(courseRequest.getCourseCompTime());
-//            course.setUpdatedAt(LocalDateTime.now());
-//
-//            // Clear old course-subject relations
-//            course.getCourseSubjects().clear();
-//            courseSubjectRepository.deleteById(courseId);
-//
-//            // Add new subjects per semester
-//            addSubjectsToCourse(course, courseRequest.getSubjectsPerSemester());
-//
-//            Course updatedCourse = courseRepository.save(course);
-//            return convertToCourseResponse(updatedCourse);
-//        } catch (NotFoundException e) {
-//            throw e;
-//        } catch (Exception e) {
-//            throw new RuntimeException("Failed to update course.", e);
-//        }
-//
-//    }
 
     @Override
     public void deleteCourse(int courseId) {
@@ -160,12 +139,29 @@ public class CourseServiceImpl implements CourseService {
     }
 
     private CourseResponse convertToCourseResponse(Course course) {
+        // Lấy danh sách các môn học liên quan đến khóa học này
+        List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
+        List<SubjectResponse> subjectResponses = courseSubjects.stream()
+                .map(cs -> {
+                    Subject subject = cs.getSubject();
+                    return new SubjectResponse(
+                            subject.getId(),
+                            subject.getSubjectName(),
+                            subject.getSubjectCode(),
+                            subject.getTotalHours(),
+                            subject.getCreatedAt(),
+                            subject.getUpdatedAt()
+                    );
+                })
+                .collect(Collectors.toList());
+
         return new CourseResponse(
                 course.getId(),
                 course.getCourseName(),
                 course.getCourseCode(),
                 course.getClassSchedule(),
-                course.getCourseCompTime()
+                course.getCourseCompTime(),
+                subjectResponses
         );
     }
 }
