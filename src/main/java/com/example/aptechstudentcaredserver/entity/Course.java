@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -24,7 +25,7 @@ public class Course {
     private String classSchedule;
 
     @Column(name = "course_comp_time", nullable = false)
-    private int courseCompTime;
+    private Timestamp courseCompTime;
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<UserCourse> userCourses;
