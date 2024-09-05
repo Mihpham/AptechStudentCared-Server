@@ -43,17 +43,17 @@ public class CourseController {
         }
     }
 
-    @PutMapping("/{courseId}")
-    public ResponseEntity<String> updateCourse(@RequestBody CourseRequest courseRequest, @PathVariable int courseId) {
-        try {
-            CourseResponse updatedCourse = courseService.updateCourse(courseId, courseRequest);
-            return new ResponseEntity<>("Course updated successfully", HttpStatus.ACCEPTED);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
+//    @PutMapping("/{courseId}")
+//    public ResponseEntity<String> updateCourse(@RequestBody CourseRequest courseRequest, @PathVariable int courseId) {
+//        try {
+//            CourseResponse updatedCourse = courseService.updateCourse(courseId, courseRequest);
+//            return new ResponseEntity<>("Course updated successfully", HttpStatus.ACCEPTED);
+//        } catch (NotFoundException e) {
+//            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+//        } catch (RuntimeException e) {
+//            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+//        }
+//    }
 
     @DeleteMapping("/{courseId}")
     public ResponseEntity<String> deleteCourse(@PathVariable int courseId) {

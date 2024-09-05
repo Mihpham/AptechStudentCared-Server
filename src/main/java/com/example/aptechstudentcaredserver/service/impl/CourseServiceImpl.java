@@ -17,7 +17,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -55,81 +57,100 @@ public class CourseServiceImpl implements CourseService {
     }
 
     @Override
-    public void createCourse(CourseRequest courseRequest) {
-        try {
-            if (courseRequest.getCourseName() == null || courseRequest.getCourseName().isEmpty()) {
-                throw new IllegalArgumentException("Course name cannot be null or empty.");
-            }
+    public void createCourse(CourseRequest request) {
+        // Step 1: Save Course
+        Course course = new Course();
+        course.setCourseName(request.getCourseName());
+        course.setCourseCode(request.getCourseCode());
+        course.setClassSchedule(request.getClassSchedule());
+        course.setCourseCompTime(request.getCourseCompTime());
 
-            Course course = new Course();
-            course.setCourseName(courseRequest.getCourseName());
-            course.setCourseCode(courseRequest.getCourseCode());
-            course.setCourseCompTime(courseRequest.getCourseCompTime());
-            course.setCreatedAt(LocalDateTime.now());
-            course.setUpdatedAt(LocalDateTime.now());
 
-            addSubjectsToCourse(course, courseRequest.getSubjectsPerSemester());
+        LocalDateTime now = LocalDateTime.now();
+        course.setCreatedAt(now);
+        course.setUpdatedAt(now);
 
-            courseRepository.save(course);
-        } catch (
-                DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Course with the same name already exists.", e);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create subject.", e);
-        }
-    }
+        course = courseRepository.save(course);
 
-    private void addSubjectsToCourse(Course course, Map<Integer, List<Integer>> subjectsPerSemester) {
-        if (subjectsPerSemester != null) {
-            for (Map.Entry<Integer, List<Integer>> entry : subjectsPerSemester.entrySet()) {
-                Integer semesterId = entry.getKey();
-                List<Integer> subjectIds = entry.getValue();
+        // Initialize default semesters
+        initializeDefaultSemesters();
 
-                Semester semester = semesterRepository.findById(semesterId)
-                        .orElseThrow(() -> new RuntimeException("Semester not found"));
+        // Step 2: Process Semesters and Subjects
+        for (Map.Entry<String, List<String>> entry : request.getSemesters().entrySet()) {
+            String semesterKey = entry.getKey();
+            List<String> subjectNames = entry.getValue();
 
-                for (Integer subjectId : subjectIds) {
-                    Subject subject = subjectRepository.findById(subjectId)
-                            .orElseThrow(() -> new RuntimeException("Subject not found"));
+            // Get or Create Semester
+            Semester semester = semesterRepository.findByName(semesterKey)
+                    .orElseGet(() -> createSemester(semesterKey));
 
-                    CourseSubject courseSubject = new CourseSubject();
-                    courseSubject.setCourse(course);
-                    courseSubject.setSemester(semester);
-                    courseSubject.setSubject(subject);
+            for (String subjectName : subjectNames) {
+                // Get or Create Subject
+                Subject subject = subjectRepository.findBySubjectName(subjectName)
+                        .orElseGet(() -> createSubject(subjectName));
 
-                    course.getCourseSubjects().add(courseSubject);
-                }
+                CourseSubject courseSubject = new CourseSubject();
+                courseSubject.setCourse(course);
+                courseSubject.setSubject(subject);
+                courseSubject.setSemester(semester);
+
+                courseSubjectRepository.save(courseSubject);
             }
         }
     }
 
-    @Override
-    public CourseResponse updateCourse(int courseId, CourseRequest courseRequest) {
-        try {
-            Course course = courseRepository.findById(courseId)
-                    .orElseThrow(() -> new NotFoundException("Course with " + courseId + " not found"));
-
-            course.setCourseName(courseRequest.getCourseName());
-            course.setCourseCode(courseRequest.getCourseCode());
-            course.setCourseCompTime(courseRequest.getCourseCompTime());
-            course.setUpdatedAt(LocalDateTime.now());
-
-            // Clear old course-subject relations
-            course.getCourseSubjects().clear();
-            courseSubjectRepository.deleteById(courseId);
-
-            // Add new subjects per semester
-            addSubjectsToCourse(course, courseRequest.getSubjectsPerSemester());
-
-            Course updatedCourse = courseRepository.save(course);
-            return convertToCourseResponse(updatedCourse);
-        } catch (NotFoundException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to update course.", e);
+    private void initializeDefaultSemesters() {
+        String[] semesterNames = {"sem1", "sem2", "sem3"};
+        for (String name : semesterNames) {
+            semesterRepository.findByName(name)
+                    .orElseGet(() -> createSemester(name));
         }
-
     }
+
+    private Semester createSemester(String name) {
+        Semester semester = new Semester();
+        semester.setName(name);
+        semester.setStartDate("2024-01-01"); // Replace with your default start date
+        semester.setEndDate("2024-06-30");   // Replace with your default end date
+        return semesterRepository.save(semester);
+    }
+    private Subject createSubject(String name) {
+        Subject subject = new Subject();
+        subject.setSubjectName(name);
+        subject.setSubjectCode("DEFAULT_CODE"); // Replace with default or generate codes
+        subject.setTotalHours(0); // Replace with default or calculated hours
+        subject.setCreatedAt(LocalDateTime.now());
+        subject.setUpdatedAt(LocalDateTime.now());
+        return subjectRepository.save(subject);
+    }
+
+//    @Override
+//    public CourseResponse updateCourse(int courseId, CourseRequest courseRequest) {
+//        try {
+//            Course course = courseRepository.findById(courseId)
+//                    .orElseThrow(() -> new NotFoundException("Course with " + courseId + " not found"));
+//
+//            course.setCourseName(courseRequest.getCourseName());
+//            course.setCourseCode(courseRequest.getCourseCode());
+//            course.setCourseCompTime(courseRequest.getCourseCompTime());
+//            course.setUpdatedAt(LocalDateTime.now());
+//
+//            // Clear old course-subject relations
+//            course.getCourseSubjects().clear();
+//            courseSubjectRepository.deleteById(courseId);
+//
+//            // Add new subjects per semester
+//            addSubjectsToCourse(course, courseRequest.getSubjectsPerSemester());
+//
+//            Course updatedCourse = courseRepository.save(course);
+//            return convertToCourseResponse(updatedCourse);
+//        } catch (NotFoundException e) {
+//            throw e;
+//        } catch (Exception e) {
+//            throw new RuntimeException("Failed to update course.", e);
+//        }
+//
+//    }
 
     @Override
     public void deleteCourse(int courseId) {
