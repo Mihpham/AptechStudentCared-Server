@@ -52,7 +52,11 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public void createStudent(StudentRequest studentRq) {
-        Class studentClass = findOrCreateClass(studentRq.getClassName());
+        Class studentClass = classRepository.findByClassName(studentRq.getClassName());
+        if (studentClass == null) {
+            throw new IllegalArgumentException("Class not found. Please add the class before adding a student.");
+        }
+
         Role role = findOrCreateRole("STUDENT");
         String email = emailGeneratorService.generateUniqueEmail(studentRq.getFullName());
 
@@ -66,6 +70,7 @@ public class StudentServiceImpl implements StudentService {
         createUserCourses(studentRq, user);
         createGroupClass(studentClass, user);
     }
+
 
     @Override
     public StudentResponse updateStudent(int studentId, StudentRequest studentRq) {
@@ -128,17 +133,6 @@ public class StudentServiceImpl implements StudentService {
                 .orElseThrow(() -> new NotFoundException("Group class not found for user id " + studentId));
     }
 
-    private Class findOrCreateClass(String className) {
-        return Optional.ofNullable(classRepository.findByClassName(className))
-                .orElseGet(() -> {
-                    Class studentClass = new Class();
-                    studentClass.setClassName(className);
-                    studentClass.setCreatedAt(LocalDateTime.now());
-                    studentClass.setUpdatedAt(LocalDateTime.now());
-                    return classRepository.save(studentClass);
-                });
-    }
-
     private Role findOrCreateRole(String roleName) {
         return Optional.ofNullable(roleRepository.findByRoleName(roleName))
                 .orElseGet(() -> {
@@ -196,16 +190,9 @@ public class StudentServiceImpl implements StudentService {
     private void createUserCourses(StudentRequest studentRq, User user) {
         if (studentRq.getCourses() != null) {
             studentRq.getCourses().forEach(courseName -> {
+                // Find course by name, return Optional<Course>
                 Course course = Optional.ofNullable(courseRepository.findByCourseName(courseName.trim()))
-                        .orElseGet(() -> {
-                            Course newCourse = new Course();
-                            newCourse.setCourseName(courseName.trim());
-                            newCourse.setCourseCode("C" + (courseRepository.count() + 1));
-                            newCourse.setClassSchedule("TBD");
-                            newCourse.setCreatedAt(LocalDateTime.now());
-                            newCourse.setUpdatedAt(LocalDateTime.now());
-                            return courseRepository.save(newCourse);
-                        });
+                        .orElseThrow(() -> new NotFoundException("Course not found: " + courseName.trim()));
 
                 UserCourse userCourse = new UserCourse();
                 userCourse.setUser(user);
@@ -218,6 +205,8 @@ public class StudentServiceImpl implements StudentService {
             });
         }
     }
+
+
 
     private void createGroupClass(Class studentClass, User user) {
         GroupClass groupClass = new GroupClass();
@@ -236,24 +225,30 @@ public class StudentServiceImpl implements StudentService {
         if (studentRq.getPhoneNumber() != null) userDetail.setPhone(studentRq.getPhoneNumber());
     }
 
-    private void updateClass(int studentId, StudentRequest studentRq) {
+    private void updateClass(int  studentId, StudentRequest studentRq) {
         if (studentRq.getClassName() != null) {
-            Class studentClass = findOrCreateClass(studentRq.getClassName());
+            Class studentClass = classRepository.findByClassName(studentRq.getClassName());
+            if (studentClass == null) {
+                throw new NotFoundException("Class not found. Please add the class before updating.");
+            }
+
             GroupClass groupClass = findGroupClassByUserId(studentId);
             groupClass.setClasses(studentClass);
             groupClassRepository.save(groupClass);
         }
     }
 
+
     private void updateCourses(int studentId, StudentRequest studentRq) {
         if (studentRq.getCourses() != null) {
-            List<UserCourse> userCourses = userCourseRepository.findByUserId(studentId);
-            if (!userCourses.isEmpty()) {
-                userCourseRepository.deleteAll(userCourses);
-            }
+            List<UserCourse> existingCourses = userCourseRepository.findByUserId(studentId);
+            userCourseRepository.deleteAll(existingCourses); // Remove all existing courses
+
+            // Create new courses (only for existing ones)
             createUserCourses(studentRq, findUserById(studentId));
         }
     }
+
 
     private void updateGroupClassStatus(int studentId, StudentRequest studentRq) {
         if (studentRq.getStatus() != null) {
