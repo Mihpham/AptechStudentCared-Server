@@ -3,17 +3,12 @@ package com.example.aptechstudentcaredserver.service.impl;
 import com.example.aptechstudentcaredserver.bean.request.CourseRequest;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
 import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
-import com.example.aptechstudentcaredserver.entity.Course;
-import com.example.aptechstudentcaredserver.entity.CourseSubject;
-import com.example.aptechstudentcaredserver.entity.Semester;
-import com.example.aptechstudentcaredserver.entity.Subject;
+import com.example.aptechstudentcaredserver.entity.*;
 import com.example.aptechstudentcaredserver.exception.EmptyListException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
-import com.example.aptechstudentcaredserver.repository.CourseRepository;
-import com.example.aptechstudentcaredserver.repository.CourseSubjectRepository;
-import com.example.aptechstudentcaredserver.repository.SemesterRepository;
-import com.example.aptechstudentcaredserver.repository.SubjectRepository;
+import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.CourseService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +25,7 @@ public class CourseServiceImpl implements CourseService {
     private final SemesterRepository semesterRepository;
     private final SubjectRepository subjectRepository;
     private final CourseSubjectRepository courseSubjectRepository;
+    private final UserCourseRepository userCourseRepository;
 
     @Override
     public CourseResponse getCourseById(int courseId) {
@@ -131,11 +127,62 @@ public class CourseServiceImpl implements CourseService {
         return semesterRepository.save(semester);
     }
 
+    @Transactional
+    @Override
+    public CourseResponse updateCourse(int courseId, CourseRequest request) {
+        // Step 1: Find the course by ID or throw an exception if not found
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NotFoundException("Course with id " + courseId + " not found"));
+
+        // Step 2: Update the course fields with the new values from the request
+        course.setCourseName(request.getCourseName());
+        course.setCourseCode(request.getCourseCode());
+        course.setClassSchedule(request.getClassSchedule());
+        course.setCourseCompTime(request.getCourseCompTime());
+        course.setUpdatedAt(LocalDateTime.now());
+
+        // Step 3: Handle the semester and subject update logic
+        // Remove all current course-subject relations before updating
+        courseSubjectRepository.deleteByCourseId(courseId);
+
+        // Initialize default semesters if they don't already exist
+        initializeDefaultSemesters();
+
+        // Process Semesters and Subjects
+        for (Map.Entry<String, List<String>> entry : request.getSemesters().entrySet()) {
+            String semesterKey = entry.getKey();
+            List<String> subjectNames = entry.getValue();
+
+            // Find the semester by name or throw an exception if not found
+            Semester semester = semesterRepository.findByName(semesterKey)
+                    .orElseThrow(() -> new NotFoundException("Semester " + semesterKey + " not found"));
+
+            // For each subject, update the course-subject relationship
+            for (String subjectName : subjectNames) {
+                Subject subject = subjectRepository.findBySubjectName(subjectName)
+                        .orElseThrow(() -> new NotFoundException("Subject " + subjectName + " not found"));
+
+                // Create new CourseSubject relationships
+                CourseSubject courseSubject = new CourseSubject();
+                courseSubject.setCourse(course);
+                courseSubject.setSubject(subject);
+                courseSubject.setSemester(semester);
+
+                courseSubjectRepository.save(courseSubject);
+            }
+        }
+
+        // Step 4: Save the updated course
+        courseRepository.save(course);
+
+        // Step 5: Return the updated course as a response
+        return convertToCourseResponse(course);
+    }
+
+    @Transactional
     @Override
     public void deleteCourse(int courseId) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new NotFoundException("Course with " + courseId + " not found"));
-        courseRepository.delete(course);
+        
     }
 
     private CourseResponse convertToCourseResponse(Course course) {

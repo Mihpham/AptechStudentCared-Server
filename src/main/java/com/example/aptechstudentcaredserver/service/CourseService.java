@@ -13,7 +13,7 @@ public interface CourseService {
 
     void createCourse(CourseRequest courseRequest);
 
-//    CourseResponse updateCourse(int courseId, CourseRequest courseRequest);
+    CourseResponse updateCourse(int courseId, CourseRequest courseRequest);
 
     void deleteCourse(int courseId);
 
