@@ -9,6 +9,7 @@ import java.util.Map;
 
 @Data
 public class CourseRequest {
+    private int id;
     private String courseName;
     private String courseCode;
     private String completionTime;
