@@ -1,12 +1,13 @@
 package com.example.aptechstudentcaredserver.controller;
 
-import com.example.aptechstudentcaredserver.bean.request.ImageRequest;
+import com.example.aptechstudentcaredserver.bean.request.ChangePasswordRequest;
 import com.example.aptechstudentcaredserver.bean.response.UserResponse;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.UserRepository;
 import com.example.aptechstudentcaredserver.service.CloudinaryService;
 import com.example.aptechstudentcaredserver.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -32,7 +34,7 @@ public class UserController {
             List<UserResponse> users = userService.findAllUser();
             return new ResponseEntity<>(users, HttpStatus.OK);
         } catch (RuntimeException e) {
-             return  new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
@@ -54,6 +56,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
     @PatchMapping("/{id}/image")
     public ResponseEntity<?> updateImage(@PathVariable Long id, @RequestParam("image") MultipartFile imageFile) {
         Optional<User> optionalUser = userRepository.findById(Math.toIntExact(id));
@@ -78,6 +81,31 @@ public class UserController {
         }
     }
 
+    @PatchMapping("/change-password")
+    public ResponseEntity<Map<String, String>> changePassword(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
+        try {
+            // Extract the JWT token from the Authorization header
+            String jwt = authorizationHeader.startsWith("Bearer ") ? authorizationHeader.substring(7) : authorizationHeader;
 
+            // Find the user based on the token
+            User user = userService.findUserFromToken(jwt);
 
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "User not found"));
+            }
+
+            // Change the password
+            userService.changePassword(user.getId(), changePasswordRequest);
+            return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "User not found"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "An error occurred"));
+        }
+    }
 }

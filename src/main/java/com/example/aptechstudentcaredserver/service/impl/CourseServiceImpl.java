@@ -3,10 +3,16 @@ package com.example.aptechstudentcaredserver.service.impl;
 import com.example.aptechstudentcaredserver.bean.request.CourseRequest;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
 import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
-import com.example.aptechstudentcaredserver.entity.*;
+import com.example.aptechstudentcaredserver.entity.Course;
+import com.example.aptechstudentcaredserver.entity.CourseSubject;
+import com.example.aptechstudentcaredserver.entity.Semester;
+import com.example.aptechstudentcaredserver.entity.Subject;
 import com.example.aptechstudentcaredserver.exception.EmptyListException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
-import com.example.aptechstudentcaredserver.repository.*;
+import com.example.aptechstudentcaredserver.repository.CourseRepository;
+import com.example.aptechstudentcaredserver.repository.CourseSubjectRepository;
+import com.example.aptechstudentcaredserver.repository.SemesterRepository;
+import com.example.aptechstudentcaredserver.repository.SubjectRepository;
 import com.example.aptechstudentcaredserver.service.CourseService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +21,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,7 +30,6 @@ public class CourseServiceImpl implements CourseService {
     private final SemesterRepository semesterRepository;
     private final SubjectRepository subjectRepository;
     private final CourseSubjectRepository courseSubjectRepository;
-    private final UserCourseRepository userCourseRepository;
 
     @Override
     public CourseResponse getCourseById(int courseId) {
@@ -197,7 +201,6 @@ public class CourseServiceImpl implements CourseService {
 
 
     private CourseResponse convertToCourseResponse(Course course) {
-        // Lấy danh sách các môn học liên quan đến khóa học này
         List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
         List<SubjectResponse> subjectResponses = courseSubjects.stream()
                 .map(cs -> {
