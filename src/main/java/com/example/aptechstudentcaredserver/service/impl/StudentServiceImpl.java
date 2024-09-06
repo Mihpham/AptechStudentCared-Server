@@ -11,7 +11,6 @@ import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
 import com.example.aptechstudentcaredserver.service.StudentService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -207,7 +206,6 @@ public class StudentServiceImpl implements StudentService {
     }
 
 
-
     private void createGroupClass(Class studentClass, User user) {
         GroupClass groupClass = new GroupClass();
         groupClass.setUser(user);
@@ -225,7 +223,7 @@ public class StudentServiceImpl implements StudentService {
         if (studentRq.getPhoneNumber() != null) userDetail.setPhone(studentRq.getPhoneNumber());
     }
 
-    private void updateClass(int  studentId, StudentRequest studentRq) {
+    private void updateClass(int studentId, StudentRequest studentRq) {
         if (studentRq.getClassName() != null) {
             Class studentClass = classRepository.findByClassName(studentRq.getClassName());
             if (studentClass == null) {
