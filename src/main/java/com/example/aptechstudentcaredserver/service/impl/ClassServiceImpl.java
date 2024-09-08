@@ -2,17 +2,22 @@ package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
+import com.example.aptechstudentcaredserver.bean.response.StudentInClassResponse;
 import com.example.aptechstudentcaredserver.entity.Class;
+import com.example.aptechstudentcaredserver.entity.GroupClass;
+import com.example.aptechstudentcaredserver.entity.User;
+import com.example.aptechstudentcaredserver.enums.DayOfWeeks;
 import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.ClassRepository;
+import com.example.aptechstudentcaredserver.repository.GroupClassRepository;
 import com.example.aptechstudentcaredserver.service.ClassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,6 +25,7 @@ import java.util.stream.Collectors;
 public class ClassServiceImpl implements ClassService {
 
     private final ClassRepository classRepository;
+    private final GroupClassRepository groupClassRepository;
 
     @Override
     public List<ClassResponse> findAllClass() {
@@ -31,13 +37,9 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public ClassResponse findClassById(int classId) {
-        Optional<Class> optionalClass = classRepository.findById(classId);
-
-        if (optionalClass.isPresent()) {
-            return convertToClassResponse(optionalClass.get());
-        } else {
-            throw new NotFoundException("Class not found with id: " + classId);
-        }
+        Class classEntity = classRepository.findById(classId)
+                .orElseThrow(() -> new NotFoundException("Class not found with id: " + classId));
+        return convertToClassResponse(classEntity);
     }
 
     @Override
@@ -52,13 +54,20 @@ public class ClassServiceImpl implements ClassService {
         newClass.setClassName(classRequest.getClassName());
         newClass.setCenter(classRequest.getCenter());
         newClass.setHour(classRequest.getHour());
-        newClass.setDays(classRequest.getDays());
+        newClass.setDays(parseDays(classRequest.getDays()));
         newClass.setAdmissionDate(classRequest.getAdmissionDate());
         newClass.setStatus(Status.STUDYING);
         newClass.setCreatedAt(LocalDateTime.now());
         newClass.setUpdatedAt(LocalDateTime.now());
 
         classRepository.save(newClass);
+    }
+
+    private List<DayOfWeeks> parseDays(String daysString) {
+        return Arrays.stream(daysString.split(","))
+                .map(String::trim)
+                .map(dayStr -> DayOfWeeks.fromValue(Integer.parseInt(dayStr)))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -69,7 +78,7 @@ public class ClassServiceImpl implements ClassService {
         existingClass.setClassName(classRequest.getClassName());
         existingClass.setCenter(classRequest.getCenter());
         existingClass.setHour(classRequest.getHour());
-        existingClass.setDays(classRequest.getDays());
+        existingClass.setDays(parseDays(classRequest.getDays()));
         existingClass.setAdmissionDate(classRequest.getAdmissionDate());
         existingClass.setStatus(Status.valueOf(classRequest.getStatus()));
 
@@ -87,14 +96,34 @@ public class ClassServiceImpl implements ClassService {
     }
 
     private ClassResponse convertToClassResponse(Class classEntity) {
+        List<GroupClass> groupClasses = groupClassRepository.findByClassesId(classEntity.getId());
+
+        List<StudentInClassResponse> studentResponses = groupClasses.stream()
+                .map(groupClass -> {
+                    User user = groupClass.getUser();
+                    return new StudentInClassResponse(
+                            user.getId(),
+                            user.getUserDetail() != null ? user.getUserDetail().getFullName() : "Unknown",
+                            user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : "N/A"
+                    );
+                })
+                .collect(Collectors.toList());
+
+        String days = classEntity.getDays() != null ?
+                classEntity.getDays().stream()
+                        .map(DayOfWeeks::name)
+                        .collect(Collectors.joining(","))
+                : null;
+
         return new ClassResponse(
                 classEntity.getId(),
                 classEntity.getClassName(),
                 classEntity.getCenter(),
                 classEntity.getHour(),
-                classEntity.getDays(),
+                days,
                 classEntity.getAdmissionDate(),
-                classEntity.getStatus() != null ? classEntity.getStatus().name() : null
+                classEntity.getStatus() != null ? classEntity.getStatus().name() : null,
+                studentResponses
         );
     }
 }
