@@ -2,11 +2,14 @@ package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.SubjectRequest;
 import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
+import com.example.aptechstudentcaredserver.entity.CourseSubject;
 import com.example.aptechstudentcaredserver.entity.Subject;
 import com.example.aptechstudentcaredserver.exception.EmptyListException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
+import com.example.aptechstudentcaredserver.repository.CourseSubjectRepository;
 import com.example.aptechstudentcaredserver.repository.SubjectRepository;
 import com.example.aptechstudentcaredserver.service.SubjectService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SubjectServiceImpl implements SubjectService {
     private final SubjectRepository subjectRepository;
+    private final CourseSubjectRepository courseSubjectRepository;
 
     @Override
     public List<SubjectResponse> findAllSubject() {
@@ -96,18 +100,21 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     public void deleteSubject(int subjectId) {
-        try {
-            if (subjectRepository.existsById(subjectId)) {
-                subjectRepository.deleteById(subjectId);
-            } else {
-                throw new NotFoundException("Subject with ID " + subjectId + " not found.");
-            }
-        } catch (EmptyResultDataAccessException e) {
-            throw new NotFoundException("Subject with ID " + subjectId + " does not exist." + e);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to delete subject.", e);
+        // Tìm kiếm các liên kết liên quan và xóa chúng
+        List<CourseSubject> courseSubjects = courseSubjectRepository.findBySubjectId(subjectId);
+        if (!courseSubjects.isEmpty()) {
+            courseSubjectRepository.deleteAll(courseSubjects);
+        }
+
+        // Xóa subject nếu tồn tại
+        if (subjectRepository.existsById(subjectId)) {
+            subjectRepository.deleteById(subjectId);
+        } else {
+            throw new NotFoundException("Subject with ID " + subjectId + " not found.");
         }
     }
+
+
 
 
     public SubjectResponse convertToSubjectResponse(Subject subject) {

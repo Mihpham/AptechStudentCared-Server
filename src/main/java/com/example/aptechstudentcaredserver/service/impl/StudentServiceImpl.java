@@ -53,7 +53,7 @@ public class StudentServiceImpl implements StudentService {
     public void createStudent(StudentRequest studentRq) {
         Class studentClass = classRepository.findByClassName(studentRq.getClassName());
         if (studentClass == null) {
-            throw new IllegalArgumentException("Class not found. Please add the class before adding a student.");
+            throw new NotFoundException("Class not found. Please add the class before adding a student.");
         }
 
         Role role = findOrCreateRole("STUDENT");
@@ -216,6 +216,8 @@ public class StudentServiceImpl implements StudentService {
     }
 
     private void updateUserDetails(User user, UserDetail userDetail, StudentRequest studentRq) {
+        String email = emailGeneratorService.generateUniqueEmail(studentRq.getFullName());
+        user.setEmail(email);
         if (studentRq.getFullName() != null) userDetail.setFullName(studentRq.getFullName());
         if (studentRq.getImage() != null) userDetail.setImage(studentRq.getImage());
         if (studentRq.getEmail() != null) user.setEmail(studentRq.getEmail());

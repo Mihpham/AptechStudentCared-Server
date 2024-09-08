@@ -2,7 +2,9 @@ package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
+import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
 import com.example.aptechstudentcaredserver.service.ClassService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,12 +33,12 @@ public class ClassController {
 
 
     @PostMapping("/add")
-    public ResponseEntity<String> addClass(@RequestBody ClassRequest classRequest) {
+    public ResponseEntity<ResponseMessage> addClass(@Valid @RequestBody ClassRequest classRequest) {
         try {
             classService.addClass(classRequest);
-            return ResponseEntity.ok("Class added successfully");
+            return ResponseEntity.status(HttpStatus.CREATED).body(new ResponseMessage("Class added successfully"));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(new ResponseMessage(e.getMessage()));
         }
     }
 
@@ -47,8 +49,8 @@ public class ClassController {
     }
 
     @DeleteMapping("/{classId}")
-    public ResponseEntity<String> deleteClass(@PathVariable int classId) {
+    public ResponseEntity<ResponseMessage> deleteClass(@PathVariable int classId) {
         classService.deleteClass(classId);
-        return new ResponseEntity<>("Delete successfully", HttpStatus.OK);
+        return new ResponseEntity<>( new ResponseMessage("Class deleted successfully"), HttpStatus.ACCEPTED);
     }
 }

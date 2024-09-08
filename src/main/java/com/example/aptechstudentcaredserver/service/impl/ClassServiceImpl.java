@@ -8,6 +8,7 @@ import com.example.aptechstudentcaredserver.entity.GroupClass;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.enums.DayOfWeeks;
 import com.example.aptechstudentcaredserver.enums.Status;
+import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.ClassRepository;
 import com.example.aptechstudentcaredserver.repository.GroupClassRepository;
@@ -47,7 +48,7 @@ public class ClassServiceImpl implements ClassService {
         Class existingClass = classRepository.findByClassName(classRequest.getClassName());
 
         if (existingClass != null) {
-            throw new RuntimeException("Class with this name already exists");
+            throw new DuplicateException("Class with this name already exists");
         }
 
         Class newClass = new Class();
@@ -62,6 +63,7 @@ public class ClassServiceImpl implements ClassService {
 
         classRepository.save(newClass);
     }
+
 
     private List<DayOfWeeks> parseDays(String daysString) {
         return Arrays.stream(daysString.split(","))

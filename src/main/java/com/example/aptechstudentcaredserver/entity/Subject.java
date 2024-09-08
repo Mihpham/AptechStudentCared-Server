@@ -17,9 +17,12 @@ public class Subject {
 
     @Column(name = "subject_name", length = 255, nullable = false)
     private String subjectName;
-    private String subjectCode;
-    private int totalHours;
 
+    @Column(name = "subject_code")
+    private String subjectCode;
+
+    @Column(name = "total_hours")
+    private int totalHours;
 
     @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<UserSubject> userSubjects;
@@ -49,5 +52,4 @@ public class Subject {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
 }

@@ -22,5 +22,4 @@ public class CourseSubject {
     @ManyToOne
     @JoinColumn(name = "semester_id", nullable = false)
     private Semester semester;
-
 }

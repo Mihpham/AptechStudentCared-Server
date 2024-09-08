@@ -22,7 +22,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
-    private final PasswordEncoder passwordEncoder; // Inject PasswordEncoder directly
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public List<UserResponse> findAllUser() {
