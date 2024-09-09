@@ -3,7 +3,6 @@ package com.example.aptechstudentcaredserver.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Set;
 
