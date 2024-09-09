@@ -3,7 +3,6 @@ package com.example.aptechstudentcaredserver.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -20,9 +19,6 @@ public class Course {
 
     @Column(name = "course_code", length = 255, nullable = false, unique = true)
     private String courseCode;
-
-    @Column(name = "class_schedule", length = 255)
-    private String classSchedule;
 
     @Column(name = "course_comp_time")
     private String courseCompTime;
