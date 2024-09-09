@@ -17,5 +17,5 @@ public class CourseResponse {
     private String courseCode;
     private String classSchedule;
     private String courseCompTime;
-    private List<SubjectResponse> subjects; // Thêm trường để chứa danh sách môn học
+    private List<SubjectResponse> subjects;
 }

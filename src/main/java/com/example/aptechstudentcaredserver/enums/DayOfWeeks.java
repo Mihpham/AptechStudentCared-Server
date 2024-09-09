@@ -9,21 +9,13 @@ public enum DayOfWeeks {
     WEDNESDAY(4),
     THURSDAY(5),
     FRIDAY(6),
-    SATURDAY(7);
+    SATURDAY(7),
+    SUNDAY(8);
 
     private final int value;
 
     DayOfWeeks(int value) {
         this.value = value;
-    }
-
-    // Case-insensitive matching for day names
-    public static DayOfWeeks fromString(String day) {
-        try {
-            return DayOfWeeks.valueOf(day.toUpperCase()); // Convert to uppercase to match enum constants
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid day format: " + day);
-        }
     }
 
     public static DayOfWeeks fromValue(int value) {
@@ -32,7 +24,10 @@ public enum DayOfWeeks {
                 return day;
             }
         }
-        throw new RuntimeException("Invalid day value: " + value);
+        throw new IllegalArgumentException("Invalid day value: " + value);
+    }
+
+    public int getDayValue() {
+        return this.value;
     }
 }
-

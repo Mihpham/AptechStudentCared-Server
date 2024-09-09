@@ -6,9 +6,7 @@ import com.example.aptechstudentcaredserver.bean.response.StudentInClassResponse
 import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.GroupClass;
 import com.example.aptechstudentcaredserver.entity.User;
-import com.example.aptechstudentcaredserver.enums.DayOfWeeks;
 import com.example.aptechstudentcaredserver.enums.Status;
-import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.ClassRepository;
 import com.example.aptechstudentcaredserver.repository.GroupClassRepository;
@@ -17,8 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,9 +36,13 @@ public class ClassServiceImpl implements ClassService {
 
     @Override
     public ClassResponse findClassById(int classId) {
-        Class classEntity = classRepository.findById(classId)
-                .orElseThrow(() -> new NotFoundException("Class not found with id: " + classId));
-        return convertToClassResponse(classEntity);
+        Optional<Class> optionalClass = classRepository.findById(classId);
+
+        if (optionalClass.isPresent()) {
+            return convertToClassResponse(optionalClass.get());
+        } else {
+            throw new NotFoundException("Class not found with id: " + classId);
+        }
     }
 
     @Override
@@ -48,28 +50,22 @@ public class ClassServiceImpl implements ClassService {
         Class existingClass = classRepository.findByClassName(classRequest.getClassName());
 
         if (existingClass != null) {
-            throw new DuplicateException("Class with this name already exists");
+            throw new RuntimeException("Class with this name already exists");
         }
 
+        // Create new Class
         Class newClass = new Class();
         newClass.setClassName(classRequest.getClassName());
         newClass.setCenter(classRequest.getCenter());
         newClass.setHour(classRequest.getHour());
-        newClass.setDays(parseDays(classRequest.getDays()));
+        newClass.setDays(classRequest.getDays());
         newClass.setAdmissionDate(classRequest.getAdmissionDate());
         newClass.setStatus(Status.STUDYING);
         newClass.setCreatedAt(LocalDateTime.now());
         newClass.setUpdatedAt(LocalDateTime.now());
 
+        // Save new Class
         classRepository.save(newClass);
-    }
-
-
-    private List<DayOfWeeks> parseDays(String daysString) {
-        return Arrays.stream(daysString.split(","))
-                .map(String::trim)
-                .map(dayStr -> DayOfWeeks.fromValue(Integer.parseInt(dayStr)))
-                .collect(Collectors.toList());
     }
 
     @Override
@@ -80,7 +76,7 @@ public class ClassServiceImpl implements ClassService {
         existingClass.setClassName(classRequest.getClassName());
         existingClass.setCenter(classRequest.getCenter());
         existingClass.setHour(classRequest.getHour());
-        existingClass.setDays(parseDays(classRequest.getDays()));
+        existingClass.setDays(classRequest.getDays());
         existingClass.setAdmissionDate(classRequest.getAdmissionDate());
         existingClass.setStatus(Status.valueOf(classRequest.getStatus()));
 
@@ -111,18 +107,12 @@ public class ClassServiceImpl implements ClassService {
                 })
                 .collect(Collectors.toList());
 
-        String days = classEntity.getDays() != null ?
-                classEntity.getDays().stream()
-                        .map(DayOfWeeks::name)
-                        .collect(Collectors.joining(","))
-                : null;
-
         return new ClassResponse(
                 classEntity.getId(),
                 classEntity.getClassName(),
                 classEntity.getCenter(),
                 classEntity.getHour(),
-                days,
+                classEntity.getDays(),
                 classEntity.getAdmissionDate(),
                 classEntity.getStatus() != null ? classEntity.getStatus().name() : null,
                 studentResponses

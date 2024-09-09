@@ -19,4 +19,5 @@ public class ClassResponse {
     private LocalDate admissionDate;
     private String status;
     private List<StudentInClassResponse> students;
+
 }
