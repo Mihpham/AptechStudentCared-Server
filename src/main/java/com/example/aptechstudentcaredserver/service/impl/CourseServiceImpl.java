@@ -54,47 +54,115 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public void createCourse(CourseRequest request) {
-        Course existCourse = courseRepository.findByCourseName(request.getCourseName());
-
-        if (existCourse != null) {
-            throw new DuplicateException("Course with this name already exists");
+        // Check if courseName already exists
+        Course existCourseByName = courseRepository.findByCourseName(request.getCourseName());
+        if (existCourseByName != null) {
+            throw new DuplicateException("Course with name '" + request.getCourseName() + "' already exists");
         }
 
-        Course course = new Course();
+        // Check if courseCode already exists
+        Course existCourseByCode = courseRepository.findByCourseCode(request.getCourseCode());
+        if (existCourseByCode != null) {
+            throw new DuplicateException("Course with code '" + request.getCourseCode() + "' already exists");
+        }
 
+        // Validate that at least one semester and subject are provided
+        if (request.getSemesters() == null || request.getSemesters().isEmpty()) {
+            throw new NotFoundException("At least one semester and subject must be provided");
+        }
+
+        // Validate that subjects exist in the system before adding them
+        for (Map.Entry<String, List<String>> entry : request.getSemesters().entrySet()) {
+            List<String> subjectNames = entry.getValue();
+
+            if (subjectNames == null || subjectNames.isEmpty()) {
+                throw new NotFoundException("Subjects for semester '" + entry.getKey() + "' must be provided");
+            }
+
+            for (String subjectName : subjectNames) {
+                // Check if the subject exists in the database
+                subjectRepository.findBySubjectName(subjectName)
+                        .orElseThrow(() -> new NotFoundException("Subject '" + subjectName + "' not found in the system"));
+            }
+        }
+
+        // If all validation passes, proceed with course creation
+        Course course = new Course();
         course.setCourseName(request.getCourseName());
         course.setCourseCode(request.getCourseCode());
-        course.setClassSchedule(request.getClassSchedule());
         course.setCourseCompTime(request.getCourseCompTime());
         course.setCreatedAt(LocalDateTime.now());
         course.setUpdatedAt(LocalDateTime.now());
 
+        // Save the course
         course = courseRepository.save(course);
+
+        // Process semesters and subjects
         processSemestersAndSubjects(request, course);
     }
+
 
     @Override
     public CourseResponse updateCourse(int courseId, CourseRequest request) {
+        // Fetch the existing course by ID
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new NotFoundException("Course with id " + courseId + " not found"));
+                .orElseThrow(() -> new NotFoundException("Course with ID " + courseId + " not found"));
 
+        // Check if courseName is being updated to an existing name for another course
+        Course existCourseByName = courseRepository.findByCourseName(request.getCourseName());
+        if (existCourseByName != null && existCourseByName.getId() != courseId) {
+            // Throw DuplicateException with a message indicating the issue
+            throw new DuplicateException("Course with name '" + request.getCourseName() + "' already exists.");
+        }
+
+        // Check if courseCode is being updated to an existing code for another course
+        Course existCourseByCode = courseRepository.findByCourseCode(request.getCourseCode());
+        if (existCourseByCode != null && existCourseByCode.getId() != courseId) {
+            // Throw DuplicateException with a message indicating the issue
+            throw new DuplicateException("Course with code '" + request.getCourseCode() + "' already exists.");
+        }
+
+        // Update course details (name, code, and compTime)
         course.setCourseName(request.getCourseName());
         course.setCourseCode(request.getCourseCode());
-        course.setClassSchedule(request.getClassSchedule());
         course.setCourseCompTime(request.getCourseCompTime());
         course.setUpdatedAt(LocalDateTime.now());
 
-        List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(courseId);
-        if (!courseSubjects.isEmpty()) {
-            courseSubjectRepository.deleteAll(courseSubjects);
+        // Validate and update subjects only if they are provided in the request
+        if (request.getSemesters() != null && !request.getSemesters().isEmpty()) {
+            // Validate subjects
+            for (Map.Entry<String, List<String>> entry : request.getSemesters().entrySet()) {
+                List<String> subjectNames = entry.getValue();
+
+                if (subjectNames == null || subjectNames.isEmpty()) {
+                    // Throw exception with a message for missing subjects
+                    throw new NotFoundException("Subjects for semester '" + entry.getKey() + "' must be provided.");
+                }
+
+                for (String subjectName : subjectNames) {
+                    subjectRepository.findBySubjectName(subjectName)
+                            .orElseThrow(() -> new NotFoundException("Subject '" + subjectName + "' not found in the system."));
+                }
+            }
+
+            // If subjects are provided, remove existing course-subject relationships and update them
+            List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(courseId);
+            if (!courseSubjects.isEmpty()) {
+                courseSubjectRepository.deleteAll(courseSubjects);
+            }
+
+            // Process and update semesters and subjects
+            processSemestersAndSubjects(request, course);
         }
 
+        // Save the updated course
         courseRepository.save(course);
 
-        processSemestersAndSubjects(request, course);
-
+        // Return the updated course response
         return convertToCourseResponse(course);
     }
+
+
 
 
     @Override
@@ -138,27 +206,20 @@ public class CourseServiceImpl implements CourseService {
 
     private CourseResponse convertToCourseResponse(Course course) {
         List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
-        List<SubjectResponse> subjectResponses = courseSubjects.stream()
-                .map(cs -> {
-                    Subject subject = cs.getSubject();
-                    return new SubjectResponse(
-                            subject.getId(),
-                            subject.getSubjectName(),
-                            subject.getSubjectCode(),
-                            subject.getTotalHours(),
-                            subject.getCreatedAt(),
-                            subject.getUpdatedAt()
-                    );
-                })
-                .collect(Collectors.toList());
+
+        Map<String, List<String>> semesterSubjects = courseSubjects.stream()
+                .collect(Collectors.groupingBy(
+                        cs -> cs.getSemester().getName(),  // Group by semester name
+                        Collectors.mapping(cs -> cs.getSubject().getSubjectName(), Collectors.toList()) // Map subject names
+                ));
+
 
         return new CourseResponse(
                 course.getId(),
                 course.getCourseName(),
                 course.getCourseCode(),
-                course.getClassSchedule(),
                 course.getCourseCompTime(),
-                subjectResponses
+                semesterSubjects
         );
     }
 }
