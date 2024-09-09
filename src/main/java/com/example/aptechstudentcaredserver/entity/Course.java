@@ -18,7 +18,7 @@ public class Course {
     @Column(name = "course_name", length = 255, nullable = false)
     private String courseName;
 
-    @Column(name = "course_code", length = 255, nullable = false)
+    @Column(name = "course_code", length = 255, nullable = false, unique = true)
     private String courseCode;
 
     @Column(name = "class_schedule", length = 255)
@@ -32,7 +32,6 @@ public class Course {
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<CourseSubject> courseSubjects;
-
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", nullable = false, updatable = false)

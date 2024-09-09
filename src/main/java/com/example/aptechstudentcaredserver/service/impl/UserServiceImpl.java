@@ -22,7 +22,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
-    private final PasswordEncoder passwordEncoder; // Inject PasswordEncoder directly
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public List<UserResponse> findAllUser() {
@@ -82,7 +82,7 @@ public class UserServiceImpl implements UserService {
         String phone = Optional.ofNullable(user.getUserDetail()).map(d -> d.getPhone()).orElse("N/A");
         String address = Optional.ofNullable(user.getUserDetail()).map(d -> d.getAddress()).orElse("N/A");
         String roleNumber = Optional.ofNullable(user.getUserDetail()).map(d -> d.getRollNumber()).orElse("N/A");
-        String image = Optional.ofNullable(user.getUserDetail()).map(d -> d.getImage()).orElse("https://static.vecteezy.com/system/resources/previews/043/900/708/non_2x/user-profile-icon-illustration-vector.jpg");
+        String image = Optional.ofNullable(user.getUserDetail()).map(d -> d.getImage()).orElse("N/A");
 
         return UserResponse.builder()
                 .id(user.getId())
@@ -97,7 +97,7 @@ public class UserServiceImpl implements UserService {
                         .collect(Collectors.toList()))
                 .status(Optional.ofNullable(user.getStatus()).map(Enum::name).orElse("N/A"))
                 .roleNumber(roleNumber)
-                .image(image)
+                .image(user.getUserDetail().getImage())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

@@ -1,12 +1,9 @@
 package com.example.aptechstudentcaredserver.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_details")
@@ -37,6 +34,6 @@ public class UserDetail {
     private User user;
 
     @OneToOne
-    @JoinColumn(name = "parent_id", nullable = true)  // nullable = true allows the parent_id to be null
+    @JoinColumn(name = "parent_id", nullable = true)
     private Parent parent;
 }

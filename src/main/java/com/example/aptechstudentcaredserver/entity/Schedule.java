@@ -14,7 +14,6 @@ public class Schedule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-
     @Column(name = "start_date", nullable = false)
     private LocalDateTime startDate;
 
@@ -23,7 +22,6 @@ public class Schedule {
 
     @OneToMany(mappedBy = "schedule")
     private List<Attendance> attendances;
-
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
@@ -36,7 +34,4 @@ public class Schedule {
     @ManyToOne
     @JoinColumn(name = "class_id", nullable = false)
     private Class classes;
-
-
-
 }

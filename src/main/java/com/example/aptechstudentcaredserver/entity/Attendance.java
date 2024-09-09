@@ -28,7 +28,7 @@ public class Attendance {
     @Column(name = "checkin2", nullable = false)
     private LocalDateTime checkin2;
 
-    @Column(name = "attendance", length = 255)
+    @Column(name = "attendance1", length = 255)
     private String attendance1;
 
     @Column(name = "attendance2", length = 255)
@@ -43,5 +43,4 @@ public class Attendance {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
 }

@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -17,4 +18,6 @@ public class ClassResponse {
     private String days;
     private LocalDate admissionDate;
     private String status;
+    private List<StudentInClassResponse> students;
+
 }
