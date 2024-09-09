@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -63,12 +64,11 @@ public class CourseServiceImpl implements CourseService {
             throw new DuplicateException("Course with code '" + request.getCourseCode() + "' already exists");
         }
 
-        // Validate that at least one semester and subject are provided
         if (request.getSemesters() == null || request.getSemesters().isEmpty()) {
             throw new NotFoundException("At least one semester and subject must be provided");
         }
 
-        // If all validation passes, proceed with course creation
+        // Create and save the course
         Course course = new Course();
         course.setCourseName(request.getCourseName());
         course.setCourseCode(request.getCourseCode());
@@ -76,13 +76,20 @@ public class CourseServiceImpl implements CourseService {
         course.setCreatedAt(LocalDateTime.now());
         course.setUpdatedAt(LocalDateTime.now());
 
-        // Save the course
         course = courseRepository.save(course);
 
         // Process semesters and subjects
-        processSemestersAndSubjects(request, course);
+        List<CourseSubject> courseSubjectsToSave = new ArrayList<>();
+        try {
+            processSemestersAndSubjects(request, course, courseSubjectsToSave);
+            // Save course subjects only after all are validated
+            courseSubjectRepository.saveAll(courseSubjectsToSave);
+        } catch (NotFoundException e) {
+            // Rollback: Delete the course if there is an error
+            courseRepository.delete(course);
+            throw e; // Re-throw the exception after rollback
+        }
     }
-
 
     @Override
     public CourseResponse updateCourse(int courseId, CourseRequest request) {
@@ -90,61 +97,52 @@ public class CourseServiceImpl implements CourseService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new NotFoundException("Course with ID " + courseId + " not found"));
 
-        // Check if courseName is being updated to an existing name for another course
+        // Check for duplicate course name or code
         Course existCourseByName = courseRepository.findByCourseName(request.getCourseName());
         if (existCourseByName != null && existCourseByName.getId() != courseId) {
-            // Throw DuplicateException with a message indicating the issue
             throw new DuplicateException("Course with name '" + request.getCourseName() + "' already exists.");
         }
 
-        // Check if courseCode is being updated to an existing code for another course
         Course existCourseByCode = courseRepository.findByCourseCode(request.getCourseCode());
         if (existCourseByCode != null && existCourseByCode.getId() != courseId) {
-            // Throw DuplicateException with a message indicating the issue
             throw new DuplicateException("Course with code '" + request.getCourseCode() + "' already exists.");
         }
 
-        // Update course details (name, code, and compTime)
+        // Update course details
         course.setCourseName(request.getCourseName());
         course.setCourseCode(request.getCourseCode());
         course.setCourseCompTime(request.getCourseCompTime());
         course.setUpdatedAt(LocalDateTime.now());
 
-        // Validate and update subjects only if they are provided in the request
-        if (request.getSemesters() != null && !request.getSemesters().isEmpty()) {
-            // Validate subjects
-            for (Map.Entry<String, List<String>> entry : request.getSemesters().entrySet()) {
-                List<String> subjectNames = entry.getValue();
-
-                if (subjectNames == null || subjectNames.isEmpty()) {
-                    // Throw exception with a message for missing subjects
-                    throw new NotFoundException("Subjects for semester '" + entry.getKey() + "' must be provided.");
-                }
-
-                for (String subjectName : subjectNames) {
-                    subjectRepository.findBySubjectName(subjectName)
-                            .orElseThrow(() -> new NotFoundException("Subject '" + subjectName + "' not found in the system."));
-                }
-            }
-
-            // If subjects are provided, remove existing course-subject relationships and update them
-            List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(courseId);
-            if (!courseSubjects.isEmpty()) {
-                courseSubjectRepository.deleteAll(courseSubjects);
-            }
-
-            // Process and update semesters and subjects
-            processSemestersAndSubjects(request, course);
-        }
-
         // Save the updated course
         courseRepository.save(course);
 
-        // Return the updated course response
+        // Process semesters and subjects
+        List<CourseSubject> courseSubjectsToSave = new ArrayList<>();
+        List<CourseSubject> courseSubjectsToDelete = courseSubjectRepository.findByCourseId(courseId);
+
+        // Collect subjects to delete based on new data
+        for (CourseSubject courseSubject : courseSubjectsToDelete) {
+            if (!request.getSemesters().containsKey(courseSubject.getSemester().getName()) ||
+                    !request.getSemesters().get(courseSubject.getSemester().getName()).contains(courseSubject.getSubject().getSubjectCode())) {
+                courseSubjectsToDelete.remove(courseSubject);
+            }
+        }
+        courseSubjectRepository.deleteAll(courseSubjectsToDelete);
+
+        try {
+            processSemestersAndSubjects(request, course, courseSubjectsToSave);
+            // Save course subjects only after all are validated
+            courseSubjectRepository.saveAll(courseSubjectsToSave);
+        } catch (NotFoundException e) {
+            // Handle the case where subjects or semesters are not found
+            // Just log the error or handle it as per your requirements
+            // Do not delete the course here
+            throw e; // Re-throw the exception
+        }
+
         return convertToCourseResponse(course);
     }
-
-
 
 
     @Override
@@ -152,7 +150,6 @@ public class CourseServiceImpl implements CourseService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new NotFoundException("Course with ID " + courseId + " not found"));
 
-        // Delete between the course and the subjects
         List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(courseId);
 
         if (!courseSubjects.isEmpty()) {
@@ -162,26 +159,25 @@ public class CourseServiceImpl implements CourseService {
         courseRepository.delete(course);
     }
 
-    private void processSemestersAndSubjects(CourseRequest request, Course course) {
-
+    private void processSemestersAndSubjects(CourseRequest request, Course course, List<CourseSubject> courseSubjectsToSave) {
         semesterService.initializeDefaultSemesters();
         for (Map.Entry<String, List<String>> entry : request.getSemesters().entrySet()) {
             String semesterKey = entry.getKey();
-            List<String> subjectNames = entry.getValue();
+            List<String> subjectCodes = entry.getValue();
 
             Semester semester = semesterRepository.findByName(semesterKey)
                     .orElseThrow(() -> new NotFoundException("Semester " + semesterKey + " not found"));
 
-            for (String subjectName : subjectNames) {
-                Subject subject = subjectRepository.findBySubjectName(subjectName)
-                        .orElseThrow(() -> new NotFoundException("Subject " + subjectName + " not found"));
+            for (String subjectCode : subjectCodes) {
+                Subject subject = subjectRepository.findBySubjectCode(subjectCode)
+                        .orElseThrow(() -> new NotFoundException("Subject " + subjectCode + " not found"));
 
                 CourseSubject courseSubject = new CourseSubject();
                 courseSubject.setCourse(course);
                 courseSubject.setSubject(subject);
                 courseSubject.setSemester(semester);
 
-                courseSubjectRepository.save(courseSubject);
+                courseSubjectsToSave.add(courseSubject);
             }
         }
     }
@@ -191,10 +187,9 @@ public class CourseServiceImpl implements CourseService {
 
         Map<String, List<String>> semesterSubjects = courseSubjects.stream()
                 .collect(Collectors.groupingBy(
-                        cs -> cs.getSemester().getName(),  // Group by semester name
-                        Collectors.mapping(cs -> cs.getSubject().getSubjectName(), Collectors.toList()) // Map subject names
+                        cs -> cs.getSemester().getName(),
+                        Collectors.mapping(cs -> cs.getSubject().getSubjectName(), Collectors.toList())
                 ));
-
 
         return new CourseResponse(
                 course.getId(),
