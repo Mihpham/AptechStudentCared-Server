@@ -4,6 +4,7 @@ import com.example.aptechstudentcaredserver.bean.request.SubjectRequest;
 import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
 import com.example.aptechstudentcaredserver.entity.CourseSubject;
 import com.example.aptechstudentcaredserver.entity.Subject;
+import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.EmptyListException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.CourseSubjectRepository;
@@ -53,12 +54,14 @@ public class SubjectServiceImpl implements SubjectService {
     }
 
 
-
     @Override
     public void createSubject(SubjectRequest subjectRq) {
+        if (subjectRepository.findBySubjectName(subjectRq.getSubjectName()).isPresent()) {
+            throw new DuplicateException("Subject with the same name already exists.");
+        }
 
-        if (subjectRepository.findBySubjectName(subjectRq.getSubjectName()) != null) {
-            throw new IllegalArgumentException("Subject with the same name already exists.");
+        if (subjectRepository.findBySubjectCode(subjectRq.getSubjectCode()).isPresent()) {
+            throw new DuplicateException("Subject code already exists.");
         }
 
         Subject subject = new Subject();
@@ -75,23 +78,41 @@ public class SubjectServiceImpl implements SubjectService {
     public SubjectResponse updateSubject(int subjectId, SubjectRequest subjectRq) {
         try {
             Optional<Subject> optionalSubject = subjectRepository.findById(subjectId);
-            if (optionalSubject.isPresent()) {
-                Subject subject = optionalSubject.get();
-                subject.setSubjectName(subjectRq.getSubjectName());
-                subject.setSubjectCode(subjectRq.getSubjectCode());
-                subject.setTotalHours(subjectRq.getTotalHours());
-                subject.setUpdatedAt(LocalDateTime.now());
-                subjectRepository.save(subject);
-                return convertToSubjectResponse(subject);
-            } else {
+            if (!optionalSubject.isPresent()) {
                 throw new NotFoundException("Subject with ID " + subjectId + " not found.");
             }
+            Subject existingSubject = optionalSubject.get();
+
+            if (subjectRepository.findBySubjectName(subjectRq.getSubjectName())
+                    .filter(subject -> subject.getId() != subjectId)
+                    .isPresent()) {
+                throw new DuplicateException("Subject with the same name already exists.");
+            }
+
+            if (subjectRepository.findBySubjectCode(subjectRq.getSubjectCode())
+                    .filter(subject -> subject.getId() != subjectId)
+                    .isPresent()) {
+                throw new DuplicateException("Subject code already exists.");
+            }
+
+            existingSubject.setSubjectName(subjectRq.getSubjectName());
+            existingSubject.setSubjectCode(subjectRq.getSubjectCode());
+            existingSubject.setTotalHours(subjectRq.getTotalHours());
+            existingSubject.setUpdatedAt(LocalDateTime.now());
+
+            subjectRepository.save(existingSubject);
+
+            return convertToSubjectResponse(existingSubject);
+
+        } catch (DuplicateException e) {
+            throw e;
         } catch (NotFoundException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to update subject.", e);
         }
     }
+
 
     @Override
     public void deleteSubject(int subjectId) {
@@ -110,8 +131,6 @@ public class SubjectServiceImpl implements SubjectService {
     }
 
 
-
-
     public SubjectResponse convertToSubjectResponse(Subject subject) {
         if (subject == null) {
             throw new IllegalArgumentException("Subject cannot be null.");
@@ -126,8 +145,6 @@ public class SubjectServiceImpl implements SubjectService {
 
         return response;
     }
-
-
 
 
 }

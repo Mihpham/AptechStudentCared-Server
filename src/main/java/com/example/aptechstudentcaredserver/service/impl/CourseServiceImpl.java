@@ -2,7 +2,6 @@ package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.CourseRequest;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
-import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
 import com.example.aptechstudentcaredserver.entity.Course;
 import com.example.aptechstudentcaredserver.entity.CourseSubject;
 import com.example.aptechstudentcaredserver.entity.Semester;
@@ -54,13 +53,11 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public void createCourse(CourseRequest request) {
-        // Check if courseName already exists
         Course existCourseByName = courseRepository.findByCourseName(request.getCourseName());
         if (existCourseByName != null) {
             throw new DuplicateException("Course with name '" + request.getCourseName() + "' already exists");
         }
 
-        // Check if courseCode already exists
         Course existCourseByCode = courseRepository.findByCourseCode(request.getCourseCode());
         if (existCourseByCode != null) {
             throw new DuplicateException("Course with code '" + request.getCourseCode() + "' already exists");
@@ -69,21 +66,6 @@ public class CourseServiceImpl implements CourseService {
         // Validate that at least one semester and subject are provided
         if (request.getSemesters() == null || request.getSemesters().isEmpty()) {
             throw new NotFoundException("At least one semester and subject must be provided");
-        }
-
-        // Validate that subjects exist in the system before adding them
-        for (Map.Entry<String, List<String>> entry : request.getSemesters().entrySet()) {
-            List<String> subjectNames = entry.getValue();
-
-            if (subjectNames == null || subjectNames.isEmpty()) {
-                throw new NotFoundException("Subjects for semester '" + entry.getKey() + "' must be provided");
-            }
-
-            for (String subjectName : subjectNames) {
-                // Check if the subject exists in the database
-                subjectRepository.findBySubjectName(subjectName)
-                        .orElseThrow(() -> new NotFoundException("Subject '" + subjectName + "' not found in the system"));
-            }
         }
 
         // If all validation passes, proceed with course creation
