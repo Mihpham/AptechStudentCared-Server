@@ -7,6 +7,7 @@ import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.GroupClass;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.enums.Status;
+import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.ClassRepository;
 import com.example.aptechstudentcaredserver.repository.GroupClassRepository;
@@ -50,7 +51,7 @@ public class ClassServiceImpl implements ClassService {
         Class existingClass = classRepository.findByClassName(classRequest.getClassName());
 
         if (existingClass != null) {
-            throw new RuntimeException("Class with this name already exists");
+            throw new DuplicateException("Class with this name already exists");
         }
 
         // Create new Class

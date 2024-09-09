@@ -56,6 +56,16 @@ public class StudentServiceImpl implements StudentService {
             throw new NotFoundException("Class not found. Please add the class before adding a student.");
         }
 
+        if (studentRq.getCourses() != null) {
+            for (String courseName : studentRq.getCourses()) {
+                Course course = courseRepository.findByCourseName(courseName.trim());
+                if (course == null) {
+                    throw new NotFoundException("Course not found: " + courseName.trim());
+                }
+            }
+        }
+
+        // Tiếp tục nếu lớp học và khóa học đều hợp lệ
         Role role = findOrCreateRole("STUDENT");
         String email = emailGeneratorService.generateUniqueEmail(studentRq.getFullName());
 
@@ -69,7 +79,6 @@ public class StudentServiceImpl implements StudentService {
         createUserCourses(studentRq, user);
         createGroupClass(studentClass, user);
     }
-
 
     @Override
     public StudentResponse updateStudent(int studentId, StudentRequest studentRq) {
@@ -91,36 +100,29 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public void deleteStudent(int studentId) {
-        // Tìm User theo studentId
         User user = userRepository.findById(studentId)
                 .orElseThrow(() -> new NotFoundException("Student not found with id " + studentId));
 
-        // Xóa các bản ghi trong UserCourse
         List<UserCourse> userCourses = userCourseRepository.findByUserId(studentId);
         userCourseRepository.deleteAll(userCourses);
 
-        // Xóa bản ghi trong GroupClass
         GroupClass groupClass = groupClassRepository.findByUserId(studentId)
                 .orElseThrow(() -> new NotFoundException("Group class not found for user id " + studentId));
         groupClassRepository.delete(groupClass);
 
-        // Cập nhật hoặc xóa bản ghi trong Parent
         UserDetail userDetail = user.getUserDetail();
         if (userDetail != null && userDetail.getParent() != null) {
             Parent parent = userDetail.getParent();
-            userDetail.setParent(null); // Xóa liên kết với Parent
-            userDetailRepository.save(userDetail); // Cập nhật UserDetail
+            userDetail.setParent(null);
+            userDetailRepository.save(userDetail);
 
-            // Xóa Parent nếu không còn liên kết với bất kỳ User nào khác
             if (parentRepository.findById(parent.getId()).isPresent()) {
                 parentRepository.delete(parent);
             }
         }
 
-        // Xóa User
         userRepository.deleteById(studentId);
     }
-
 
     private User findUserById(int studentId) {
         return userRepository.findById(studentId)
@@ -155,11 +157,7 @@ public class StudentServiceImpl implements StudentService {
     private UserDetail createUserDetail(StudentRequest studentRq, User user) {
         UserDetail userDetail = new UserDetail();
         userDetail.setRollNumber(studentRq.getRollNumber());
-        userDetail.setImage(
-                (studentRq.getImage() != null && !studentRq.getImage().isEmpty())
-                        ? studentRq.getImage()
-                        : null
-        );
+        userDetail.setImage("avatar-default.webp");
         userDetail.setFullName(studentRq.getFullName());
         userDetail.setGender(studentRq.getGender());
         userDetail.setDob(studentRq.getDob());
@@ -189,7 +187,6 @@ public class StudentServiceImpl implements StudentService {
     private void createUserCourses(StudentRequest studentRq, User user) {
         if (studentRq.getCourses() != null) {
             studentRq.getCourses().forEach(courseName -> {
-                // Find course by name, return Optional<Course>
                 Course course = Optional.ofNullable(courseRepository.findByCourseName(courseName.trim()))
                         .orElseThrow(() -> new NotFoundException("Course not found: " + courseName.trim()));
 
@@ -204,7 +201,6 @@ public class StudentServiceImpl implements StudentService {
             });
         }
     }
-
 
     private void createGroupClass(Class studentClass, User user) {
         GroupClass groupClass = new GroupClass();
@@ -238,17 +234,13 @@ public class StudentServiceImpl implements StudentService {
         }
     }
 
-
     private void updateCourses(int studentId, StudentRequest studentRq) {
         if (studentRq.getCourses() != null) {
             List<UserCourse> existingCourses = userCourseRepository.findByUserId(studentId);
-            userCourseRepository.deleteAll(existingCourses); // Remove all existing courses
-
-            // Create new courses (only for existing ones)
+            userCourseRepository.deleteAll(existingCourses);
             createUserCourses(studentRq, findUserById(studentId));
         }
     }
-
 
     private void updateGroupClassStatus(int studentId, StudentRequest studentRq) {
         if (studentRq.getStatus() != null) {
@@ -293,8 +285,6 @@ public class StudentServiceImpl implements StudentService {
                 user.getUserDetail() != null ? user.getUserDetail().getParent().getStudentRelation() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getParent().getPhone() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getParent().getGender() : null
-
         );
     }
-
 }
