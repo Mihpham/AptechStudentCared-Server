@@ -10,6 +10,5 @@ public class ClassRequest {
     private String center;
     private String hour;
     private String days;
-    private LocalDate admissionDate;
     private String status;
 }

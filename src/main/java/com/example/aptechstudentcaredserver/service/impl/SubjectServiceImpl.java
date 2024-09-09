@@ -56,23 +56,18 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     public void createSubject(SubjectRequest subjectRq) {
-        try {
-            if (subjectRq.getSubjectName() == null || subjectRq.getSubjectName().isEmpty()) {
-                throw new IllegalArgumentException("Subject name cannot be null or empty.");
-            }
 
-            Subject subject = new Subject();
-            subject.setSubjectName(subjectRq.getSubjectName());
-            subject.setSubjectCode(subjectRq.getSubjectCode());
-            subject.setTotalHours(subjectRq.getTotalHours());
-            subject.setCreatedAt(LocalDateTime.now());
-            subject.setUpdatedAt(LocalDateTime.now());
-            subjectRepository.save(subject);
-        } catch (DataIntegrityViolationException e) {
-            throw new IllegalArgumentException("Subject with the same name already exists.", e);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create subject.", e);
+        if (subjectRepository.findBySubjectName(subjectRq.getSubjectName()) != null) {
+            throw new IllegalArgumentException("Subject with the same name already exists.");
         }
+
+        Subject subject = new Subject();
+        subject.setSubjectName(subjectRq.getSubjectName());
+        subject.setSubjectCode(subjectRq.getSubjectCode());
+        subject.setTotalHours(subjectRq.getTotalHours());
+        subject.setCreatedAt(LocalDateTime.now());
+        subject.setUpdatedAt(LocalDateTime.now());
+        subjectRepository.save(subject);
     }
 
 

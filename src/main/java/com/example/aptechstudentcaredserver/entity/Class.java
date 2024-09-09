@@ -27,9 +27,6 @@ public class Class {
 
     private String days;
 
-    @Column(name = "Admission_Date")
-    private LocalDate admissionDate;
-
     @Enumerated(EnumType.STRING)
     private Status status;
 

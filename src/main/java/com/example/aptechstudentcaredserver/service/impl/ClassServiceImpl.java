@@ -60,7 +60,6 @@ public class ClassServiceImpl implements ClassService {
         newClass.setCenter(classRequest.getCenter());
         newClass.setHour(classRequest.getHour());
         newClass.setDays(classRequest.getDays());
-        newClass.setAdmissionDate(classRequest.getAdmissionDate());
         newClass.setStatus(Status.STUDYING);
         newClass.setCreatedAt(LocalDateTime.now());
         newClass.setUpdatedAt(LocalDateTime.now());
@@ -74,11 +73,15 @@ public class ClassServiceImpl implements ClassService {
         Class existingClass = classRepository.findById(classId)
                 .orElseThrow(() -> new NotFoundException("Class not found with id " + classId));
 
+        Class classWithNewName = classRepository.findByClassName(classRequest.getClassName());
+        if (classWithNewName != null && classWithNewName.getId() != classId) {
+            throw new DuplicateException("Class with name '" + classRequest.getClassName() + "' already exists.");
+        }
+
         existingClass.setClassName(classRequest.getClassName());
         existingClass.setCenter(classRequest.getCenter());
         existingClass.setHour(classRequest.getHour());
         existingClass.setDays(classRequest.getDays());
-        existingClass.setAdmissionDate(classRequest.getAdmissionDate());
         existingClass.setStatus(Status.valueOf(classRequest.getStatus()));
 
         classRepository.save(existingClass);
@@ -114,7 +117,7 @@ public class ClassServiceImpl implements ClassService {
                 classEntity.getCenter(),
                 classEntity.getHour(),
                 classEntity.getDays(),
-                classEntity.getAdmissionDate(),
+                classEntity.getCreatedAt(),
                 classEntity.getStatus() != null ? classEntity.getStatus().name() : null,
                 studentResponses
         );
