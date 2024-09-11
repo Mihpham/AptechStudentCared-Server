@@ -16,17 +16,21 @@ import com.example.aptechstudentcaredserver.repository.SubjectRepository;
 import com.example.aptechstudentcaredserver.service.CourseService;
 import com.example.aptechstudentcaredserver.service.SemesterService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CourseServiceImpl implements CourseService {
+//    private static final Logger log = (Logger) LoggerFactory.getLogger(CourseServiceImpl.class);
+
     private final CourseRepository courseRepository;
     private final SemesterRepository semesterRepository;
     private final SubjectRepository subjectRepository;
@@ -158,6 +162,7 @@ public class CourseServiceImpl implements CourseService {
 
         courseRepository.delete(course);
     }
+
 
     private void processSemestersAndSubjects(CourseRequest request, Course course, List<CourseSubject> courseSubjectsToSave) {
         semesterService.initializeDefaultSemesters();

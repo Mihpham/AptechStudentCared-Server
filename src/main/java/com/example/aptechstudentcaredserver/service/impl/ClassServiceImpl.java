@@ -105,9 +105,13 @@ public class ClassServiceImpl implements ClassService {
                     User user = groupClass.getUser();
                     return new StudentInClassResponse(
                             user.getId(),
-                            user.getUserDetail() != null ? user.getUserDetail().getFullName() : "Unknown",
-                            user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : "N/A"
-                    );
+                            user.getUserDetail() != null ? user.getUserDetail().getImage() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getFullName() : null,
+                            user.getEmail(),
+                            user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
+                            groupClass.getStatus().name()
+                            );
                 })
                 .collect(Collectors.toList());
 
