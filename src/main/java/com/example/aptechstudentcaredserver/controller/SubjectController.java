@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.controller;
 import com.example.aptechstudentcaredserver.bean.request.SubjectRequest;
 import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
 import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
+import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.service.SubjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,19 +36,22 @@ public class SubjectController {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Subject not found", e);
             }
         }
-        @PostMapping("/add")
-        public ResponseEntity<String> addSubject(@Valid @RequestBody SubjectRequest subjectRq) {
-            try {
-                subjectService.createSubject(subjectRq);
-                return ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_TYPE, "application/json")
-                        .body("{\"message\": \"Subject added successfully\"}");
-            } catch (RuntimeException e) {
-                return ResponseEntity.badRequest().body(e.getMessage());
-            }
+    @PostMapping("/add")
+    public ResponseEntity<String> addSubject(@Valid @RequestBody SubjectRequest subjectRq) {
+        try {
+            subjectService.createSubject(subjectRq);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .body("{\"message\": \"Subject added successfully\"}");
+        } catch (DuplicateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to add subject.");
         }
+    }
 
-        @PutMapping("/{subjectId}")
+
+    @PutMapping("/{subjectId}")
         public ResponseEntity<SubjectResponse> updateSubject(
                 @PathVariable int subjectId,
                 @RequestBody SubjectRequest subjectRequest) {

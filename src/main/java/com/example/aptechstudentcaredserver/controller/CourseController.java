@@ -2,6 +2,8 @@ package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.CourseRequest;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
+import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
+import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.service.CourseService;
 import lombok.RequiredArgsConstructor;
@@ -25,43 +27,43 @@ public class CourseController {
 
     @GetMapping("/{courseId}")
     public ResponseEntity<CourseResponse> getCourseById(@PathVariable int courseId) {
-        try {
-            CourseResponse courseResponse = courseService.getCourseById(courseId);
-            return new ResponseEntity<>(courseResponse, HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        CourseResponse courseResponse = courseService.getCourseById(courseId);
+        return new ResponseEntity<>(courseResponse, HttpStatus.OK);
     }
 
     @PostMapping("/add")
-    public ResponseEntity<String> createCourse(@RequestBody CourseRequest courseRequest) {
+    public ResponseEntity<ResponseMessage> createCourse(@RequestBody CourseRequest courseRequest) {
         try {
             courseService.createCourse(courseRequest);
-            return new ResponseEntity<>("Course added successfully", HttpStatus.CREATED);
+            return ResponseEntity.status(HttpStatus.CREATED).body(new ResponseMessage("Course added successfully"));
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().body(new ResponseMessage(e.getMessage()));
         }
     }
 
     @PutMapping("/{courseId}")
-    public ResponseEntity<String> updateCourse(@RequestBody CourseRequest courseRequest, @PathVariable int courseId) {
+    public ResponseEntity<ResponseMessage> updateCourse(@RequestBody CourseRequest courseRequest, @PathVariable int courseId) {
         try {
-            CourseResponse updatedCourse = courseService.updateCourse(courseId, courseRequest);
-            return new ResponseEntity<>("Course updated successfully", HttpStatus.ACCEPTED);
+            courseService.updateCourse(courseId, courseRequest);
+            return new ResponseEntity<>(new ResponseMessage("Course updated successfully"), HttpStatus.ACCEPTED);
         } catch (NotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMessage(e.getMessage()));
+        } catch (DuplicateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMessage(e.getMessage()));
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMessage(e.getMessage()));
         }
     }
 
     @DeleteMapping("/{courseId}")
-    public ResponseEntity<String> deleteCourse(@PathVariable int courseId) {
+    public ResponseEntity<ResponseMessage> deleteCourse(@PathVariable int courseId) {
         try {
             courseService.deleteCourse(courseId);
-            return new ResponseEntity<>("Course deleted successfully", HttpStatus.OK);
+            return new ResponseEntity<>(new ResponseMessage("Course deleted successfully"), HttpStatus.ACCEPTED);
         } catch (NotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMessage(e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMessage(e.getMessage()));
         }
     }
 }

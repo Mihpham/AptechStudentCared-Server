@@ -9,5 +9,5 @@ import java.util.Optional;
 public interface CourseSubjectRepository extends JpaRepository<CourseSubject, Integer> {
     List<CourseSubject> findByCourseId(int courseId);
 
-    void deleteByCourseId(int courseId);
+    List<CourseSubject>findBySubjectId(int subjectId);
 }

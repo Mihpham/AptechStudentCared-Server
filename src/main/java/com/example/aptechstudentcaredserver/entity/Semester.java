@@ -27,5 +27,4 @@ public class Semester {
 
     @OneToMany(mappedBy = "semester")
     private Set<CourseSubject> courseSubjects;
-
 }

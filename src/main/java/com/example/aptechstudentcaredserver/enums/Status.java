@@ -7,7 +7,9 @@ public enum Status {
     ACTIVE, DELETE,
 
 
-    // status of class
+    /**
+     * Status for class
+     */
     STUDYING,FINISHED,CANCEL,SCHEDULED
 
 

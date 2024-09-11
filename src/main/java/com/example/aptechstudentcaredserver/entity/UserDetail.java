@@ -36,5 +36,4 @@ public class UserDetail {
     @OneToOne
     @JoinColumn(name = "parent_id", nullable = true)
     private Parent parent;
-
 }

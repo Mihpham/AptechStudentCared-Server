@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface GroupClassRepository extends JpaRepository<GroupClass, Integer> {
     Optional<GroupClass> findByUserId(int userId);
 
-    List<GroupClass> findByClassesId(int classId); // Sửa lại tên phương thức
+    List<GroupClass> findByClassesId(int classId);
 
 
 }

@@ -25,12 +25,7 @@ public class Class {
 
     private String hour;
 
-    @ElementCollection(targetClass = DayOfWeeks.class)
-    @Enumerated(EnumType.STRING)
-    private List<DayOfWeeks> days;
-
-    @Column(name = "Admission_Date")
-    private LocalDate admissionDate;
+    private String days;
 
     @Enumerated(EnumType.STRING)
     private Status status;
