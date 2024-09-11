@@ -2,6 +2,7 @@ package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.CourseRequest;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
+import com.example.aptechstudentcaredserver.bean.response.StudentResponse;
 import com.example.aptechstudentcaredserver.entity.Course;
 import com.example.aptechstudentcaredserver.entity.CourseSubject;
 import com.example.aptechstudentcaredserver.entity.Semester;
@@ -40,9 +41,6 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public List<CourseResponse> getAllCourses() {
         List<Course> courses = courseRepository.findAll();
-        if (courses.isEmpty()) {
-            throw new EmptyListException("No course found.");
-        }
         return courses.stream()
                 .map(this::convertToCourseResponse)
                 .collect(Collectors.toList());
@@ -188,6 +186,9 @@ public class CourseServiceImpl implements CourseService {
     }
 
     private CourseResponse convertToCourseResponse(Course course) {
+        if (course == null ) {
+            return new CourseResponse(); // return object empty if need
+        }
         List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
 
         Map<String, List<String>> semesterSubjects = courseSubjects.stream()
