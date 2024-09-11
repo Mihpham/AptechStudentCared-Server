@@ -43,6 +43,17 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
+    public List<StudentResponse> findStudentsByStatus(ClassMemberStatus status) {
+        List<GroupClass> groupClasses = groupClassRepository.findByStatus(status);
+        return groupClasses.stream()
+                .map(groupClass -> {
+                    User user = groupClass.getUser();
+                    return convertToStudentResponse(user, groupClass);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public StudentResponse findStudentById(int studentId) {
         User user = findUserById(studentId);
         GroupClass groupClass = findGroupClassByUserId(studentId);

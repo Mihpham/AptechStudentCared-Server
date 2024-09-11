@@ -2,9 +2,11 @@ package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.StudentRequest;
 import com.example.aptechstudentcaredserver.bean.response.StudentResponse;
+import com.example.aptechstudentcaredserver.enums.ClassMemberStatus;
 import com.example.aptechstudentcaredserver.service.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +21,12 @@ public class StudentController {
     @GetMapping
     public ResponseEntity<List<StudentResponse>> getAllStudents() {
         List<StudentResponse> students = studentService.findAllStudent();
+        return ResponseEntity.ok(students);
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<StudentResponse>> getStudentsByStatus(@PathVariable("status") ClassMemberStatus status) {
+        List<StudentResponse> students = studentService.findStudentsByStatus(status);
         return ResponseEntity.ok(students);
     }
 
