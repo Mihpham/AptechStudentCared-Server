@@ -168,7 +168,7 @@ public class StudentServiceImpl implements StudentService {
     private UserDetail createUserDetail(StudentRequest studentRq, User user) {
         UserDetail userDetail = new UserDetail();
         userDetail.setRollNumber(studentRq.getRollNumber());
-        userDetail.setImage("assets/images/avatar-default.webp");
+        userDetail.setImage(null);
         userDetail.setFullName(studentRq.getFullName());
         userDetail.setGender(studentRq.getGender());
         userDetail.setDob(studentRq.getDob());
