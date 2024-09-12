@@ -2,7 +2,7 @@ package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
-import com.example.aptechstudentcaredserver.bean.response.StudentInClassResponse;
+import com.example.aptechstudentcaredserver.bean.response.StudentResponse;
 import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.GroupClass;
 import com.example.aptechstudentcaredserver.entity.User;
@@ -11,6 +11,7 @@ import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.ClassRepository;
 import com.example.aptechstudentcaredserver.repository.GroupClassRepository;
+import com.example.aptechstudentcaredserver.repository.UserCourseRepository;
 import com.example.aptechstudentcaredserver.service.ClassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,8 @@ public class ClassServiceImpl implements ClassService {
 
     private final ClassRepository classRepository;
     private final GroupClassRepository groupClassRepository;
+    private final UserCourseRepository userCourseRepository;
+
 
     @Override
     public List<ClassResponse> findAllClass() {
@@ -100,18 +103,31 @@ public class ClassServiceImpl implements ClassService {
     private ClassResponse convertToClassResponse(Class classEntity) {
         List<GroupClass> groupClasses = groupClassRepository.findByClassesId(classEntity.getId());
 
-        List<StudentInClassResponse> studentResponses = groupClasses.stream()
+        List<StudentResponse> studentResponses = groupClasses.stream()
                 .map(groupClass -> {
                     User user = groupClass.getUser();
-                    return new StudentInClassResponse(
+                    List<String> courses = userCourseRepository.findByUserId(user.getId()).stream()
+                            .map(userCourse -> userCourse.getCourse().getCourseName())
+                            .collect(Collectors.toList());
+
+                    return new StudentResponse(
                             user.getId(),
                             user.getUserDetail() != null ? user.getUserDetail().getImage() : null,
                             user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : null,
                             user.getUserDetail() != null ? user.getUserDetail().getFullName() : null,
                             user.getEmail(),
+                            user.getUserDetail() != null ? user.getUserDetail().getAddress() : null,
+                            classEntity.getClassName(),
+                            user.getUserDetail() != null ? user.getUserDetail().getGender() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getDob() : null,
                             user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
-                            groupClass.getStatus().name()
-                            );
+                            courses,
+                            groupClass.getStatus() != null ? groupClass.getStatus().name() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getParent().getFullName() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getParent().getStudentRelation() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getParent().getPhone() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getParent().getGender() : null
+                    );
                 })
                 .collect(Collectors.toList());
 
