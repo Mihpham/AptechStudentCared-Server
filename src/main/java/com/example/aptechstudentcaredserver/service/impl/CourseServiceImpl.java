@@ -2,6 +2,7 @@ package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.CourseRequest;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
+import com.example.aptechstudentcaredserver.bean.response.StudentResponse;
 import com.example.aptechstudentcaredserver.entity.Course;
 import com.example.aptechstudentcaredserver.entity.CourseSubject;
 import com.example.aptechstudentcaredserver.entity.Semester;
@@ -16,17 +17,21 @@ import com.example.aptechstudentcaredserver.repository.SubjectRepository;
 import com.example.aptechstudentcaredserver.service.CourseService;
 import com.example.aptechstudentcaredserver.service.SemesterService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CourseServiceImpl implements CourseService {
+//    private static final Logger log = (Logger) LoggerFactory.getLogger(CourseServiceImpl.class);
+
     private final CourseRepository courseRepository;
     private final SemesterRepository semesterRepository;
     private final SubjectRepository subjectRepository;
@@ -36,9 +41,6 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public List<CourseResponse> getAllCourses() {
         List<Course> courses = courseRepository.findAll();
-        if (courses.isEmpty()) {
-            throw new EmptyListException("No course found.");
-        }
         return courses.stream()
                 .map(this::convertToCourseResponse)
                 .collect(Collectors.toList());
@@ -159,6 +161,7 @@ public class CourseServiceImpl implements CourseService {
         courseRepository.delete(course);
     }
 
+
     private void processSemestersAndSubjects(CourseRequest request, Course course, List<CourseSubject> courseSubjectsToSave) {
         semesterService.initializeDefaultSemesters();
         for (Map.Entry<String, List<String>> entry : request.getSemesters().entrySet()) {
@@ -183,6 +186,9 @@ public class CourseServiceImpl implements CourseService {
     }
 
     private CourseResponse convertToCourseResponse(Course course) {
+        if (course == null ) {
+            return new CourseResponse(); // return object empty if need
+        }
         List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
 
         Map<String, List<String>> semesterSubjects = courseSubjects.stream()

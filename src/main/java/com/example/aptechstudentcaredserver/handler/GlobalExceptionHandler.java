@@ -1,9 +1,6 @@
 package com.example.aptechstudentcaredserver.handler;
 
-import com.example.aptechstudentcaredserver.exception.DuplicateException;
-import com.example.aptechstudentcaredserver.exception.EmailFormatException;
-import com.example.aptechstudentcaredserver.exception.InvalidCredentialsException;
-import com.example.aptechstudentcaredserver.exception.NotFoundException;
+import com.example.aptechstudentcaredserver.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -75,6 +72,17 @@ public class GlobalExceptionHandler {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
         problemDetail.setType(URI.create("https://example.com/invalid-email"));
         problemDetail.setTitle("Invalid Email Format");
+        problemDetail.setInstance(URI.create(request.getDescription(false).split(";")[0].replace("uri=", "")));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(EmptyListException.class)
+    @ResponseStatus(HttpStatus.NO_CONTENT) // or HttpStatus.NOT_FOUND, depending on your preference
+    public ProblemDetail handleEmptyListException(EmptyListException exception, WebRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NO_CONTENT, exception.getMessage());
+        problemDetail.setType(URI.create("https://example.com/empty-list"));
+        problemDetail.setTitle("No Content");
         problemDetail.setInstance(URI.create(request.getDescription(false).split(";")[0].replace("uri=", "")));
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
