@@ -1,167 +1,207 @@
 package com.example.aptechstudentcaredserver.controller;
 
-import com.example.aptechstudentcaredserver.bean.request.RegisterUserRequest;
-import com.example.aptechstudentcaredserver.bean.response.AuthResponse;
-import com.example.aptechstudentcaredserver.service.AuthService;
+
+import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.example.aptechstudentcaredserver.bean.request.AuthRequest;
+import com.example.aptechstudentcaredserver.bean.request.RegisterUserRequest;
+import com.example.aptechstudentcaredserver.bean.response.AuthResponse;
+import com.example.aptechstudentcaredserver.exception.EmailFormatException;
+import com.example.aptechstudentcaredserver.exception.InvalidCredentialsException;
+import com.example.aptechstudentcaredserver.exception.NotFoundException;
+import com.example.aptechstudentcaredserver.service.AuthService;
+
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 /**
- * Các bài kiểm tra cho lớp AuthController.
+ * Lớp test cho AuthController.
+ * Kiểm tra các chức năng của API: đăng ký và đăng nhập.
  */
-@Slf4j
+/**
+ * Lớp test cho AuthController với Spring Boot Test.
+ */
+//@SpringBootTest // Khởi chạy toàn bộ context của Spring Boot
 @SpringBootTest
 @AutoConfigureMockMvc
 public class AuthControllerTest {
 
     @Autowired
-    private MockMvc mockMvc;  // Inject MockMvc để thực hiện các yêu cầu HTTP mô phỏng
+    private MockMvc mockMvc; // Inject MockMvc để giả lập các request HTTP
 
     @MockBean
-    private AuthService authService;  // Mock AuthService để kiểm soát hành vi của các phương thức trong lớp này
+    private AuthService authService; // Giả lập AuthService để không gọi đến service thực
 
-    private RegisterUserRequest requestAdmin;
-    private RegisterUserRequest requestUser;
-    private AuthResponse authAdminResponse;
-    private AuthResponse authUserResponse;
+    @Autowired
+    private ObjectMapper objectMapper; // Sử dụng ObjectMapper để chuyển đổi đối tượng thành JSON
 
     /**
-     * Khởi tạo dữ liệu mẫu trước mỗi bài kiểm tra.
+     * Test đăng ký người dùng thành công.
+     * Kết quả mong muốn: Trả về HttpStatus.CREATED và thông tin phản hồi chứa JWT.
      */
-    @BeforeEach
-    void initData() {
-        // Dữ liệu cho người dùng với role "user"
-        requestUser = RegisterUserRequest.builder()
-                .email("hoi.bt.2156@gmail.com")
-                .password("123456789")
-                .fullName("bui thi hoi")
-                .phone("0838658924")
-                .address("Ha Noi")
-                .roleName("user")
+    @Test
+    void testRegisterUser_ShouldReturnCreated_WhenRegistrationSuccessful() throws Exception {
+        RegisterUserRequest request = RegisterUserRequest.builder()
+                .email("test@example.com")
+                .password("password123")
+                .fullName("Nguyễn Văn A")
+                .phone("0123456789")
+                .address("123 Đường ABC, Hà Nội")
+                .roleName("USER")
+                .image("profile.jpg")
                 .build();
 
-        // Phản hồi mong đợi sau khi đăng ký thành công với role "user"
-        authUserResponse = AuthResponse.builder()
-                .message("Registration successful!")
-                .role("user")
+        AuthResponse response = AuthResponse.builder()
+                .jwt("jwt-token")
+                .message("Registration successful")
+                .role("USER")
                 .build();
 
-        // Dữ liệu cho người dùng với role "admin"
-        requestAdmin = RegisterUserRequest.builder()
-                .email("hoi.bt.2156@gmail.com")
-                .password("123456789")
-                .fullName("bui thi hoi")
-                .phone("0838658924")
-                .address("Ha Noi")
-                .roleName("admin")
-                .build();
+        when(authService.registerUser(any(RegisterUserRequest.class))).thenReturn(response);
 
-        // Phản hồi mong đợi sau khi đăng ký thành công với role "admin"
-        authAdminResponse = AuthResponse.builder()
-                .message("Registration successful!")
-                .role("admin")
-                .build();
+        mockMvc.perform(post("/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(MockMvcResultMatchers.status().isCreated())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.jwt").value("jwt-token"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Registration successful"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.role").value("USER"));
     }
 
     /**
-     * Kiểm tra kịch bản đăng ký thành công cho người dùng với role "admin".
-     * <p>
-     * Phương thức này giả lập việc đăng ký thành công và kiểm tra phản hồi từ server.
-     * </p>
+     * Test đăng ký thất bại khi email đã tồn tại.
+     * Kết quả mong muốn: Trả về HttpStatus.CONFLICT và thông báo lỗi.
      */
     @Test
-    void registerAdmin_validRequest_success() throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String content = objectMapper.writeValueAsString(requestAdmin);
-        Mockito.when(authService.registerUser(ArgumentMatchers.any()))
-                .thenReturn(authAdminResponse);  // Giả lập phản hồi từ AuthService
+    void testRegisterUser_ShouldReturnConflict_WhenDuplicateEmail() throws Exception {
+        RegisterUserRequest request = RegisterUserRequest.builder()
+                .email("duplicate@example.com")
+                .password("password123")
+                .fullName("Nguyễn Văn B")
+                .phone("0987654321")
+                .address("456 Đường XYZ, Đà Nẵng")
+                .roleName("USER")
+                .image("avatar.jpg")
+                .build();
 
-        mockMvc.perform(MockMvcRequestBuilders
-                        .post("/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(content))
-                .andExpect(MockMvcResultMatchers.status().isCreated())  // Kiểm tra mã trạng thái HTTP 201
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
-                        .value("Registration successful!"))  // Kiểm tra thông báo phản hồi
-                .andExpect(MockMvcResultMatchers.jsonPath("$.role")
-                        .value("admin"));  // Kiểm tra vai trò của người dùng
+        when(authService.registerUser(any(RegisterUserRequest.class)))
+                .thenThrow(new DuplicateException("Email already exists"));
+
+        mockMvc.perform(post("/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Email already exists"));
     }
 
     /**
-     * Kiểm tra kịch bản đăng ký thất bại khi email không hợp lệ.
-     * <p>
-     * Phương thức này thiết lập một email không hợp lệ và kiểm tra phản hồi lỗi từ server.
-     * </p>
+     * Test đăng nhập thành công.
+     * Kết quả mong muốn: Trả về HttpStatus.OK và thông tin JWT.
      */
     @Test
-    void registerAdmin_invalidEmailRequest_Fail() throws Exception {
-        requestAdmin.setEmail(""); // Cài đặt email không hợp lệ
+    void testLoginUser_ShouldReturnOk_WhenLoginSuccessful() throws Exception {
+        AuthRequest request = AuthRequest.builder()
+                .email("test@example.com")
+                .password("password123")
+                .build();
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        String content = objectMapper.writeValueAsString(requestAdmin);
+        AuthResponse response = AuthResponse.builder()
+                .jwt("jwt-token")
+                .message("Login successful")
+                .role("USER")
+                .build();
 
-        // Thực hiện yêu cầu POST và kiểm tra phản hồi lỗi
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                        .post("/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(content))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())  // Kiểm tra mã trạng thái HTTP 400
-                .andReturn();
+        when(authService.loginUser(any(AuthRequest.class))).thenReturn(response);
 
-        // In ra nội dung phản hồi để debug
-        String responseContent = result.getResponse().getContentAsString();
-        System.out.println("Response content: " + responseContent);
-
-        mockMvc.perform(MockMvcRequestBuilders
-                        .post("/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(content))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest())  // Kiểm tra mã trạng thái HTTP 400
-                .andExpect(MockMvcResultMatchers.jsonPath("$.type")
-                        .value("about:blank"))  // Kiểm tra loại lỗi
-                .andExpect(MockMvcResultMatchers.jsonPath("$.title")
-                        .value("Bad Request"))  // Kiểm tra tiêu đề lỗi
-                .andExpect(MockMvcResultMatchers.jsonPath("$.status")
-                        .value(400))  // Kiểm tra mã trạng thái lỗi
-                .andExpect(MockMvcResultMatchers.jsonPath("$.detail")
-                        .value("Invalid request content."));  // Kiểm tra chi tiết lỗi
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jwt").value("jwt-token"))
+                .andExpect(jsonPath("$.message").value("Login successful"))
+                .andExpect(jsonPath("$.role").value("USER"));
     }
 
     /**
-     * Kiểm tra kịch bản đăng ký thành công cho người dùng với role "user".
-     * <p>
-     * Phương thức này giả lập việc đăng ký thành công và kiểm tra phản hồi từ server.
-     * </p>
+     * Test đăng nhập thất bại khi email không tồn tại.
+     * Kết quả mong muốn: Trả về HttpStatus.NOT_FOUND.
      */
     @Test
-    void registerUser_validRequest_success() throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String content = objectMapper.writeValueAsString(requestUser);
-        Mockito.when(authService.registerUser(ArgumentMatchers.any()))
-                .thenReturn(authUserResponse);  // Giả lập phản hồi từ AuthService
+    void testLoginUser_ShouldReturnNotFound_WhenEmailNotFound() throws Exception {
+        AuthRequest request = AuthRequest.builder()
+                .email("nonexistent@example.com")
+                .password("password123")
+                .build();
 
-        mockMvc.perform(MockMvcRequestBuilders
-                        .post("/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .content(content))
-                .andExpect(MockMvcResultMatchers.status().isCreated())  // Kiểm tra mã trạng thái HTTP 201
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
-                        .value("Registration successful!"))  // Kiểm tra thông báo phản hồi
-                .andExpect(MockMvcResultMatchers.jsonPath("$.role")
-                        .value("user"));  // Kiểm tra vai trò của người dùng
+        when(authService.loginUser(any(AuthRequest.class)))
+                .thenThrow(new NotFoundException("Email not found"));
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Email not found"));
+    }
+
+    /**
+     * Test đăng nhập thất bại khi thông tin đăng nhập sai.
+     * Kết quả mong muốn: Trả về HttpStatus.UNAUTHORIZED.
+     */
+    @Test
+    void testLoginUser_ShouldReturnUnauthorized_WhenInvalidCredentials() throws Exception {
+        AuthRequest request = AuthRequest.builder()
+                .email("test@example.com")
+                .password("wrongpassword")
+                .build();
+
+        when(authService.loginUser(any(AuthRequest.class)))
+                .thenThrow(new InvalidCredentialsException("Invalid credentials"));
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Invalid credentials"));
+    }
+
+    /**
+     * Test đăng ký thất bại khi dữ liệu không hợp lệ.
+     * Kết quả mong muốn: Trả về HttpStatus.BAD_REQUEST.
+     */
+    @Test
+    void testRegisterUser_ShouldReturnBadRequest_WhenInvalidData() throws Exception {
+        RegisterUserRequest request = RegisterUserRequest.builder()
+                .email("invalid-email")
+                .password("password123")
+                .fullName("Nguyễn Văn C")
+                .phone("12345") // Số điện thoại không hợp lệ
+                .address("456 Đường XYZ, Đà Nẵng")
+                .roleName("USER")
+                .image("avatar.jpg")
+                .build();
+
+        when(authService.registerUser(any(RegisterUserRequest.class)))
+                .thenThrow(new EmailFormatException("Invalid email format"));
+
+        mockMvc.perform(post("/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("User registration failed: Invalid email format"));
     }
 }
