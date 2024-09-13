@@ -4,14 +4,20 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class TeacherResponse {
-    private String image;
+    private int id;
+    private String email;
     private String fullName;
-    private String password;
-    private String phoneNumber;
+    private String phone;
     private String address;
+    private String dob;
+    private String roleName;
     private String status;
+    private String image;
+    private LocalDateTime createdAt;
 }

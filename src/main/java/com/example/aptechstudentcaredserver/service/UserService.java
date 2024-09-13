@@ -18,7 +18,4 @@ public interface UserService {
 
     void changePassword(int userId, ChangePasswordRequest changePasswordRequest);
 
-    void registerTeacher(TeacherRequest teacherRequest);
-
-    List<UserResponse>findAllTeachers();
 }

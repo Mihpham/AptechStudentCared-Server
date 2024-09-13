@@ -1,8 +1,6 @@
 package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.ChangePasswordRequest;
-import com.example.aptechstudentcaredserver.bean.request.StudentRequest;
-import com.example.aptechstudentcaredserver.bean.request.TeacherRequest;
 import com.example.aptechstudentcaredserver.bean.response.UserResponse;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
@@ -11,7 +9,6 @@ import com.example.aptechstudentcaredserver.service.CloudinaryService;
 import com.example.aptechstudentcaredserver.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -112,24 +109,5 @@ public class UserController {
         }
     }
 
-    @PostMapping("/register-teacher")
-    public ResponseEntity<String> registerTeacher(@RequestBody TeacherRequest teacherRq) {
-        try {
-            userService.registerTeacher(teacherRq);
-            return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "application/json")
-                    .body("{\"message\": \"Teacher added successfully\"}");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
 
-    @GetMapping("/teachers")
-    public ResponseEntity<List<UserResponse>> getAllTeachers() {
-        try {
-            List<UserResponse> users = userService.findAllTeachers();
-            return new ResponseEntity<>(users, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-    }
 }

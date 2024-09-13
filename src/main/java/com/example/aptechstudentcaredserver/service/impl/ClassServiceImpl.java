@@ -138,7 +138,7 @@ public class ClassServiceImpl implements ClassService {
                 classEntity.getHour(),
                 classEntity.getDays(),
                 classEntity.getCreatedAt(),
-                classEntity.getStatus() != null ? classEntity.getStatus().name() : null,
+                classEntity.getStatus().name() != null ? classEntity.getStatus().name() : null,
                 studentResponses
         );
     }

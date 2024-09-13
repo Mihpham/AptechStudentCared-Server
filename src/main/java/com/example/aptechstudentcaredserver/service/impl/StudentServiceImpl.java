@@ -95,9 +95,11 @@ public class StudentServiceImpl implements StudentService {
         User user = findUserById(studentId);
         UserDetail userDetail = user.getUserDetail();
 
+        String oldFullName = userDetail.getFullName();
+
         updateUserDetails(user, userDetail, studentRq);
 
-        if (studentRq.getFullName() != null) {
+        if (studentRq.getFullName() != null && !studentRq.getFullName().equals(oldFullName)) {
             String newEmail = emailGeneratorService.generateUniqueEmail(studentRq.getFullName());
             user.setEmail(newEmail);
         }
@@ -111,6 +113,7 @@ public class StudentServiceImpl implements StudentService {
         userDetailRepository.save(userDetail);
 
         GroupClass groupClass = findGroupClassByUserId(studentId);
+
         return convertToStudentResponse(user, groupClass);
     }
 

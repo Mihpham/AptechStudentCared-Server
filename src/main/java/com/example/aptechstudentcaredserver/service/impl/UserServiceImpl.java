@@ -92,61 +92,6 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    @Override
-    public List<UserResponse> findAllTeachers() {
-        Role teacherRole = roleRepository.findByRoleName("TEACHER");
-        if (teacherRole == null) {
-            return Collections.emptyList();
-        }
-
-        List<User> teachers = userRepository.findByRole(teacherRole);
-        return teachers.stream()
-                .map(this::convertUserToUserResponse)
-                .collect(Collectors.toList());
-    }
-
-
-    @Override
-    public void registerTeacher(TeacherRequest teacherRequest) {
-        Role role = findOrCreateRole("TEACHER");
-        String email = emailGeneratorService.generateUniqueEmail(teacherRequest.getFullName());
-        User user = createUser(teacherRequest, role, email);
-        userRepository.save(user);
-        UserDetail userDetail = createUserDetail(teacherRequest, user);
-        userDetailRepository.save(userDetail);
-    }
-
-    private Role findOrCreateRole(String roleName) {
-        return Optional.ofNullable(roleRepository.findByRoleName(roleName))
-                .orElseGet(() -> {
-                    Role role = new Role();
-                    role.setRoleName(roleName);
-                    return roleRepository.save(role);
-                });
-    }
-
-    private User createUser(TeacherRequest teacherRq, Role role, String email) {
-        User user = new User();
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(teacherRq.getPassword()));
-        user.setRole(role);
-        user.setStatus(Status.ACTIVE);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
-        return user;
-    }
-
-    private UserDetail createUserDetail(TeacherRequest teacherRq, User user) {
-        UserDetail userDetail = new UserDetail();
-        userDetail.setFullName(teacherRq.getFullName());
-        userDetail.setPhone(teacherRq.getPhoneNumber());
-        userDetail.setAddress(teacherRq.getAddress());
-        userDetail.setImage(null);
-        userDetail.setParent(null);
-        userDetail.setUser(user);
-        userDetailRepository.save(userDetail);
-        return userDetail;
-    }
 
     private UserResponse convertUserToUserResponse(User user) {
         String fullName = Optional.ofNullable(user.getUserDetail()).map(d -> d.getFullName()).orElse("N/A");
