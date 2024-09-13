@@ -53,9 +53,7 @@ public class UserControllerTest {
         user1.setPhone("123456789");
         user1.setAddress("123 Main St");
         user1.setRoleName("USER");
-        user1.setClasses(Arrays.asList("Class A", "Class B"));
         user1.setStatus("Active");
-        user1.setRoleNumber("001");
         user1.setImage("user1.jpg");
 
         UserResponse user2 = new UserResponse();
@@ -65,9 +63,7 @@ public class UserControllerTest {
         user2.setPhone("987654321");
         user2.setAddress("456 Elm St");
         user2.setRoleName("ADMIN");
-        user2.setClasses(Arrays.asList("Class C"));
         user2.setStatus("Inactive");
-        user2.setRoleNumber("002");
         user2.setImage("user2.jpg");
 
         userResponse = user1;
@@ -97,10 +93,7 @@ public class UserControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].phone").value("123456789"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].address").value("123 Main St"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].roleName").value("USER"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].classes[0]").value("Class A"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].classes[1]").value("Class B"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].status").value("Active"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].roleNumber").value("001"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].image").value("user1.jpg"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[1].id").value(2))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[1].email").value("user2@example.com"))
@@ -108,7 +101,6 @@ public class UserControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$[1].phone").value("987654321"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[1].address").value("456 Elm St"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[1].roleName").value("ADMIN"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].classes[0]").value("Class C"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[1].status").value("Inactive"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[1].image").value("user2.jpg"));
     }
@@ -135,10 +127,7 @@ public class UserControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.phone").value("123456789"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.address").value("123 Main St"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.roleName").value("USER"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.classes[0]").value("Class A"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.classes[1]").value("Class B"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("Active"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.roleNumber").value("001"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.image").value("user1.jpg"));
     }
 
@@ -185,10 +174,7 @@ public class UserControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.phone").value("123456789"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.address").value("123 Main St"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.roleName").value("USER"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.classes[0]").value("Class A"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.classes[1]").value("Class B"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("Active"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.roleNumber").value("001"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.image").value("user1.jpg"));
     }
 

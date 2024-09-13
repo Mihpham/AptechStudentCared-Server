@@ -69,13 +69,9 @@ public class AuthServiceImpl implements AuthService {
         userDetail.setFullName(registerUserRequest.getFullName());
         userDetail.setPhone(registerUserRequest.getPhone());
         userDetail.setAddress(registerUserRequest.getAddress());
-        userDetail.setImage("assets/images/avatar-default.webp");
+        userDetail.setImage(null);
         userDetail.setUser(user);
-
-        // Handle Parent association
-        if ("admin".equalsIgnoreCase(roleName) || "sro".equalsIgnoreCase(roleName) || "teacher".equalsIgnoreCase(roleName)) {
-            userDetail.setParent(null);
-        }
+        userDetail.setParent(null);
 
         userDetailRepository.save(userDetail);
         user.setUserDetail(userDetail);

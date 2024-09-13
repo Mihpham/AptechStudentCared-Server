@@ -76,7 +76,6 @@ public class StudentServiceImpl implements StudentService {
             }
         }
 
-        // Tiếp tục nếu lớp học và khóa học đều hợp lệ
         Role role = findOrCreateRole("STUDENT");
         String email = emailGeneratorService.generateUniqueEmail(studentRq.getFullName());
 
@@ -97,6 +96,12 @@ public class StudentServiceImpl implements StudentService {
         UserDetail userDetail = user.getUserDetail();
 
         updateUserDetails(user, userDetail, studentRq);
+
+        if (studentRq.getFullName() != null) {
+            String newEmail = emailGeneratorService.generateUniqueEmail(studentRq.getFullName());
+            user.setEmail(newEmail);
+        }
+
         updateClass(studentId, studentRq);
         updateCourses(studentId, studentRq);
         updateGroupClassStatus(studentId, studentRq);
@@ -223,8 +228,6 @@ public class StudentServiceImpl implements StudentService {
     }
 
     private void updateUserDetails(User user, UserDetail userDetail, StudentRequest studentRq) {
-        String email = emailGeneratorService.generateUniqueEmail(studentRq.getFullName());
-        user.setEmail(email);
         if (studentRq.getFullName() != null) userDetail.setFullName(studentRq.getFullName());
         if (studentRq.getImage() != null) userDetail.setImage(studentRq.getImage());
         if (studentRq.getEmail() != null) user.setEmail(studentRq.getEmail());

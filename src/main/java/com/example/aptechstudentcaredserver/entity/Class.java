@@ -1,11 +1,9 @@
 package com.example.aptechstudentcaredserver.entity;
 
-import com.example.aptechstudentcaredserver.enums.DayOfWeeks;
 import com.example.aptechstudentcaredserver.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;

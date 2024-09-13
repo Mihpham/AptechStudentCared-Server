@@ -19,9 +19,7 @@ public class UserResponse {
     private String phone;
     private String address;
     private String roleName;
-    private List<String> classes;
     private String status;
-    private String roleNumber;
     private String image;
     private LocalDateTime createdAt;
 }

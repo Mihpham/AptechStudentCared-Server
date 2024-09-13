@@ -1,16 +1,25 @@
 package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.ChangePasswordRequest;
+import com.example.aptechstudentcaredserver.bean.request.StudentRequest;
+import com.example.aptechstudentcaredserver.bean.request.TeacherRequest;
 import com.example.aptechstudentcaredserver.bean.response.UserResponse;
+import com.example.aptechstudentcaredserver.entity.Role;
 import com.example.aptechstudentcaredserver.entity.User;
+import com.example.aptechstudentcaredserver.entity.UserDetail;
+import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
+import com.example.aptechstudentcaredserver.repository.RoleRepository;
+import com.example.aptechstudentcaredserver.repository.UserDetailRepository;
 import com.example.aptechstudentcaredserver.repository.UserRepository;
+import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
 import com.example.aptechstudentcaredserver.service.UserService;
 import com.example.aptechstudentcaredserver.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -21,8 +30,14 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final UserDetailRepository userDetailRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final EmailGeneratorService emailGeneratorService;
+    private final RoleRepository roleRepository;
+
+
+
 
     @Override
     public List<UserResponse> findAllUser() {
@@ -77,12 +92,67 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
+    @Override
+    public List<UserResponse> findAllTeachers() {
+        Role teacherRole = roleRepository.findByRoleName("TEACHER");
+        if (teacherRole == null) {
+            return Collections.emptyList();
+        }
+
+        List<User> teachers = userRepository.findByRole(teacherRole);
+        return teachers.stream()
+                .map(this::convertUserToUserResponse)
+                .collect(Collectors.toList());
+    }
+
+
+    @Override
+    public void registerTeacher(TeacherRequest teacherRequest) {
+        Role role = findOrCreateRole("TEACHER");
+        String email = emailGeneratorService.generateUniqueEmail(teacherRequest.getFullName());
+        User user = createUser(teacherRequest, role, email);
+        userRepository.save(user);
+        UserDetail userDetail = createUserDetail(teacherRequest, user);
+        userDetailRepository.save(userDetail);
+    }
+
+    private Role findOrCreateRole(String roleName) {
+        return Optional.ofNullable(roleRepository.findByRoleName(roleName))
+                .orElseGet(() -> {
+                    Role role = new Role();
+                    role.setRoleName(roleName);
+                    return roleRepository.save(role);
+                });
+    }
+
+    private User createUser(TeacherRequest teacherRq, Role role, String email) {
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(teacherRq.getPassword()));
+        user.setRole(role);
+        user.setStatus(Status.ACTIVE);
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        return user;
+    }
+
+    private UserDetail createUserDetail(TeacherRequest teacherRq, User user) {
+        UserDetail userDetail = new UserDetail();
+        userDetail.setFullName(teacherRq.getFullName());
+        userDetail.setPhone(teacherRq.getPhoneNumber());
+        userDetail.setAddress(teacherRq.getAddress());
+        userDetail.setImage(null);
+        userDetail.setParent(null);
+        userDetail.setUser(user);
+        userDetailRepository.save(userDetail);
+        return userDetail;
+    }
+
     private UserResponse convertUserToUserResponse(User user) {
         String fullName = Optional.ofNullable(user.getUserDetail()).map(d -> d.getFullName()).orElse("N/A");
         String phone = Optional.ofNullable(user.getUserDetail()).map(d -> d.getPhone()).orElse("N/A");
         String address = Optional.ofNullable(user.getUserDetail()).map(d -> d.getAddress()).orElse("N/A");
-        String roleNumber = Optional.ofNullable(user.getUserDetail()).map(d -> d.getRollNumber()).orElse("N/A");
-        String image = Optional.ofNullable(user.getUserDetail()).map(d -> d.getImage()).orElse("N/A");
+
 
         return UserResponse.builder()
                 .id(user.getId())
@@ -91,12 +161,7 @@ public class UserServiceImpl implements UserService {
                 .phone(phone)
                 .address(address)
                 .roleName(Optional.ofNullable(user.getRole()).map(r -> r.getRoleName()).orElse("N/A"))
-                .classes(Optional.ofNullable(user.getGroupClasses()).orElse(Collections.emptyList())
-                        .stream()
-                        .map(g -> Optional.ofNullable(g.getClasses()).map(c -> c.getClassName()).orElse("N/A"))
-                        .collect(Collectors.toList()))
                 .status(Optional.ofNullable(user.getStatus()).map(Enum::name).orElse("N/A"))
-                .roleNumber(roleNumber)
                 .image(user.getUserDetail().getImage())
                 .createdAt(user.getCreatedAt())
                 .build();
