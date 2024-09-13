@@ -1,8 +1,10 @@
 package com.example.aptechstudentcaredserver.handler;
 
+import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
 import com.example.aptechstudentcaredserver.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -87,4 +89,16 @@ public class GlobalExceptionHandler {
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }
+
+    @ExceptionHandler(RuntimeException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ProblemDetail handleRuntimeException(RuntimeException exception, WebRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+        problemDetail.setType(URI.create("https://example.com/runtime-error"));
+        problemDetail.setTitle("Bad Request");
+        problemDetail.setInstance(URI.create(request.getDescription(false).split(";")[0].replace("uri=", "")));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
 }

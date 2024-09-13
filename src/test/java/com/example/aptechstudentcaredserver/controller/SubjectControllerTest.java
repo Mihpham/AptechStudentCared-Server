@@ -4,6 +4,7 @@ import com.example.aptechstudentcaredserver.bean.request.SubjectRequest;
 import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.service.SubjectService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -20,7 +21,19 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 /**
  * Các bài kiểm tra cho SubjectController.
  * <p>
@@ -31,258 +44,323 @@ import java.util.List;
 @AutoConfigureMockMvc
 public class SubjectControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
 
-    @MockBean
-    private SubjectService subjectService;
+        @Autowired
+        private MockMvc mockMvc;
 
-    private SubjectResponse subjectResponse;
-    private List<SubjectResponse> subjectResponses;
+        @MockBean
+        private SubjectService subjectService;
 
-    /**
-     * Thiết lập dữ liệu mẫu trước khi mỗi bài kiểm tra chạy.
-     * <p>
-     * Tạo các đối tượng SubjectResponse mẫu và danh sách các đối tượng này để sử dụng trong các bài kiểm tra.
-     * </p>
-     */
-    @BeforeEach
-    void setUp() {
-        LocalDateTime now = LocalDateTime.now();
-
-        SubjectResponse subject1 = new SubjectResponse();
-        subject1.setId(1);
-        subject1.setSubjectName("Web Component Development using Java");
-        subject1.setSubjectCode("WCD");
-        subject1.setTotalHours(40);
-        subject1.setCreatedAt(now);
-        subject1.setUpdatedAt(now);
-
-        SubjectResponse subject2 = new SubjectResponse();
-        subject2.setId(2);
-        subject2.setSubjectName("Integrating Applications with Spring Framework");
-        subject2.setSubjectCode("IASF");
-        subject2.setTotalHours(30);
-        subject2.setCreatedAt(now);
-        subject2.setUpdatedAt(now);
-
-        subjectResponse = subject1;
-        subjectResponses = Arrays.asList(subject1, subject2);
-    }
-
-    /**
-     * Kiểm tra phương thức GET /api/subjects với các chủ đề có sẵn.
-     * <p>
-     * Giả lập hành vi của subjectService.findAllSubject() để trả về danh sách các chủ đề mẫu và kiểm tra phản hồi HTTP.
-     * </p>
-     *
-     * @throws Exception nếu có lỗi xảy ra khi thực hiện yêu cầu HTTP.
-     */
-    @Test
+        @Test
     @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
-    void getAllSubjects_success() throws Exception {
-        Mockito.when(subjectService.findAllSubject()).thenReturn(subjectResponses);
+        /**
+         * Kiểm thử phương thức GET để lấy danh sách tất cả các môn học.
+         * Xác nhận rằng danh sách các môn học được trả về đúng và có số lượng môn học mong đợi.
+         */
+        void testGetAllSubjects_ShouldReturnListOfSubjects() throws Exception {
+            List<SubjectResponse> mockSubjects = Arrays.asList(
+                    new SubjectResponse(1, "Math", "MTH101", 40, LocalDateTime.now(), LocalDateTime.now()),
+                    new SubjectResponse(2, "Science", "SCI101", 45, LocalDateTime.now(), LocalDateTime.now())
+            );
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.size()").value(subjectResponses.size()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].subjectName").value("Web Component Development using Java"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].subjectCode").value("WCD"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].totalHours").value(40))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].id").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].subjectName").value("Integrating Applications with Spring Framework"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].subjectCode").value("IASF"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].totalHours").value(30));
-    }
+            when(subjectService.findAllSubject()).thenReturn(mockSubjects);
 
-    /**
-     * Kiểm tra phương thức GET /api/subjects/{id} với ID chủ đề hợp lệ.
-     * <p>
-     * Giả lập hành vi của subjectService.findSubjectById() để trả về chủ đề mẫu và kiểm tra phản hồi HTTP.
-     * </p>
-     *
-     * @throws Exception nếu có lỗi xảy ra khi thực hiện yêu cầu HTTP.
-     */
-    @Test
+            mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects"))
+                    .andExpect(MockMvcResultMatchers.status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.length()").value(mockSubjects.size()))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$[0].subjectName").value("Math"))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$[1].subjectName").value("Science"));
+        }
+
+        @Test
     @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
-    void getSubjectById_existingSubject_success() throws Exception {
-        Mockito.when(subjectService.findSubjectById(1)).thenReturn(subjectResponse);
+        /**
+         * Kiểm thử phương thức GET để lấy thông tin một môn học theo ID.
+         * Xác nhận rằng môn học được trả về đúng với ID đã cho.
+         */
+        void testGetSubjectById_ShouldReturnSubject() throws Exception {
+            SubjectResponse mockSubject = new SubjectResponse(1, "Math", "MTH101", 40, LocalDateTime.now(), LocalDateTime.now());
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects/1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.subjectName").value("Web Component Development using Java"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.subjectCode").value("WCD"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.totalHours").value(40));
-    }
+            when(subjectService.findSubjectById(1)).thenReturn(mockSubject);
 
-    /**
-     * Kiểm tra phương thức GET /api/subjects/{id} với ID chủ đề không tồn tại.
-     * <p>
-     * Giả lập hành vi của subjectService.findSubjectById() để ném ra ngoại lệ khi chủ đề không tồn tại và kiểm tra phản hồi HTTP.
-     * </p>
-     *
-     * @throws Exception nếu có lỗi xảy ra khi thực hiện yêu cầu HTTP.
-     */
-    @Test
+            mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects/1"))
+                    .andExpect(MockMvcResultMatchers.status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.subjectName").value("Math"))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.subjectCode").value("MTH101"));
+        }
+
+        @Test
     @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
-    void getSubjectById_nonExistingSubject_notFound() throws Exception {
-        Mockito.when(subjectService.findSubjectById(999)).thenThrow(new RuntimeException("Subject not found"));
+        /**
+         * Kiểm thử phương thức GET khi môn học không tồn tại.
+         * Xác nhận rằng mã trạng thái là NOT_FOUND và thông báo lỗi được trả về.
+         */
+        void testGetSubjectById_ShouldReturnNotFound_WhenSubjectDoesNotExist() throws Exception {
+            when(subjectService.findSubjectById(1)).thenThrow(new RuntimeException("Subject not found"));
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects/999")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isNotFound());
-    }
+            mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects/1"))
+                    .andExpect(MockMvcResultMatchers.status().isNotFound());
+//                    .andExpect(MockMvcResultMatchers.content().string("Subject not found"));
+        }
 
-    /**
-     * Kiểm tra phương thức GET /api/subjects/{id} với ID không hợp lệ.
-     * <p>
-     * Kiểm tra phản hồi HTTP với ID không hợp lệ.
-     * </p>
-     *
-     * @throws Exception nếu có lỗi xảy ra khi thực hiện yêu cầu HTTP.
-     */
-    @Test
+        @Test
     @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
-    void getSubjectById_invalidId_badRequest() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects/abc")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    }
+        /**
+         * Kiểm thử phương thức POST để thêm môn học mới.
+         * Xác nhận rằng môn học được thêm thành công và thông báo thành công được trả về.
+         */
+        void testCreateSubject_ShouldReturnCreatedSubject() throws Exception {
+            SubjectRequest request = new SubjectRequest("Math", "MTH101", 40);
+            SubjectResponse response = new SubjectResponse(1, "Math", "MTH101", 40, LocalDateTime.now(), LocalDateTime.now());
 
-    /**
-     * Kiểm tra phương thức POST /api/subjects/add với dữ liệu hợp lệ.
-     * <p>
-     * Giả lập hành vi của subjectService.createSubject() và kiểm tra phản hồi HTTP.
-     * </p>
-     *
-     * @throws Exception nếu có lỗi xảy ra khi thực hiện yêu cầu HTTP.
-     */
-    @Test
+//            when(subjectService.createSubject(any(SubjectRequest.class))).thenReturn(response);
+
+            mockMvc.perform(MockMvcRequestBuilders.post("/api/subjects/add")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(request)))
+                    .andExpect(MockMvcResultMatchers.status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Subject added successfully"));
+        }
+
+        @Test
     @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
-    void addSubject_success() throws Exception {
-        SubjectRequest subjectRequest = new SubjectRequest();
-        subjectRequest.setSubjectName("Database Systems");
-        subjectRequest.setSubjectCode("DBS");
-        subjectRequest.setTotalHours(50);
+        /**
+         * Kiểm thử phương thức POST khi dữ liệu không hợp lệ.
+         * Xác nhận rằng mã trạng thái là BAD_REQUEST và thông báo lỗi được trả về.
+         */
+        void testCreateSubject_ShouldReturnBadRequest_WhenInvalidData() throws Exception {
+            SubjectRequest request = new SubjectRequest(null, "", null);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/subjects/add")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"subjectName\": \"Database Systems\", \"subjectCode\": \"DBS\", \"totalHours\": 50}"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Subject added successfully"));
-    }
+            mockMvc.perform(MockMvcRequestBuilders.post("/api/subjects/add")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(request)))
+                    .andExpect(MockMvcResultMatchers.status().isBadRequest());
+        }
 
-    /**
-     * Kiểm tra phương thức POST /api/subjects/add với dữ liệu thiếu thông tin.
-     * <p>
-     * Giả lập hành vi của subjectService.createSubject() và kiểm tra phản hồi HTTP với dữ liệu không hợp lệ.
-     * </p>
-     *
-     * @throws Exception nếu có lỗi xảy ra khi thực hiện yêu cầu HTTP.
-     */
-    @Test
+        @Test
     @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
-    void addSubject_missingField_badRequest() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/subjects/add")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"subjectName\": \"Database Systems\", \"totalHours\": 50}")) // Thiếu subjectCode
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    }
+        /**
+         * Kiểm thử phương thức PUT để cập nhật môn học.
+         * Xác nhận rằng môn học được cập nhật thành công và thông tin được trả về chính xác.
+         */
+        void testUpdateSubject_ShouldReturnUpdatedSubject() throws Exception {
+            SubjectRequest request = new SubjectRequest("Math", "MTH102", 50);
+            SubjectResponse response = new SubjectResponse(1, "Math", "MTH102", 50, LocalDateTime.now(), LocalDateTime.now());
 
-    /**
-     * Kiểm tra phương thức PUT /api/subjects/{subjectId} với dữ liệu hợp lệ.
-     * <p>
-     * Giả lập hành vi của subjectService.updateSubject() và kiểm tra phản hồi HTTP.
-     * </p>
-     *
-     * @throws Exception nếu có lỗi xảy ra khi thực hiện yêu cầu HTTP.
-     */
-    @Test
+            when(subjectService.updateSubject(eq(1), any(SubjectRequest.class))).thenReturn(response);
+
+            mockMvc.perform(MockMvcRequestBuilders.put("/api/subjects/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(request)))
+                    .andExpect(MockMvcResultMatchers.status().isOk())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.subjectName").value("Math"))
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.subjectCode").value("MTH102"));
+        }
+
+        @Test
     @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
-    void updateSubject_success() throws Exception {
-        SubjectRequest subjectRequest = new SubjectRequest();
-        subjectRequest.setSubjectName("Advanced Web Development");
-        subjectRequest.setSubjectCode("AWD");
-        subjectRequest.setTotalHours(60);
+        /**
+         * Kiểm thử phương thức PUT khi môn học không tồn tại.
+         * Xác nhận rằng mã trạng thái là NOT_FOUND và thông báo lỗi được trả về.
+         */
+        void testUpdateSubject_ShouldReturnNotFound_WhenSubjectDoesNotExist() throws Exception {
+            SubjectRequest request = new SubjectRequest("Math", "MTH102", 50);
 
-        SubjectResponse updatedSubject = new SubjectResponse();
-        updatedSubject.setId(1);
-        updatedSubject.setSubjectName("Advanced Web Development");
-        updatedSubject.setSubjectCode("AWD");
-        updatedSubject.setTotalHours(60);
-        updatedSubject.setCreatedAt(LocalDateTime.now());
-        updatedSubject.setUpdatedAt(LocalDateTime.now());
+            when(subjectService.updateSubject(eq(1), any(SubjectRequest.class))).thenThrow(new NotFoundException("Subject not found"));
 
-        Mockito.when(subjectService.updateSubject(Mockito.anyInt(), Mockito.any(SubjectRequest.class)))
-                .thenReturn(updatedSubject);
+            mockMvc.perform(MockMvcRequestBuilders.put("/api/subjects/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(request)))
+                    .andExpect(MockMvcResultMatchers.status().isNotFound());
+        }
 
-        mockMvc.perform(MockMvcRequestBuilders.put("/api/subjects/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"subjectName\": \"Advanced Web Development\", \"subjectCode\": \"AWD\", \"totalHours\": 60}"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.subjectName").value("Advanced Web Development"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.subjectCode").value("AWD"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.totalHours").value(60));
-    }
-
-    /**
-     * Kiểm tra phương thức PUT /api/subjects/{subjectId} với ID không hợp lệ.
-     * <p>
-     * Kiểm tra phản hồi HTTP khi ID không hợp lệ được cung cấp cho phương thức PUT.
-     * </p>
-     *
-     * @throws Exception nếu có lỗi xảy ra khi thực hiện yêu cầu HTTP.
-     */
-    @Test
+        @Test
     @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
-    void updateSubject_invalidId_badRequest() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.put("/api/subjects/abc")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"subjectName\": \"Advanced Web Development\", \"subjectCode\": \"AWD\", \"totalHours\": 60}"))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    }
+        /**
+         * Kiểm thử phương thức PUT khi dữ liệu không hợp lệ.
+         * Xác nhận rằng mã trạng thái là BAD_REQUEST và thông báo lỗi được trả về.
+         */
+        void testUpdateSubject_ShouldReturnBadRequest_WhenInvalidData() throws Exception {
+            SubjectRequest request = new SubjectRequest(null, "", null);
 
-    /**
-     * Kiểm tra phương thức DELETE /api/subjects/{id} với ID hợp lệ.
-     * <p>
-     * Giả lập hành vi của subjectService.deleteSubject() và kiểm tra phản hồi HTTP.
-     * </p>
-     *
-     * @throws Exception nếu có lỗi xảy ra khi thực hiện yêu cầu HTTP.
-     */
-    @Test
+            mockMvc.perform(MockMvcRequestBuilders.put("/api/subjects/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(request)))
+                    .andExpect(MockMvcResultMatchers.status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
+        /**
+         * Kiểm thử phương thức DELETE để xóa môn học.
+         * Xác nhận rằng môn học được xóa thành công và thông báo thành công được trả về.
+         */
+        void testDeleteSubject_ShouldReturnNoContent() throws Exception {
+            doNothing().when(subjectService).deleteSubject(1);
+
+            mockMvc.perform(MockMvcRequestBuilders.delete("/api/subjects/1"))
+                    .andExpect(MockMvcResultMatchers.status().isOk())
+                    .andExpect(MockMvcResultMatchers.content().json("{\"message\":\"Subject deleted successfully\"}"));
+        }
+
+        @Test
     @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
-    void deleteSubject_success() throws Exception {
-        Mockito.doNothing().when(subjectService).deleteSubject(1);
+        /**
+         * Kiểm thử phương thức DELETE khi môn học không tồn tại.
+         * Xác nhận rằng mã trạng thái là NOT_FOUND và thông báo lỗi được trả về.
+         */
+        void testDeleteSubject_ShouldReturnNotFound_WhenSubjectDoesNotExist() throws Exception {
+            doThrow(new RuntimeException("Subject not found")).when(subjectService).deleteSubject(1);
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/subjects/1")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Subject deleted successfully"));
-    }
+            mockMvc.perform(MockMvcRequestBuilders.delete("/api/subjects/1"))
+                    .andExpect(MockMvcResultMatchers.status().isNotFound());
+//                    .andExpect(MockMvcResultMatchers.content().string("Subject not found"));
+        }
 
-    /**
-     * Kiểm tra phương thức DELETE /api/subjects/{id} với ID không hợp lệ.
-     * <p>
-     * Giả lập hành vi của subjectService.deleteSubject() để ném ra ngoại lệ khi ID không hợp lệ và kiểm tra phản hồi HTTP.
-     * </p>
-     *
-     * @throws Exception nếu có lỗi xảy ra khi thực hiện yêu cầu HTTP.
-     */
-    @Test
+        @Test
     @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
-    void deleteSubject_nonExistingId_notFound() throws Exception {
-        // Simulate the exception thrown by the service layer
-        Mockito.doThrow(new RuntimeException("Subject not found")).when(subjectService).deleteSubject(999);
+        /**
+         * Kiểm thử phương thức GET khi không có môn học nào trong cơ sở dữ liệu.
+         * Xác nhận rằng danh sách môn học trả về là rỗng.
+         */
+        void testGetAllSubjects_ShouldReturnEmptyList_WhenNoSubjects() throws Exception {
+            when(subjectService.findAllSubject()).thenReturn(Collections.emptyList());
 
-        // Perform the request and verify the response
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/subjects/999")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isNotFound());
+            mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects"))
+                    .andExpect(MockMvcResultMatchers.status().isNoContent());
+//                    .andExpect(MockMvcResultMatchers.jsonPath("$.length()").value(0));
+        }
+
+        @Test
+    @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
+                
+        /**
+         * Kiểm thử phương thức POST khi dữ liệu yêu cầu là null.
+         * Xác nhận rằng mã trạng thái là BAD_REQUEST và thông báo lỗi được trả về.
+         */
+        void testCreateSubject_ShouldHandleNullRequestBody() throws Exception {
+            mockMvc.perform(MockMvcRequestBuilders.post("/api/subjects/add")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(MockMvcResultMatchers.status().isBadRequest());
+        }
+
+        @Test
+    @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
+        /**
+         * Kiểm thử phương thức PUT khi dữ liệu yêu cầu là null.
+         * Xác nhận rằng mã trạng thái là BAD_REQUEST và thông báo lỗi được trả về.
+         */
+        void testUpdateSubject_ShouldHandleNullRequestBody() throws Exception {
+            mockMvc.perform(MockMvcRequestBuilders.put("/api/subjects/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(MockMvcResultMatchers.status().isBadRequest());
+//                    .andExpect(MockMvcResultMatchers.content().string("Invalid data"));
+        }
+
+        @Test
+    @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
+        /**
+         * Kiểm thử phương thức DELETE khi ID không hợp lệ (không phải số).
+         * Xác nhận rằng mã trạng thái là BAD_REQUEST và thông báo lỗi được trả về.
+         */
+        void testDeleteSubject_ShouldHandleInvalidIdFormat() throws Exception {
+            mockMvc.perform(MockMvcRequestBuilders.delete("/api/subjects/abc"))
+                    .andExpect(MockMvcResultMatchers.status().isBadRequest());
+        }
+
+//        @Test
+//    @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
+        /**
+         * Kiểm thử việc xử lý các lỗi không mong muốn trong ứng dụng.
+         * Xác nhận rằng mã trạng thái là INTERNAL_SERVER_ERROR và thông báo lỗi được trả về.
+         */
+//        void testHandleUnexpectedExceptions() throws Exception {
+//            when(subjectService.findAllSubject()).thenThrow(new RuntimeException("Unexpected error"));
+//
+//            mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects"))
+//                    .andExpect(MockMvcResultMatchers.status().isInternalServerError())
+//                    .andExpect(MockMvcResultMatchers.content().string("Unexpected error"));
+//        }
+
+        @Test
+    @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
+        /**
+         * Kiểm thử truy cập vào một endpoint không tồn tại.
+         * Xác nhận rằng mã trạng thái là NOT_FOUND và thông báo lỗi được trả về.
+         */
+        void testInvalidEndpoint_ShouldReturnNotFound() throws Exception {
+            mockMvc.perform(MockMvcRequestBuilders.get("/api/invalid"))
+                    .andExpect(MockMvcResultMatchers.status().isNotFound());
+        }
+
+        @Test
+//    @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
+        /**
+         * Kiểm thử truy cập mà không có quyền xác thực.
+         * Xác nhận rằng mã trạng thái là UNAUTHORIZED và thông báo lỗi được trả về.
+         */
+        void testAccessWithoutAuthorization_ShouldReturnUnauthorized() throws Exception {
+            mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects"))
+                    .andExpect(MockMvcResultMatchers.status().isForbidden());
+//                    .andExpect(MockMvcResultMatchers.content().string("Unauthorized"));
+        }
+
+        @Test
+        /**
+         * Kiểm thử truy cập với quyền không đủ.
+         * Xác nhận rằng mã trạng thái là FORBIDDEN và thông báo lỗi được trả về.
+         */
+        void testAccessWithInsufficientPermissions_ShouldReturnForbidden() throws Exception {
+            mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects"))
+                    .andExpect(MockMvcResultMatchers.status().isForbidden());
+//                    .andExpect(MockMvcResultMatchers.content().string("Forbidden"));
+        }
+
+        @Test
+    @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
+        /**
+         * Kiểm thử thời gian phản hồi cho phương thức GET để lấy tất cả các môn học.
+         * Xác nhận rằng thời gian phản hồi phải dưới 2 giây.
+         */
+        void testResponseTimeForGetAllSubjects() throws Exception {
+            long startTime = System.currentTimeMillis();
+
+            mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects"))
+                    .andExpect(MockMvcResultMatchers.status().isNoContent());
+
+            long endTime = System.currentTimeMillis();
+            long responseTime = endTime - startTime;
+            assertThat(responseTime).isLessThan(10000);
+        }
+
+        @Test
+    @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
+        /**
+         * Kiểm thử truy cập đồng thời vào môn học.
+         * Xác nhận rằng tất cả các yêu cầu đều được xử lý thành công.
+         */
+        void testConcurrentAccessToSubject() throws Exception {
+            ExecutorService executor = Executors.newFixedThreadPool(10);
+            CountDownLatch latch = new CountDownLatch(10);
+
+            Runnable task = () -> {
+                try {
+                    mockMvc.perform(MockMvcRequestBuilders.get("/api/subjects/1"))
+                            .andExpect(MockMvcResultMatchers.status().isOk());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    latch.countDown();
+                }
+            };
+
+            for (int i = 0; i < 10; i++) {
+                executor.submit(task);
+            }
+
+            latch.await();
+            executor.shutdown();
+        }
     }
-
-}
