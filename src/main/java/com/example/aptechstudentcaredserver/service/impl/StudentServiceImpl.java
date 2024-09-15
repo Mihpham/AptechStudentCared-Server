@@ -6,6 +6,7 @@ import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.*;
 import com.example.aptechstudentcaredserver.enums.ClassMemberStatus;
 import com.example.aptechstudentcaredserver.enums.Status;
+import com.example.aptechstudentcaredserver.exception.EmptyListException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
@@ -37,6 +38,11 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public List<StudentResponse> findAllStudent() {
         List<User> users = userRepository.findByRoleRoleName("STUDENT");
+
+        if (users.isEmpty()) {
+            throw new EmptyListException("No students found.");
+        }
+
         return users.stream()
                 .map(user -> convertToStudentResponse(user, findGroupClassByUserId(user.getId())))
                 .collect(Collectors.toList());

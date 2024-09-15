@@ -6,7 +6,6 @@ public enum Status {
      */
     ACTIVE, DELETE,
 
-
     /**
      * Status for class
      */
@@ -17,12 +16,9 @@ public enum Status {
      */
     DELAY,DROPOUT,GRADUATED,
 
-
     /**
      * Status for teacher
      */
-    TEACHING,ONLEAVE,LEAVE
-
-
+    TEACHING,ONLEAVE,LEAVE,
 
 }
