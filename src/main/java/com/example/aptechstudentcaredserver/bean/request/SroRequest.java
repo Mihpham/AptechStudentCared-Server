@@ -14,6 +14,7 @@ public class SroRequest {
     private String password;
     private String phoneNumber;
     private String dob;
+    private String gender;
     private String address;
     private String status;
 }
