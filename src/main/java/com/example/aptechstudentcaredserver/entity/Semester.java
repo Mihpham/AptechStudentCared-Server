@@ -19,12 +19,9 @@ public class Semester {
 
     private String name;
 
-    @Column(name = "start_date", nullable = false)
-    private String startDate;
-
-    @Column(name = "end_date", nullable = false)
-    private String endDate;
-
     @OneToMany(mappedBy = "semester")
     private Set<CourseSubject> courseSubjects;
+
+    @OneToMany(mappedBy = "semester", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private Set<Class> classes;
 }

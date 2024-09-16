@@ -1,6 +1,7 @@
 package com.example.aptechstudentcaredserver.service;
 
 import com.example.aptechstudentcaredserver.bean.request.ChangePasswordRequest;
+import com.example.aptechstudentcaredserver.bean.request.TeacherRequest;
 import com.example.aptechstudentcaredserver.bean.response.UserResponse;
 import com.example.aptechstudentcaredserver.entity.User;
 
@@ -16,6 +17,5 @@ public interface UserService {
     UserResponse findUserResponseFromToken(String token);
 
     void changePassword(int userId, ChangePasswordRequest changePasswordRequest);
-
 
 }

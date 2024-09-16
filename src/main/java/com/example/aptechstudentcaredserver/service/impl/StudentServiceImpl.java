@@ -6,6 +6,7 @@ import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.*;
 import com.example.aptechstudentcaredserver.enums.ClassMemberStatus;
 import com.example.aptechstudentcaredserver.enums.Status;
+import com.example.aptechstudentcaredserver.exception.EmptyListException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
@@ -37,6 +38,11 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public List<StudentResponse> findAllStudent() {
         List<User> users = userRepository.findByRoleRoleName("STUDENT");
+
+        if (users.isEmpty()) {
+            throw new EmptyListException("No students found.");
+        }
+
         return users.stream()
                 .map(user -> convertToStudentResponse(user, findGroupClassByUserId(user.getId())))
                 .collect(Collectors.toList());
@@ -76,7 +82,6 @@ public class StudentServiceImpl implements StudentService {
             }
         }
 
-        // Tiếp tục nếu lớp học và khóa học đều hợp lệ
         Role role = findOrCreateRole("STUDENT");
         String email = emailGeneratorService.generateUniqueEmail(studentRq.getFullName());
 
@@ -96,7 +101,15 @@ public class StudentServiceImpl implements StudentService {
         User user = findUserById(studentId);
         UserDetail userDetail = user.getUserDetail();
 
+        String oldFullName = userDetail.getFullName();
+
         updateUserDetails(user, userDetail, studentRq);
+
+        if (studentRq.getFullName() != null && !studentRq.getFullName().equals(oldFullName)) {
+            String newEmail = emailGeneratorService.generateUniqueEmail(studentRq.getFullName());
+            user.setEmail(newEmail);
+        }
+
         updateClass(studentId, studentRq);
         updateCourses(studentId, studentRq);
         updateGroupClassStatus(studentId, studentRq);
@@ -106,6 +119,7 @@ public class StudentServiceImpl implements StudentService {
         userDetailRepository.save(userDetail);
 
         GroupClass groupClass = findGroupClassByUserId(studentId);
+
         return convertToStudentResponse(user, groupClass);
     }
 
@@ -223,8 +237,6 @@ public class StudentServiceImpl implements StudentService {
     }
 
     private void updateUserDetails(User user, UserDetail userDetail, StudentRequest studentRq) {
-        String email = emailGeneratorService.generateUniqueEmail(studentRq.getFullName());
-        user.setEmail(email);
         if (studentRq.getFullName() != null) userDetail.setFullName(studentRq.getFullName());
         if (studentRq.getImage() != null) userDetail.setImage(studentRq.getImage());
         if (studentRq.getEmail() != null) user.setEmail(studentRq.getEmail());

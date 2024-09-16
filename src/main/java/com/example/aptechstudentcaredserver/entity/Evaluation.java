@@ -1,6 +1,6 @@
 package com.example.aptechstudentcaredserver.entity;
 
-import com.example.aptechstudentcaredserver.enums.RoleType;
+import com.example.aptechstudentcaredserver.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -21,7 +21,7 @@ public class Evaluation {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
-    private RoleType role;
+    private Status role;
 
     @ManyToOne
     @JoinColumn(name = "subject_id", nullable = false)

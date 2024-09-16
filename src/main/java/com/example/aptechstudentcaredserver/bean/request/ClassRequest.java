@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
 @Data
 @Builder
 @AllArgsConstructor
@@ -17,4 +15,6 @@ public class ClassRequest {
     private String hour;
     private String days;
     private String status;
+    private String sem;
+    private String courseCode;
 }

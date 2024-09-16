@@ -1,6 +1,6 @@
 package com.example.aptechstudentcaredserver.entity;
 
-import com.example.aptechstudentcaredserver.enums.ExamType;
+import com.example.aptechstudentcaredserver.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -25,7 +25,7 @@ public class ExamDetail {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "exam_type", nullable = false)
-    private ExamType examType;
+    private Status examType;
 
     @Column(name = "score", precision = 5, scale = 2)
     private BigDecimal score;
