@@ -19,6 +19,7 @@ public class ClassResponse {
     private LocalDateTime createdAt;
     private String status;
     private String sem;
+    private String teacherName;
     private CourseResponse course;
     private List<StudentResponse> students;
 }

@@ -16,5 +16,6 @@ public class ClassRequest {
     private String days;
     private String status;
     private String sem;
+    private String teacherName;
     private String courseCode;
 }

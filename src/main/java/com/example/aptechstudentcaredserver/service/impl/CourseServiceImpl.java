@@ -194,7 +194,7 @@ public class CourseServiceImpl implements CourseService {
         Map<String, List<String>> semesterSubjects = courseSubjects.stream()
                 .collect(Collectors.groupingBy(
                         cs -> cs.getSemester().getName(),
-                        Collectors.mapping(cs -> cs.getSubject().getSubjectName(), Collectors.toList())
+                        Collectors.mapping(cs -> cs.getSubject().getSubjectCode(), Collectors.toList())
                 ));
 
         return new CourseResponse(
