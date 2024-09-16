@@ -30,13 +30,12 @@ public class SroServiceImpl implements SroService {
     private final UserRepository userRepository;
     private final UserDetailRepository userDetailRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailGeneratorService emailGeneratorService;
     private final RoleRepository roleRepository;
 
     @Override
     public void registerSro(SroRequest sroRequest) {
         Role role = findOrCreateRole("SRO");
-        String email = emailGeneratorService.generateUniqueEmail(sroRequest.getFullName());
+        String email = sroRequest.getEmail();
         User user = createUser(sroRequest, role, email);
         userRepository.save(user);
         UserDetail userDetail = createUserDetail(sroRequest, user);
@@ -78,14 +77,8 @@ public class SroServiceImpl implements SroService {
         }
 
         UserDetail userDetail = user.getUserDetail();
-        String oldFullName = userDetail.getFullName();
 
         updateSroDetail(user, userDetail, sroRequest);
-
-        if (sroRequest.getFullName() != null && !sroRequest.getFullName().equals(oldFullName)) {
-            String newEmail = emailGeneratorService.generateUniqueEmail(sroRequest.getFullName());
-            user.setEmail(newEmail);
-        }
 
         userRepository.save(user);
         userDetailRepository.save(userDetail);
@@ -159,6 +152,9 @@ public class SroServiceImpl implements SroService {
         }
         if (sroRequest.getStatus() != null) {
             user.setStatus(Status.valueOf(sroRequest.getStatus()));
+        }
+        if (sroRequest.getEmail() != null) {
+            user.setEmail(sroRequest.getEmail());
         }
     }
 

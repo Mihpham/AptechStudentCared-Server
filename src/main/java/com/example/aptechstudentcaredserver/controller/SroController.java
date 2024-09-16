@@ -2,6 +2,7 @@ package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.SroRequest;
 import com.example.aptechstudentcaredserver.bean.response.SroResponse;
+import com.example.aptechstudentcaredserver.service.AuthService;
 import com.example.aptechstudentcaredserver.service.SroService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -16,7 +17,7 @@ import java.util.List;
 @RequestMapping("api/sros")
 public class SroController {
     private final SroService sroService;
-
+    private final AuthService authService;
 
     @PostMapping("/add")
     public ResponseEntity<String> registerSro(@RequestBody SroRequest sroRequest) {
