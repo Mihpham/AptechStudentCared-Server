@@ -3,6 +3,9 @@ package com.example.aptechstudentcaredserver.service.impl;
 import com.example.aptechstudentcaredserver.bean.request.ChangePasswordRequest;
 import com.example.aptechstudentcaredserver.bean.response.UserResponse;
 import com.example.aptechstudentcaredserver.entity.User;
+import com.example.aptechstudentcaredserver.entity.UserDetail;
+import com.example.aptechstudentcaredserver.enums.Status;
+import com.example.aptechstudentcaredserver.exception.EmptyListException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.RoleRepository;
 import com.example.aptechstudentcaredserver.repository.UserDetailRepository;
@@ -35,7 +38,7 @@ public class UserServiceImpl implements UserService {
     public List<UserResponse> findAllUser() {
         List<User> users = userRepository.findAll();
         if (users.isEmpty()) {
-            return Collections.emptyList();
+            throw new EmptyListException("users not found");
         }
         return users.stream()
                 .map(this::convertUserToUserResponse)

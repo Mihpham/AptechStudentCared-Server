@@ -1,8 +1,8 @@
 package com.example.aptechstudentcaredserver.service.impl;
 
+import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.bean.request.CourseRequest;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
-import com.example.aptechstudentcaredserver.bean.response.StudentResponse;
 import com.example.aptechstudentcaredserver.entity.Course;
 import com.example.aptechstudentcaredserver.entity.CourseSubject;
 import com.example.aptechstudentcaredserver.entity.Semester;
@@ -10,37 +10,34 @@ import com.example.aptechstudentcaredserver.entity.Subject;
 import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.EmptyListException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
-import com.example.aptechstudentcaredserver.repository.CourseRepository;
-import com.example.aptechstudentcaredserver.repository.CourseSubjectRepository;
-import com.example.aptechstudentcaredserver.repository.SemesterRepository;
-import com.example.aptechstudentcaredserver.repository.SubjectRepository;
+import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.CourseService;
 import com.example.aptechstudentcaredserver.service.SemesterService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CourseServiceImpl implements CourseService {
-//    private static final Logger log = (Logger) LoggerFactory.getLogger(CourseServiceImpl.class);
-
     private final CourseRepository courseRepository;
     private final SemesterRepository semesterRepository;
     private final SubjectRepository subjectRepository;
     private final CourseSubjectRepository courseSubjectRepository;
     private final SemesterService semesterService;
+    private final ClassRepository classRepository;
 
     @Override
     public List<CourseResponse> getAllCourses() {
         List<Course> courses = courseRepository.findAll();
+        if(courses.isEmpty()){
+            throw new EmptyListException("courses not found");
+        }
         return courses.stream()
                 .map(this::convertToCourseResponse)
                 .collect(Collectors.toList());
@@ -70,7 +67,6 @@ public class CourseServiceImpl implements CourseService {
             throw new NotFoundException("At least one semester and subject must be provided");
         }
 
-        // Create and save the course
         Course course = new Course();
         course.setCourseName(request.getCourseName());
         course.setCourseCode(request.getCourseCode());
@@ -80,26 +76,23 @@ public class CourseServiceImpl implements CourseService {
 
         course = courseRepository.save(course);
 
-        // Process semesters and subjects
         List<CourseSubject> courseSubjectsToSave = new ArrayList<>();
+
         try {
             processSemestersAndSubjects(request, course, courseSubjectsToSave);
-            // Save course subjects only after all are validated
             courseSubjectRepository.saveAll(courseSubjectsToSave);
         } catch (NotFoundException e) {
-            // Rollback: Delete the course if there is an error
             courseRepository.delete(course);
-            throw e; // Re-throw the exception after rollback
+            throw e;
         }
     }
 
     @Override
     public CourseResponse updateCourse(int courseId, CourseRequest request) {
-        // Fetch the existing course by ID
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new NotFoundException("Course with ID " + courseId + " not found"));
 
-        // Check for duplicate course name or code
+        // Kiểm tra tên và mã khóa học trùng lặp
         Course existCourseByName = courseRepository.findByCourseName(request.getCourseName());
         if (existCourseByName != null && existCourseByName.getId() != courseId) {
             throw new DuplicateException("Course with name '" + request.getCourseName() + "' already exists.");
@@ -110,41 +103,36 @@ public class CourseServiceImpl implements CourseService {
             throw new DuplicateException("Course with code '" + request.getCourseCode() + "' already exists.");
         }
 
-        // Update course details
+        // Cập nhật thông tin khóa học
         course.setCourseName(request.getCourseName());
         course.setCourseCode(request.getCourseCode());
         course.setCourseCompTime(request.getCourseCompTime());
         course.setUpdatedAt(LocalDateTime.now());
 
-        // Save the updated course
         courseRepository.save(course);
 
-        // Process semesters and subjects
+        // Xử lý các môn học và kỳ học
         List<CourseSubject> courseSubjectsToSave = new ArrayList<>();
         List<CourseSubject> courseSubjectsToDelete = courseSubjectRepository.findByCourseId(courseId);
 
-        // Collect subjects to delete based on new data
-        for (CourseSubject courseSubject : courseSubjectsToDelete) {
-            if (!request.getSemesters().containsKey(courseSubject.getSemester().getName()) ||
-                    !request.getSemesters().get(courseSubject.getSemester().getName()).contains(courseSubject.getSubject().getSubjectCode())) {
-                courseSubjectsToDelete.remove(courseSubject);
-            }
-        }
-        courseSubjectRepository.deleteAll(courseSubjectsToDelete);
+        // Xoá các môn học không còn trong yêu cầu
+        List<CourseSubject> subjectsToDelete = courseSubjectsToDelete.stream()
+                .filter(cs -> !request.getSemesters().containsKey(cs.getSemester().getName()) ||
+                        !request.getSemesters().get(cs.getSemester().getName()).contains(cs.getSubject().getSubjectCode()))
+                .collect(Collectors.toList());
+
+        courseSubjectRepository.deleteAll(subjectsToDelete);
 
         try {
             processSemestersAndSubjects(request, course, courseSubjectsToSave);
-            // Save course subjects only after all are validated
             courseSubjectRepository.saveAll(courseSubjectsToSave);
         } catch (NotFoundException e) {
-            // Handle the case where subjects or semesters are not found
-            // Just log the error or handle it as per your requirements
-            // Do not delete the course here
-            throw e; // Re-throw the exception
+            throw e;
         }
 
         return convertToCourseResponse(course);
     }
+
 
 
     @Override
@@ -152,15 +140,27 @@ public class CourseServiceImpl implements CourseService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new NotFoundException("Course with ID " + courseId + " not found"));
 
-        List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(courseId);
+        List<Class> classes = classRepository.findByCourseId(courseId);
 
-        if (!courseSubjects.isEmpty()) {
-            courseSubjectRepository.deleteAll(courseSubjects);
+        try {
+
+            if (!classes.isEmpty()) {
+                for (Class newClass : classes) {
+                    newClass.setCourse(null);
+                    classRepository.save(newClass);
+                }
+            }
+
+            List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(courseId);
+            if (!courseSubjects.isEmpty()) {
+                courseSubjectRepository.deleteAll(courseSubjects);
+            }
+
+            courseRepository.delete(course);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete course with ID " + courseId, e);
         }
-
-        courseRepository.delete(course);
     }
-
 
     private void processSemestersAndSubjects(CourseRequest request, Course course, List<CourseSubject> courseSubjectsToSave) {
         semesterService.initializeDefaultSemesters();
@@ -186,7 +186,7 @@ public class CourseServiceImpl implements CourseService {
     }
 
     private CourseResponse convertToCourseResponse(Course course) {
-        if (course == null ) {
+        if (course == null) {
             return new CourseResponse(); // return object empty if need
         }
         List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(course.getId());

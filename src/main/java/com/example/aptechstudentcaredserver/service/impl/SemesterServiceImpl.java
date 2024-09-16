@@ -14,7 +14,7 @@ public class SemesterServiceImpl implements SemesterService {
 
     @Override
     public void initializeDefaultSemesters() {
-        String[] semesterNames = {"sem1", "sem2", "sem3","sem4"};
+        String[] semesterNames = {"Sem1", "Sem2", "Sem3","Sem4"};
         for (String name : semesterNames) {
             semesterRepository.findByName(name)
                     .orElseGet(() -> createSemester(name));
@@ -24,9 +24,6 @@ public class SemesterServiceImpl implements SemesterService {
     private Semester createSemester(String name) {
         Semester semester = new Semester();
         semester.setName(name);
-        semester.setStartDate("2024-01-01");
-        semester.setEndDate("2024-06-30");
-
         return semesterRepository.save(semester);
     }
 }
