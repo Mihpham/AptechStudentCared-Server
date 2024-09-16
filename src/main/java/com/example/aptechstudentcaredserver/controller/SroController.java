@@ -17,16 +17,15 @@ import java.util.List;
 @RequestMapping("api/sros")
 public class SroController {
     private final SroService sroService;
-    private final AuthService authService;
 
     @PostMapping("/add")
     public ResponseEntity<String> registerSro(@RequestBody SroRequest sroRequest) {
         try {
             sroService.registerSro(sroRequest);
             return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "application/json")
-                    .body("{\"message\": \"Sro added successfully\"}");
+                    .body("{\"message\": \"SRO added successfully\"}");
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"error\": \"" + e.getMessage() + "\"}");
         }
     }
 
@@ -41,23 +40,38 @@ public class SroController {
     }
 
     @GetMapping("/{sroId}")
-    public ResponseEntity<SroResponse> getSroById(@PathVariable("sroId") int sroId) {
-        SroResponse sroResponse = sroService.findSroById(sroId);
-        return ResponseEntity.ok(sroResponse);
+    public ResponseEntity<Object> getSroById(@PathVariable("sroId") int sroId) {
+        try {
+            SroResponse sroResponse = sroService.findSroById(sroId);
+            return ResponseEntity.ok(sroResponse);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("{\"error\": \"SRO not found with id " + sroId + "\"}");
+        }
     }
 
     @PutMapping("/{sroId}")
-    public ResponseEntity<SroResponse> updateSro(
+    public ResponseEntity<Object> updateSro(
             @PathVariable int sroId,
             @RequestBody SroRequest sroRequest) {
-        SroResponse updatedSro = sroService.updateSro(sroId, sroRequest);
-        return ResponseEntity.ok(updatedSro);
+        try {
+            SroResponse updatedSro = sroService.updateSro(sroId, sroRequest);
+            return ResponseEntity.ok(updatedSro);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("{\"error\": \"Failed to update SRO: " + e.getMessage() + "\"}");
+        }
     }
 
     @DeleteMapping("/{sroId}")
     public ResponseEntity<String> deleteSro(@PathVariable("sroId") int sroId) {
-        sroService.deleteSro(sroId);
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "application/json")
-                .body("{\"message\": \"Sro deleted successfully\"}");
+        try {
+            sroService.deleteSro(sroId);
+            return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .body("{\"message\": \"SRO deleted successfully\"}");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("{\"error\": \"SRO not found with id " + sroId + "\"}");
+        }
     }
 }
