@@ -2,7 +2,6 @@ package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.SroRequest;
 import com.example.aptechstudentcaredserver.bean.response.SroResponse;
-import com.example.aptechstudentcaredserver.service.AuthService;
 import com.example.aptechstudentcaredserver.service.SroService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;

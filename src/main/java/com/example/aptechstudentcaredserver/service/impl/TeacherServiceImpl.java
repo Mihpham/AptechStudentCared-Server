@@ -120,7 +120,7 @@ public class TeacherServiceImpl implements TeacherService {
     private User createUser(TeacherRequest teacherRq, Role role, String email) {
         User user = new User();
         user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(teacherRq.getPassword()));
+        user.setPassword(passwordEncoder.encode("@123456789"));
         user.setRole(role);
         user.setStatus(Status.ACTIVE);
         user.setCreatedAt(LocalDateTime.now());
