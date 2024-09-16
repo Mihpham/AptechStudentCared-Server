@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class SroRequest {
     private String image;
     private String fullName;
+    private String email;
     private String password;
     private String phoneNumber;
     private String dob;

@@ -1,9 +1,7 @@
 package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.SroRequest;
-import com.example.aptechstudentcaredserver.bean.request.TeacherRequest;
 import com.example.aptechstudentcaredserver.bean.response.SroResponse;
-import com.example.aptechstudentcaredserver.bean.response.TeacherResponse;
 import com.example.aptechstudentcaredserver.entity.Role;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.entity.UserDetail;
@@ -11,7 +9,6 @@ import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.repository.RoleRepository;
 import com.example.aptechstudentcaredserver.repository.UserDetailRepository;
 import com.example.aptechstudentcaredserver.repository.UserRepository;
-import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
 import com.example.aptechstudentcaredserver.service.SroService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,13 +27,16 @@ public class SroServiceImpl implements SroService {
     private final UserRepository userRepository;
     private final UserDetailRepository userDetailRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailGeneratorService emailGeneratorService;
     private final RoleRepository roleRepository;
 
     @Override
     public void registerSro(SroRequest sroRequest) {
+        Optional<User> existingUser = Optional.ofNullable(userRepository.findByEmail(sroRequest.getEmail()));
+        if (existingUser.isPresent()) {
+            throw new RuntimeException("Email '" + sroRequest.getEmail() + "' already exists.");
+        }
         Role role = findOrCreateRole("SRO");
-        String email = emailGeneratorService.generateUniqueEmail(sroRequest.getFullName());
+        String email = sroRequest.getEmail();
         User user = createUser(sroRequest, role, email);
         userRepository.save(user);
         UserDetail userDetail = createUserDetail(sroRequest, user);
@@ -77,15 +77,17 @@ public class SroServiceImpl implements SroService {
             throw new RuntimeException("User with id " + sroId + " is not a sro.");
         }
 
+        if (sroRequest.getEmail() != null && !sroRequest.getEmail().equals(user.getEmail())) {
+            Optional<User> existingUser = Optional.ofNullable(userRepository.findByEmail(sroRequest.getEmail()));
+            if (existingUser.isPresent()) {
+                throw new RuntimeException("Email '" + sroRequest.getEmail() + "' already exists.");
+            }
+            user.setEmail(sroRequest.getEmail());
+        }
+
         UserDetail userDetail = user.getUserDetail();
-        String oldFullName = userDetail.getFullName();
 
         updateSroDetail(user, userDetail, sroRequest);
-
-        if (sroRequest.getFullName() != null && !sroRequest.getFullName().equals(oldFullName)) {
-            String newEmail = emailGeneratorService.generateUniqueEmail(sroRequest.getFullName());
-            user.setEmail(newEmail);
-        }
 
         userRepository.save(user);
         userDetailRepository.save(userDetail);
@@ -120,7 +122,7 @@ public class SroServiceImpl implements SroService {
     private User createUser(SroRequest sroRequest, Role role, String email) {
         User user = new User();
         user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(sroRequest.getPassword()));
+        user.setPassword(passwordEncoder.encode("@123456789"));
         user.setRole(role);
         user.setStatus(Status.ACTIVE);
         user.setCreatedAt(LocalDateTime.now());
@@ -135,7 +137,6 @@ public class SroServiceImpl implements SroService {
         userDetail.setDob(sroRequest.getDob());
         userDetail.setAddress(sroRequest.getAddress());
         userDetail.setImage(null);
-        userDetail.setParent(null);
         userDetail.setUser(user);
         userDetailRepository.save(userDetail);
         return userDetail;
@@ -159,6 +160,9 @@ public class SroServiceImpl implements SroService {
         }
         if (sroRequest.getStatus() != null) {
             user.setStatus(Status.valueOf(sroRequest.getStatus()));
+        }
+        if (sroRequest.getEmail() != null) {
+            user.setEmail(sroRequest.getEmail());
         }
     }
 
