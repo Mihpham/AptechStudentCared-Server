@@ -12,9 +12,9 @@ import java.time.LocalDateTime;
 public class TeacherRequest {
     private String image;
     private String fullName;
-    private String password;
     private String phoneNumber;
     private String dob;
+    private String gender;
     private String address;
     private String status;
 }

@@ -134,6 +134,7 @@ public class TeacherServiceImpl implements TeacherService {
         userDetail.setPhone(teacherRq.getPhoneNumber());
         userDetail.setDob(teacherRq.getDob());
         userDetail.setAddress(teacherRq.getAddress());
+        userDetail.setGender(teacherRq.getGender());
         userDetail.setImage(null);
         userDetail.setParent(null);
         userDetail.setUser(user);
@@ -157,6 +158,9 @@ public class TeacherServiceImpl implements TeacherService {
         if (teacherRq.getAddress() != null) {
             userDetail.setAddress(teacherRq.getAddress());
         }
+        if (teacherRq.getAddress() != null) {
+            userDetail.setGender(teacherRq.getGender());
+        }
         if (teacherRq.getStatus() != null) {
             user.setStatus(Status.valueOf(teacherRq.getStatus()));
         }
@@ -175,6 +179,7 @@ public class TeacherServiceImpl implements TeacherService {
                 user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getAddress() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getDob() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getGender() : null,
                 user.getRole().getRoleName(),
                 user.getStatus().name(),
                 user.getUserDetail() != null ? user.getUserDetail().getImage() : null,
