@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,6 +32,13 @@ public class ClassController {
         return new ResponseEntity<>(classResponse, HttpStatus.OK);
     }
 
+    @GetMapping("/{classId}/subjects")
+    public ResponseEntity<Map<String, List<String>>> getAllSubjectsBySemester(
+            @PathVariable int classId,
+            @RequestParam(required = false) String semesterName) {
+        Map<String, List<String>> subjects = classService.getAllSubjectsBySemester(classId, semesterName);
+        return ResponseEntity.ok(subjects);
+    }
 
     @PostMapping("/add")
     public ResponseEntity<ResponseMessage> addClass(@Valid @RequestBody ClassRequest classRequest) {
@@ -51,6 +59,6 @@ public class ClassController {
     @DeleteMapping("/{classId}")
     public ResponseEntity<ResponseMessage> deleteClass(@PathVariable int classId) {
         classService.deleteClass(classId);
-        return new ResponseEntity<>( new ResponseMessage("Class deleted successfully"), HttpStatus.ACCEPTED);
+        return new ResponseEntity<>(new ResponseMessage("Class deleted successfully"), HttpStatus.ACCEPTED);
     }
 }
