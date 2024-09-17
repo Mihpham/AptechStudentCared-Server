@@ -178,6 +178,7 @@ public class SroServiceImpl implements SroService {
                 user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getAddress() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getDob() : null,
+                user.getUserDetail() != null ? user.getUserDetail().getGender() : null,
                 user.getRole().getRoleName(),
                 user.getStatus().name(),
                 user.getUserDetail() != null ? user.getUserDetail().getImage() : null,
