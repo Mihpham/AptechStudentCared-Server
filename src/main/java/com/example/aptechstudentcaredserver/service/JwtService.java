@@ -32,7 +32,7 @@ public class JwtService implements UserDetailsService {
         }
 
         List<GrantedAuthority> authorities = user.getRole() != null
-                ? Collections.singletonList(new SimpleGrantedAuthority(user.getRole().getRoleName()))
+                ? Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().getRoleName()))
                 : Collections.emptyList();
 
         return new org.springframework.security.core.userdetails.User(
