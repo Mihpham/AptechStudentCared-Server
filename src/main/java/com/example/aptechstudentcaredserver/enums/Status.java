@@ -12,7 +12,7 @@ public enum Status {
     STUDYING,FINISHED,CANCEL,SCHEDULED,
 
     /**
-     * Status for class
+     * Status for student
      */
     DELAY,DROPOUT,GRADUATED,
 

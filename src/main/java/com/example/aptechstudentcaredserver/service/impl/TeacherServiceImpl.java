@@ -122,7 +122,7 @@ public class TeacherServiceImpl implements TeacherService {
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode("@123456789"));
         user.setRole(role);
-        user.setStatus(Status.ACTIVE);
+        user.setStatus(Status.TEACHING);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         return user;
