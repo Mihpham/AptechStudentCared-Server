@@ -2,6 +2,7 @@ package com.example.aptechstudentcaredserver.util;
 
 import com.example.aptechstudentcaredserver.bean.request.StudentRequest;
 import com.example.aptechstudentcaredserver.bean.response.ImportResponse;
+import com.example.aptechstudentcaredserver.service.StudentService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,7 +16,7 @@ import java.util.Set;
 
 public class ExcelUtils {
 
-    public static List<ImportResponse> parseExcelFile(MultipartFile file) throws IOException {
+    public static List<ImportResponse> parseExcelFile(MultipartFile file, StudentService studentService) throws IOException {
         List<ImportResponse> importResults = new ArrayList<>();
 
         try (InputStream is = file.getInputStream();
@@ -99,8 +100,8 @@ public class ExcelUtils {
                     student.setStudentRelation(getCellValue(row.getCell(studentRelationIndex)));
                     student.setParentPhone(getCellValue(row.getCell(parentPhoneIndex)));
                     student.setParentGender(getCellValue(row.getCell(parentGenderIndex)));
-//                    System.out.println("Processing student: " + student);
-
+                    System.out.println("Processing student: " + student);
+                    studentService.createStudent(student);
                     // Validate student data if needed
                     String validationMessage = validateStudent(student);
                     if (validationMessage != null) {
@@ -108,7 +109,7 @@ public class ExcelUtils {
                     }
 
                 } catch (Exception e) {
-                    errorBuilder.append("Row ").append(i).append(": ").append(e.getMessage());
+                    errorBuilder.append(e.getMessage());
                     importResponse.setMessage(errorBuilder.toString());
                 }
 

@@ -47,7 +47,7 @@ public class StudentController {
     @PostMapping("/import")
     public ResponseEntity<String> importStudents(@ModelAttribute("file") MultipartFile file) {
         try {
-            List<ImportResponse> importResults = ExcelUtils.parseExcelFile(file);
+            List<ImportResponse> importResults = ExcelUtils.parseExcelFile(file,studentService);
             StringBuilder errorMessage = new StringBuilder();
 
             for (ImportResponse result : importResults) {
