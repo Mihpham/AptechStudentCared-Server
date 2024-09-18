@@ -15,4 +15,5 @@ public interface ClassService {
     public ClassResponse updateClass(int classId,ClassRequest classRequest);
     public  void  deleteClass(int classId);
 
+    void assignTeacherToSubject(String subjectCode, String teacherName);
 }

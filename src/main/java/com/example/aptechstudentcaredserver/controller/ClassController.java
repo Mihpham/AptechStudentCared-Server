@@ -1,5 +1,6 @@
 package com.example.aptechstudentcaredserver.controller;
 
+import com.example.aptechstudentcaredserver.bean.request.AssignTeacherRequest;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
@@ -57,5 +58,15 @@ public class ClassController {
     public ResponseEntity<ResponseMessage> deleteClass(@PathVariable int classId) {
         classService.deleteClass(classId);
         return new ResponseEntity<>(new ResponseMessage("Class deleted successfully"), HttpStatus.ACCEPTED);
+    }
+
+    @PostMapping("/assign-teacher")
+    public ResponseEntity<String> assignTeacherToSubject(@RequestBody AssignTeacherRequest request) {
+        try {
+            classService.assignTeacherToSubject(request.getSubjectCode(), request.getTeacherName());
+            return ResponseEntity.ok("Gán giáo viên thành công");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +32,9 @@ public class ClassServiceImpl implements ClassService {
     private final CourseSubjectRepository courseSubjectRepository;
     private final SemesterRepository semesterRepository;
     private final UserDetailRepository userDetailRepository;
+    private final UserRepository userRepository;
+    private final UserSubjectRepository userSubjectRepository;
+    private final SubjectRepository subjectRepository;
 
     @Override
     public List<ClassResponse> findAllClass() {
@@ -122,13 +126,65 @@ public class ClassServiceImpl implements ClassService {
         classRepository.delete(existingClass);
     }
 
+    @Override
+    public void assignTeacherToSubject(String subjectCode, String teacherName) {
+        // Tìm giáo viên mới dựa trên tên
+        User newTeacher = userRepository.findByUserDetailFullName(teacherName);
+        if (newTeacher == null || !newTeacher.getRole().getRoleName().equals("TEACHER")) {
+            throw new RuntimeException("Giáo viên không hợp lệ");
+        }
+
+        // Lấy tất cả CourseSubject và lọc theo tên môn học
+        List<CourseSubject> courseSubjects = courseSubjectRepository.findAll();
+        List<CourseSubject> filteredCourseSubjects = courseSubjects.stream()
+                .filter(cs -> cs.getSubject().getSubjectCode().equals(subjectCode))
+                .collect(Collectors.toList());
+
+        if (filteredCourseSubjects.isEmpty()) {
+            throw new RuntimeException("Môn học không hợp lệ hoặc không được gán trong khóa học");
+        }
+
+        // Lặp qua các CourseSubject để kiểm tra và gán giáo viên
+        for (CourseSubject courseSubject : filteredCourseSubjects) {
+            Subject subject = courseSubject.getSubject();
+
+            Optional<UserSubject> existingUserSubject = userSubjectRepository.findByUserAndSubject(newTeacher, subject);
+            if (existingUserSubject.isPresent()) {
+                throw new RuntimeException("Giáo viên đã được gán cho môn học này");
+            }
+
+            // Kiểm tra UserSubject hiện tại
+            Optional<UserSubject> userSubjectOptional = userSubjectRepository.findBySubject(subject);
+
+            if (userSubjectOptional.isPresent()) {
+                UserSubject userSubject = userSubjectOptional.get();
+                userSubject.setUser(newTeacher);
+                userSubject.setUpdatedAt(LocalDateTime.now());
+                userSubjectRepository.save(userSubject);
+            } else {
+                // Nếu không tìm thấy UserSubject, tạo mới
+                UserSubject newUserSubject = new UserSubject();
+                newUserSubject.setUser(newTeacher);
+                newUserSubject.setSubject(subject);
+                newUserSubject.setCreatedAt(LocalDateTime.now());
+                newUserSubject.setUpdatedAt(LocalDateTime.now());
+                userSubjectRepository.save(newUserSubject);
+            }
+        }
+    }
+
+
+
+
     private ClassResponse convertToClassResponse(Class classEntity) {
         List<GroupClass> groupClasses = groupClassRepository.findByClassesId(classEntity.getId());
 
         Course course = classEntity.getCourse();
         CourseResponse courseResponse = null;
+        List<CourseSubject> courseSubjects = null; // Định nghĩa biến này
+
         if (course != null) {
-            List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
+            courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
 
             String currentSemester = classEntity.getSemester() != null ? classEntity.getSemester().getName() : null;
 
@@ -149,10 +205,7 @@ public class ClassServiceImpl implements ClassService {
         }
 
         Semester semester = classEntity.getSemester();
-        String semesterName = null;
-        if (semester != null) {
-            semesterName = semester.getName();
-        }
+        String semesterName = semester != null ? semester.getName() : null;
 
         List<StudentResponse> studentResponses = groupClasses.stream()
                 .filter(groupClass -> groupClass.getUser() != null
@@ -199,6 +252,14 @@ public class ClassServiceImpl implements ClassService {
                 })
                 .collect(Collectors.toList());
 
+        List<UserSubject> userSubjects = userSubjectRepository.findBySubjectIn(courseSubjects.stream()
+                .map(CourseSubject::getSubject)
+                .collect(Collectors.toList()));
+
+        Map<String, String> subjectTeacherMap = userSubjects.stream()
+                .collect(Collectors.toMap(userSubject -> userSubject.getSubject().getSubjectCode(),
+                        userSubject -> userSubject.getUser().getUserDetail().getFullName())); // Lấy tên giáo viên từ UserDetail
+
         return new ClassResponse(
                 classEntity.getId(),
                 classEntity.getClassName(),
@@ -209,7 +270,10 @@ public class ClassServiceImpl implements ClassService {
                 classEntity.getStatus().name(),
                 semesterName,
                 courseResponse,
-                studentResponses
+                studentResponses,
+                subjectTeacherMap
         );
     }
+
+
 }
