@@ -288,7 +288,7 @@ public class StudentServiceImpl implements StudentService {
 
         Class studentClass = groupClass.getClasses();
         List<String> courses = userCourseRepository.findByUserId(user.getId()).stream()
-                .map(userCourse -> userCourse.getCourse().getCourseName())
+                .map(userCourse -> userCourse.getCourse().getCourseCode())
                 .collect(Collectors.toList());
 
         return new StudentResponse(

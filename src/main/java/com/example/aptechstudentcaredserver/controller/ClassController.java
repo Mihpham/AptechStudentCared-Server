@@ -65,12 +65,10 @@ public class ClassController {
             @PathVariable int classId,
             @RequestBody AssignTeacherRequest request) {
         try {
-            // Use the classId from the URL
             classService.assignTeacherToSubject(classId, request.getSubjectCode(), request.getTeacherName());
-            return ResponseEntity.ok("Gán giáo viên thành công");
+            return ResponseEntity.ok("Assign Teacher successfully");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
 }

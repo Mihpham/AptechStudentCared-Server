@@ -133,8 +133,6 @@ public class CourseServiceImpl implements CourseService {
         return convertToCourseResponse(course);
     }
 
-
-
     @Override
     public void deleteCourse(int courseId) {
         Course course = courseRepository.findById(courseId)
