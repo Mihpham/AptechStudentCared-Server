@@ -56,6 +56,37 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
+    public Map<String, List<String>> getAllSubjectsBySemester(int classId, String semesterName) {
+        Class existingClass = classRepository.findById(classId)
+                .orElseThrow(() -> new NotFoundException("Class not found with id " + classId));
+
+        Course course = existingClass.getCourse();
+        if (course == null) {
+            throw new NotFoundException("No course found for the class");
+        }
+
+        List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
+
+        if (semesterName != null && !semesterName.isEmpty()) {
+            courseSubjects = courseSubjects.stream()
+                    .filter(cs -> cs.getSemester().getName().equalsIgnoreCase(semesterName))
+                    .collect(Collectors.toList());
+            if (courseSubjects.isEmpty()) {
+                throw new NotFoundException("No subjects found for the semester: " + semesterName);
+            }
+        }
+
+        Map<String, List<String>> semesterSubjects = courseSubjects.stream()
+                .collect(Collectors.groupingBy(
+                        cs -> cs.getSemester().getName().toUpperCase(), // Convert semester name to uppercase
+                        Collectors.mapping(cs -> cs.getSubject().getSubjectName(), Collectors.toList()) // Map to subject names
+                ));
+
+        return semesterSubjects;
+    }
+
+
+    @Override
     public void addClass(ClassRequest classRequest) {
         Class existingClass = classRepository.findByClassName(classRequest.getClassName());
 

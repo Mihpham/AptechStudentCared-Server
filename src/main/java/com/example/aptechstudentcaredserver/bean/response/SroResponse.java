@@ -16,6 +16,7 @@ public class SroResponse {
     private String phone;
     private String address;
     private String dob;
+    private String gender;
     private String roleName;
     private String status;
     private String image;
