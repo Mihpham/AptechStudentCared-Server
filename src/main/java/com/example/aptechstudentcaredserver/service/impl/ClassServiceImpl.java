@@ -158,15 +158,17 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public void assignTeacherToSubject(String subjectCode, String teacherName) {
-        // Tìm giáo viên mới dựa trên tên
+    public void assignTeacherToSubject(int classId, String subjectCode, String teacherName) {
+        Class existingClass = classRepository.findById(classId)
+                .orElseThrow(() -> new RuntimeException("Lớp không tìm thấy với id: " + classId));
+
         User newTeacher = userRepository.findByUserDetailFullName(teacherName);
         if (newTeacher == null || !newTeacher.getRole().getRoleName().equals("TEACHER")) {
             throw new RuntimeException("Giáo viên không hợp lệ");
         }
 
-        // Lấy tất cả CourseSubject và lọc theo tên môn học
-        List<CourseSubject> courseSubjects = courseSubjectRepository.findAll();
+        // Lấy tất cả môn học của lớp này
+        List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(existingClass.getCourse().getId());
         List<CourseSubject> filteredCourseSubjects = courseSubjects.stream()
                 .filter(cs -> cs.getSubject().getSubjectCode().equals(subjectCode))
                 .collect(Collectors.toList());
@@ -175,28 +177,29 @@ public class ClassServiceImpl implements ClassService {
             throw new RuntimeException("Môn học không hợp lệ hoặc không được gán trong khóa học");
         }
 
-        // Lặp qua các CourseSubject để kiểm tra và gán giáo viên
+        // Lấy tất cả UserSubject cho lớp hiện tại
+        List<UserSubject> userSubjectsForClass = userSubjectRepository.findByClassroom(existingClass);
+
         for (CourseSubject courseSubject : filteredCourseSubjects) {
             Subject subject = courseSubject.getSubject();
 
-            Optional<UserSubject> existingUserSubject = userSubjectRepository.findByUserAndSubject(newTeacher, subject);
+            // Tìm UserSubject tương ứng với môn học
+            Optional<UserSubject> existingUserSubject = userSubjectsForClass.stream()
+                    .filter(us -> us.getSubject().equals(subject))
+                    .findFirst();
+
             if (existingUserSubject.isPresent()) {
-                throw new RuntimeException("Giáo viên đã được gán cho môn học này");
-            }
-
-            // Kiểm tra UserSubject hiện tại
-            Optional<UserSubject> userSubjectOptional = userSubjectRepository.findBySubject(subject);
-
-            if (userSubjectOptional.isPresent()) {
-                UserSubject userSubject = userSubjectOptional.get();
+                // Cập nhật giáo viên
+                UserSubject userSubject = existingUserSubject.get();
                 userSubject.setUser(newTeacher);
                 userSubject.setUpdatedAt(LocalDateTime.now());
                 userSubjectRepository.save(userSubject);
             } else {
-                // Nếu không tìm thấy UserSubject, tạo mới
+                // Tạo mới nếu chưa tồn tại
                 UserSubject newUserSubject = new UserSubject();
                 newUserSubject.setUser(newTeacher);
                 newUserSubject.setSubject(subject);
+                newUserSubject.setClassroom(existingClass);
                 newUserSubject.setCreatedAt(LocalDateTime.now());
                 newUserSubject.setUpdatedAt(LocalDateTime.now());
                 userSubjectRepository.save(newUserSubject);
@@ -207,16 +210,19 @@ public class ClassServiceImpl implements ClassService {
 
 
 
+
+
+
+
     private ClassResponse convertToClassResponse(Class classEntity) {
         List<GroupClass> groupClasses = groupClassRepository.findByClassesId(classEntity.getId());
-
         Course course = classEntity.getCourse();
         CourseResponse courseResponse = null;
-        List<CourseSubject> courseSubjects = null; // Định nghĩa biến này
+
+        // Lấy danh sách các môn học của khóa học
+        List<CourseSubject> courseSubjects = course != null ? courseSubjectRepository.findByCourseId(course.getId()) : List.of();
 
         if (course != null) {
-            courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
-
             String currentSemester = classEntity.getSemester() != null ? classEntity.getSemester().getName() : null;
 
             Map<String, List<String>> semesterSubjects = courseSubjects.stream()
@@ -235,8 +241,7 @@ public class ClassServiceImpl implements ClassService {
             );
         }
 
-        Semester semester = classEntity.getSemester();
-        String semesterName = semester != null ? semester.getName() : null;
+        String semesterName = classEntity.getSemester() != null ? classEntity.getSemester().getName() : null;
 
         List<StudentResponse> studentResponses = groupClasses.stream()
                 .filter(groupClass -> groupClass.getUser() != null
@@ -283,13 +288,14 @@ public class ClassServiceImpl implements ClassService {
                 })
                 .collect(Collectors.toList());
 
-        List<UserSubject> userSubjects = userSubjectRepository.findBySubjectIn(courseSubjects.stream()
-                .map(CourseSubject::getSubject)
-                .collect(Collectors.toList()));
+        // Chỉ lấy UserSubject cho lớp hiện tại
+        List<UserSubject> userSubjects = userSubjectRepository.findByClassroom(classEntity); // Cập nhật phương thức tìm kiếm
 
         Map<String, String> subjectTeacherMap = userSubjects.stream()
-                .collect(Collectors.toMap(userSubject -> userSubject.getSubject().getSubjectCode(),
-                        userSubject -> userSubject.getUser().getUserDetail().getFullName())); // Lấy tên giáo viên từ UserDetail
+                .collect(Collectors.toMap(
+                        userSubject -> userSubject.getSubject().getSubjectCode(),
+                        userSubject -> userSubject.getUser().getUserDetail().getFullName()
+                ));
 
         return new ClassResponse(
                 classEntity.getId(),
@@ -305,6 +311,7 @@ public class ClassServiceImpl implements ClassService {
                 subjectTeacherMap
         );
     }
+
 
 
 }

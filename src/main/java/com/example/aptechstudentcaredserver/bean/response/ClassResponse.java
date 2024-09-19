@@ -22,6 +22,6 @@ public class ClassResponse {
     private String sem;
     private CourseResponse course;
     private List<StudentResponse> students;
-    private Map<String, String> subjectTeacherMap; // Thêm thuộc tính để lưu danh sách giáo viên
+    private Map<String, String> subjectTeacherMap;
 
 }

@@ -20,5 +20,5 @@ public interface ClassService {
 
     public void deleteClass(int classId);
 
-    void assignTeacherToSubject(String subjectCode, String teacherName);
+    void assignTeacherToSubject(int classId,String subjectCode, String teacherName);
 }

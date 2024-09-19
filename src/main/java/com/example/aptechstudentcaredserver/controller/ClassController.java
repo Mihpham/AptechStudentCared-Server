@@ -60,13 +60,17 @@ public class ClassController {
         return new ResponseEntity<>(new ResponseMessage("Class deleted successfully"), HttpStatus.ACCEPTED);
     }
 
-    @PostMapping("/assign-teacher")
-    public ResponseEntity<String> assignTeacherToSubject(@RequestBody AssignTeacherRequest request) {
+    @PutMapping("/{classId}/assign-teacher")
+    public ResponseEntity<String> assignTeacherToSubject(
+            @PathVariable int classId,
+            @RequestBody AssignTeacherRequest request) {
         try {
-            classService.assignTeacherToSubject(request.getSubjectCode(), request.getTeacherName());
+            // Use the classId from the URL
+            classService.assignTeacherToSubject(classId, request.getSubjectCode(), request.getTeacherName());
             return ResponseEntity.ok("Gán giáo viên thành công");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
 }
