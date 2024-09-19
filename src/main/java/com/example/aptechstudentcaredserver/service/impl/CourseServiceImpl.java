@@ -202,24 +202,26 @@ public class CourseServiceImpl implements CourseService {
         );
     }
 
-    public String generateCourseCode(String courseName) {
+    public String generateCourseCode(String subjectName) {
         List<String> ignoreWords = Arrays.asList("in", "on", "at", "of", "the", "and", "a", "an", "to", "for");
 
-        String[] words = courseName.trim().split("\\s+");
-
+        String[] words = subjectName.trim().split("\\s+");
         if (words.length == 1) {
             return words[0].toUpperCase().substring(0, Math.min(words[0].length(), 6));
         }
         StringBuilder code = new StringBuilder();
         for (String word : words) {
-            if (code.length() < 6) {
-                code.append(Character.toUpperCase(word.charAt(0)));
-            } else {
-                break;
+            if (!ignoreWords.contains(word.toLowerCase())) {
+                if (code.length() < 6) {
+                    code.append(Character.toUpperCase(word.charAt(0)));
+                } else {
+                    break; // Đảm bảo mã không quá 6 ký tự
+                }
             }
         }
 
         return code.toString();
     }
+
 
 }

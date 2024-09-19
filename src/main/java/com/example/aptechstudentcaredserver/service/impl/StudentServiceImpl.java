@@ -75,10 +75,10 @@ public class StudentServiceImpl implements StudentService {
         }
 
         if (studentRq.getCourses() != null) {
-            for (String courseName : studentRq.getCourses()) {
-                Course course = courseRepository.findByCourseName(courseName.trim());
+            for (String courseCode : studentRq.getCourses()) {
+                Course course = courseRepository.findByCourseCode(courseCode.trim());
                 if (course == null) {
-                    throw new NotFoundException("Course not found: " + courseName.trim());
+                    throw new NotFoundException("Course not found: " + courseCode.trim());
                 }
             }
         }
