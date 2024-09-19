@@ -4,7 +4,7 @@ public enum Status {
     /**
      * Common status for all entity
      */
-    ACTIVE, DELETE,
+    ACTIVE, INACTIVE,
 
     /**
      * Status for class
