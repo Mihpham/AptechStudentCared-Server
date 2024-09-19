@@ -17,6 +17,7 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -56,23 +57,22 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     public void createSubject(SubjectRequest subjectRq) {
+        String generatedSubjectCode = generateSubjectCode(subjectRq.getSubjectName());
         if (subjectRepository.findBySubjectName(subjectRq.getSubjectName()).isPresent()) {
             throw new DuplicateException("Subject with the same name already exists.");
         }
-
-        if (subjectRepository.findBySubjectCode(subjectRq.getSubjectCode()).isPresent()) {
+        if (subjectRepository.findBySubjectCode(generatedSubjectCode).isPresent()) {
             throw new DuplicateException("Subject code already exists.");
         }
-
         Subject subject = new Subject();
         subject.setSubjectName(subjectRq.getSubjectName());
-        subject.setSubjectCode(subjectRq.getSubjectCode());
+        subject.setSubjectCode(generatedSubjectCode);
         subject.setTotalHours(subjectRq.getTotalHours());
         subject.setCreatedAt(LocalDateTime.now());
         subject.setUpdatedAt(LocalDateTime.now());
+
         subjectRepository.save(subject);
     }
-
 
     @Override
     public SubjectResponse updateSubject(int subjectId, SubjectRequest subjectRq) {
@@ -82,21 +82,19 @@ public class SubjectServiceImpl implements SubjectService {
                 throw new NotFoundException("Subject with ID " + subjectId + " not found.");
             }
             Subject existingSubject = optionalSubject.get();
-
             if (subjectRepository.findBySubjectName(subjectRq.getSubjectName())
                     .filter(subject -> subject.getId() != subjectId)
                     .isPresent()) {
                 throw new DuplicateException("Subject with the same name already exists.");
             }
-
-            if (subjectRepository.findBySubjectCode(subjectRq.getSubjectCode())
+            String newSubjectCode = generateSubjectCode(subjectRq.getSubjectName());
+            if (subjectRepository.findBySubjectCode(newSubjectCode)
                     .filter(subject -> subject.getId() != subjectId)
                     .isPresent()) {
                 throw new DuplicateException("Subject code already exists.");
             }
-
             existingSubject.setSubjectName(subjectRq.getSubjectName());
-            existingSubject.setSubjectCode(subjectRq.getSubjectCode());
+            existingSubject.setSubjectCode(newSubjectCode);
             existingSubject.setTotalHours(subjectRq.getTotalHours());
             existingSubject.setUpdatedAt(LocalDateTime.now());
 
@@ -116,13 +114,11 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     public void deleteSubject(int subjectId) {
-        // Tìm kiếm các liên kết liên quan và xóa chúng
         List<CourseSubject> courseSubjects = courseSubjectRepository.findBySubjectId(subjectId);
         if (!courseSubjects.isEmpty()) {
             courseSubjectRepository.deleteAll(courseSubjects);
         }
 
-        // Xóa subject nếu tồn tại
         if (subjectRepository.existsById(subjectId)) {
             subjectRepository.deleteById(subjectId);
         } else {
@@ -146,5 +142,23 @@ public class SubjectServiceImpl implements SubjectService {
         return response;
     }
 
+    public String generateSubjectCode(String subjectName) {
+        List<String> ignoreWords = Arrays.asList("in", "on", "at", "of", "the", "and", "a", "an", "to", "for");
+
+        String[] words = subjectName.trim().split("\\s+");
+        if (words.length == 1) {
+            return words[0].toUpperCase().substring(0, Math.min(words[0].length(), 6));
+        }
+        StringBuilder code = new StringBuilder();
+        for (String word : words) {
+            if (code.length() < 6) {
+                code.append(Character.toUpperCase(word.charAt(0)));
+            } else {
+                break;
+            }
+        }
+
+        return code.toString();
+    }
 
 }

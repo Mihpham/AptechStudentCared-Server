@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
@@ -181,7 +182,7 @@ public class StudentServiceImpl implements StudentService {
 
     private UserDetail createUserDetail(StudentRequest studentRq, User user) {
         UserDetail userDetail = new UserDetail();
-        userDetail.setRollNumber(studentRq.getRollNumber());
+        userDetail.setRollNumber(generateUniqueRoll());
         userDetail.setImage(null);
         userDetail.setFullName(studentRq.getFullName());
         userDetail.setGender(studentRq.getGender());
@@ -211,9 +212,9 @@ public class StudentServiceImpl implements StudentService {
 
     private void createUserCourses(StudentRequest studentRq, User user) {
         if (studentRq.getCourses() != null) {
-            studentRq.getCourses().forEach(courseName -> {
-                Course course = Optional.ofNullable(courseRepository.findByCourseName(courseName.trim()))
-                        .orElseThrow(() -> new NotFoundException("Course not found: " + courseName.trim()));
+            studentRq.getCourses().forEach(courseCode -> {
+                Course course = Optional.ofNullable(courseRepository.findByCourseCode(courseCode.trim()))
+                        .orElseThrow(() -> new NotFoundException("Course Code not found: " + courseCode.trim()));
 
                 UserCourse userCourse = new UserCourse();
                 userCourse.setUser(user);
@@ -240,7 +241,7 @@ public class StudentServiceImpl implements StudentService {
         if (studentRq.getFullName() != null) userDetail.setFullName(studentRq.getFullName());
         if (studentRq.getImage() != null) userDetail.setImage(studentRq.getImage());
         if (studentRq.getEmail() != null) user.setEmail(studentRq.getEmail());
-        if (studentRq.getRollNumber() != null) userDetail.setRollNumber(studentRq.getRollNumber());
+//        if (studentRq.getRollNumber() != null) userDetail.setRollNumber(studentRq.getRollNumber());
         if (studentRq.getPhoneNumber() != null) userDetail.setPhone(studentRq.getPhoneNumber());
     }
 
@@ -288,7 +289,7 @@ public class StudentServiceImpl implements StudentService {
 
         Class studentClass = groupClass.getClasses();
         List<String> courses = userCourseRepository.findByUserId(user.getId()).stream()
-                .map(userCourse -> userCourse.getCourse().getCourseName())
+                .map(userCourse -> userCourse.getCourse().getCourseCode())
                 .collect(Collectors.toList());
 
         return new StudentResponse(
@@ -309,5 +310,28 @@ public class StudentServiceImpl implements StudentService {
                 user.getUserDetail() != null ? user.getUserDetail().getParent().getPhone() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getParent().getGender() : null
         );
+    }
+
+    private Random random = new Random();
+    private String generateUniqueRoll() {
+        String newRoll;
+        do {
+            newRoll = "Student" + generateRandomNumber();
+        } while (checkRollNumberExists(newRoll));
+
+        return newRoll;
+    }
+
+    private String generateRandomNumber() {
+        StringBuilder number = new StringBuilder();
+        for (int i = 0; i < 7; i++) {
+            int randomDigit = 1 + random.nextInt(9);
+            number.append(randomDigit);
+        }
+        return number.toString();
+    }
+
+    public boolean checkRollNumberExists(String rollNumber) {
+        return userDetailRepository.existsByRollNumber(rollNumber);
     }
 }
