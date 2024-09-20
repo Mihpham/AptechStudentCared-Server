@@ -1,5 +1,6 @@
 package com.example.aptechstudentcaredserver.entity;
 
+import com.example.aptechstudentcaredserver.enums.DayOfWeek;
 import com.example.aptechstudentcaredserver.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -23,7 +24,11 @@ public class Class {
 
     private String hour;
 
-    private String days;
+    @ElementCollection(targetClass = DayOfWeek.class)
+    @CollectionTable(name = "class_days", joinColumns = @JoinColumn(name = "class_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "days")
+    private List<DayOfWeek> days;
 
     @Enumerated(EnumType.STRING)
     private Status status;

@@ -1,5 +1,6 @@
 package com.example.aptechstudentcaredserver.bean.response;
 
+import com.example.aptechstudentcaredserver.enums.DayOfWeek;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,12 +17,11 @@ public class ClassResponse {
     private String className;
     private String center;
     private String hour;
-    private String days;
+    private List<DayOfWeek> days;
     private LocalDateTime createdAt;
     private String status;
     private String sem;
     private CourseResponse course;
     private List<StudentResponse> students;
     private Map<String, String> subjectTeacherMap;
-
 }

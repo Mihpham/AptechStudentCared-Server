@@ -96,8 +96,9 @@ public class ClassServiceImpl implements ClassService {
         newClass.setClassName(classRequest.getClassName());
         newClass.setCenter(classRequest.getCenter());
         newClass.setHour(classRequest.getHour());
-        newClass.setDays(classRequest.getDays());
+        newClass.setDays(classRequest.getDays()); // Set trực tiếp từ ClassRequest
         newClass.setStatus(Status.STUDYING);
+
         Course course = courseRepository.findByCourseCode(classRequest.getCourseCode());
         if (course == null) {
             throw new NotFoundException("Course not found with code: " + classRequest.getCourseCode());
@@ -111,7 +112,6 @@ public class ClassServiceImpl implements ClassService {
         newClass.setCreatedAt(LocalDateTime.now());
         newClass.setUpdatedAt(LocalDateTime.now());
 
-
         classRepository.save(newClass);
     }
 
@@ -123,7 +123,7 @@ public class ClassServiceImpl implements ClassService {
         existingClass.setClassName(classRequest.getClassName());
         existingClass.setCenter(classRequest.getCenter());
         existingClass.setHour(classRequest.getHour());
-        existingClass.setDays(classRequest.getDays());
+        existingClass.setDays(classRequest.getDays()); // Set trực tiếp từ ClassRequest
         existingClass.setStatus(Status.valueOf(classRequest.getStatus()));
 
         Course course = courseRepository.findByCourseCode(classRequest.getCourseCode());
