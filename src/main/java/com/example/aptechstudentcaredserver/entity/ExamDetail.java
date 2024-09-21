@@ -1,6 +1,6 @@
 package com.example.aptechstudentcaredserver.entity;
 
-import com.example.aptechstudentcaredserver.enums.Status;
+import com.example.aptechstudentcaredserver.enums.MarkType;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -25,13 +25,10 @@ public class ExamDetail {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "exam_type", nullable = false)
-    private Status examType;
+    private MarkType examType;
 
     @Column(name = "score", precision = 5, scale = 2)
     private BigDecimal score;
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "updated_at", nullable = false)
