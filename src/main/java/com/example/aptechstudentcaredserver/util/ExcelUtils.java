@@ -1,7 +1,9 @@
 package com.example.aptechstudentcaredserver.util;
 
 import com.example.aptechstudentcaredserver.bean.request.StudentRequest;
+import com.example.aptechstudentcaredserver.bean.request.SubjectExamScoreRequest;
 import com.example.aptechstudentcaredserver.bean.response.ImportResponse;
+import com.example.aptechstudentcaredserver.service.ExamDetailService;
 import com.example.aptechstudentcaredserver.service.StudentService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -9,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -16,7 +19,7 @@ import java.util.Set;
 
 public class ExcelUtils {
 
-    public static List<ImportResponse> parseExcelFile(MultipartFile file, StudentService studentService) throws IOException {
+    public static List<ImportResponse> parseStudentExcelFile(MultipartFile file, StudentService studentService) throws IOException {
         List<ImportResponse> importResults = new ArrayList<>();
 
         try (InputStream is = file.getInputStream();
@@ -240,4 +243,139 @@ public class ExcelUtils {
         // Return accumulated errors or null if no errors
         return errors.length() > 0 ? errors.toString() : null;
     }
+
+    public static List<ImportResponse> parseExamExcelFile(MultipartFile file, ExamDetailService examDetailService) throws IOException {
+        List<ImportResponse> importResults = new ArrayList<>();
+
+        try (InputStream is = file.getInputStream();
+             Workbook workbook = new XSSFWorkbook(is)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+            if (sheet == null) {
+                throw new IllegalArgumentException("No sheets found in the file");
+            }
+
+            // Assume the first row is always present and serves as header if the file has one
+            Row firstRow = sheet.getRow(0);
+            if (firstRow == null) {
+                importResults.add(new ImportResponse("File format is incorrect.", -1));
+                return importResults;
+            }
+
+            int requiredColumns = 5;
+
+            // Check if the first row contains the required number of columns
+            if (firstRow.getPhysicalNumberOfCells() < requiredColumns) {
+                importResults.add(new ImportResponse("File format is incorrect. The file does not contain enough columns. Expected at least " + requiredColumns + ".", -1));
+                return importResults;
+            }
+
+            // Đặt chỉ số cột dựa trên yêu cầu mới
+            int studentNameCol = 1;
+            int subjectNameCol = 2;
+            int theoreticalScoreCol = 3;
+            int practicalScoreCol = 4;
+            int classIdCol = 5;
+
+            for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) { // Bỏ qua dòng tiêu đề
+                Row row = sheet.getRow(i);
+                if (row == null) {
+                    continue; // Bỏ qua dòng trống
+                }
+
+                ImportResponse importResponse = new ImportResponse("Success", i + 1); // Row number (1-based)
+                StringBuilder errorBuilder = new StringBuilder();
+
+                try {
+                    SubjectExamScoreRequest examDetailRequest = new SubjectExamScoreRequest();
+                    examDetailRequest.setStudentName(getCellValue(row.getCell(studentNameCol)));
+                    examDetailRequest.setSubjectName(getCellValue(row.getCell(subjectNameCol)));
+
+                    // Lấy điểm lý thuyết
+                    String theoreticalScoreString = getCellValue(row.getCell(theoreticalScoreCol));
+                    if (theoreticalScoreString != null && !theoreticalScoreString.trim().isEmpty()) {
+                        BigDecimal theoreticalScore = new BigDecimal(theoreticalScoreString);
+                        examDetailRequest.setTheoreticalScore(theoreticalScore);
+                    }
+
+                    // Lấy điểm thực hành
+                    String practicalScoreString = getCellValue(row.getCell(practicalScoreCol));
+                    if (practicalScoreString != null && !practicalScoreString.trim().isEmpty()) {
+                        BigDecimal practicalScore = new BigDecimal(practicalScoreString);
+                        examDetailRequest.setPracticalScore(practicalScore);
+                    }
+
+                    // Lấy classId
+                    String classIdString = getCellValue(row.getCell(classIdCol));
+                    if (classIdString == null || classIdString.trim().isEmpty()) {
+                        throw new IllegalArgumentException("Class ID cannot be empty");
+                    }
+                    int classId = Integer.parseInt(classIdString);
+                    examDetailRequest.setClassId(classId);
+
+                    // Gọi hàm validate và xử lý import
+                    String validationMessage = validateExamMark(examDetailRequest);
+                    if (validationMessage != null) {
+                        importResponse.setMessage(validationMessage);
+                        importResults.add(importResponse);
+                        continue;
+                    }
+
+                    examDetailService.updateStudentExamScore(examDetailRequest,classId);
+                } catch (Exception e) {
+                    errorBuilder.append("Error in row ").append(i + 1).append(": ").append(e.getMessage()).append("; ");
+                    importResponse.setMessage(errorBuilder.toString());
+                }
+
+                if (errorBuilder.length() > 0) {
+                    importResults.add(importResponse);
+                } else {
+                    importResults.add(importResponse);
+                }
+            }
+
+            if (importResults.isEmpty()) {
+                importResults.add(new ImportResponse("File format is incorrect.", -1));
+            }
+        }
+
+        return importResults;
+    }
+    private static String validateExamMark(SubjectExamScoreRequest examDetailRequest) {
+        StringBuilder errorMessage = new StringBuilder();
+
+        // Kiểm tra studentName
+        if (examDetailRequest.getStudentName() == null || examDetailRequest.getStudentName().trim().isEmpty()) {
+            errorMessage.append("Student name cannot be empty. ");
+        }
+
+        // Kiểm tra subjectName
+        if (examDetailRequest.getSubjectName() == null || examDetailRequest.getSubjectName().trim().isEmpty()) {
+            errorMessage.append("Subject name cannot be empty. ");
+        }
+
+        // Kiểm tra theoreticalScore
+        if (examDetailRequest.getTheoreticalScore() == null) {
+            errorMessage.append("Theoretical score cannot be null. ");
+        } else if (examDetailRequest.getTheoreticalScore().compareTo(BigDecimal.ZERO) < 0) {
+            errorMessage.append("Theoretical score cannot be negative. ");
+        }
+
+        // Kiểm tra practicalScore
+        if (examDetailRequest.getPracticalScore() == null) {
+            errorMessage.append("Practical score cannot be null. ");
+        } else if (examDetailRequest.getPracticalScore().compareTo(BigDecimal.ZERO) < 0) {
+            errorMessage.append("Practical score cannot be negative. ");
+        }
+
+        // Kiểm tra classId
+        if (examDetailRequest.getClassId() <= 0) {
+            errorMessage.append("Class ID must be greater than 0. ");
+        }
+
+        return errorMessage.length() > 0 ? errorMessage.toString() : null;
+    }
+
+
 }
+
