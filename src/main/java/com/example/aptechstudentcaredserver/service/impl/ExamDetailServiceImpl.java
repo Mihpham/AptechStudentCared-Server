@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -94,6 +95,7 @@ public class ExamDetailServiceImpl implements ExamDetailService {
         theoreticalDetail.setSubject(subject);
         theoreticalDetail.setExamType(MarkType.THEORETICAL);
         theoreticalDetail.setScore(scoreRequest.getTheoreticalScore());
+        theoreticalDetail.setUpdatedAt(LocalDateTime.now());
         examDetailRepository.save(theoreticalDetail);
 
         // Update or create the practical score
@@ -104,6 +106,7 @@ public class ExamDetailServiceImpl implements ExamDetailService {
         practicalDetail.setSubject(subject);
         practicalDetail.setExamType(MarkType.PRACTICAL);
         practicalDetail.setScore(scoreRequest.getPracticalScore());
+        practicalDetail.setUpdatedAt(LocalDateTime.now());
         examDetailRepository.save(practicalDetail);
 
         // Convert to response object

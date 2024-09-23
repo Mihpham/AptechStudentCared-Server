@@ -32,10 +32,13 @@ public class ExamDetailController {
         StudentExamScoreResponse updatedExamScore = examDetailService.updateStudentExamScore(scoreRequest, classId);
         return ResponseEntity.ok(updatedExamScore);
     }
-    @PostMapping("/import")
-    public ResponseEntity<String> importStudents(@ModelAttribute("file") MultipartFile file) {
+
+    @PutMapping("/import/{classId}")
+    public ResponseEntity<String> importStudents(
+            @PathVariable int classId,
+            @ModelAttribute("file") MultipartFile file) {
         try {
-            List<ImportResponse> importResults = ExcelUtils.parseExamExcelFile(file,examDetailService);
+            List<ImportResponse> importResults = ExcelUtils.parseExamExcelFile(file, examDetailService, classId);
             StringBuilder errorMessage = new StringBuilder();
 
             for (ImportResponse result : importResults) {
@@ -43,25 +46,23 @@ public class ExamDetailController {
                 int rowNumber = result.getRowNumber();
 
                 if (message.startsWith("Success")) {
-                    // Success messages are handled by the importResults itself
-                    continue;
+                    continue; // Success messages are handled
                 } else {
-                    // Append error details including the row number
                     errorMessage.append("Row ").append(rowNumber).append(": ").append(message).append("\n");
                 }
             }
 
-            // Nếu không có lỗi nào được ghi lại, trả về thông báo thành công toàn bộ
+            // If no errors recorded
             if (errorMessage.length() == 0) {
-                return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "application/json")
-                        .body("{\"message\": \"All records in the file were processed successfully without any errors.\"}");
+                return ResponseEntity.ok()
+                        .body("{\"message\": \"All records processed successfully.\"}");
             } else {
-                // Nếu có lỗi, trả về thông báo lỗi
                 return ResponseEntity.badRequest().body(errorMessage.toString());
             }
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error processing file: " + e.getMessage());
         }
     }
+
 
 }

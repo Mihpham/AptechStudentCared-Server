@@ -244,7 +244,7 @@ public class ExcelUtils {
         return errors.length() > 0 ? errors.toString() : null;
     }
 
-    public static List<ImportResponse> parseExamExcelFile(MultipartFile file, ExamDetailService examDetailService) throws IOException {
+    public static List<ImportResponse> parseExamExcelFile(MultipartFile file, ExamDetailService examDetailService,int classId) throws IOException {
         List<ImportResponse> importResults = new ArrayList<>();
 
         try (InputStream is = file.getInputStream();
@@ -255,7 +255,6 @@ public class ExcelUtils {
                 throw new IllegalArgumentException("No sheets found in the file");
             }
 
-            // Assume the first row is always present and serves as header if the file has one
             Row firstRow = sheet.getRow(0);
             if (firstRow == null) {
                 importResults.add(new ImportResponse("File format is incorrect.", -1));
@@ -263,14 +262,12 @@ public class ExcelUtils {
             }
 
             int requiredColumns = 5;
-
-            // Check if the first row contains the required number of columns
             if (firstRow.getPhysicalNumberOfCells() < requiredColumns) {
                 importResults.add(new ImportResponse("File format is incorrect. The file does not contain enough columns. Expected at least " + requiredColumns + ".", -1));
                 return importResults;
             }
 
-            // Đặt chỉ số cột dựa trên yêu cầu mới
+            // Cấu hình các cột trong file Excel
             int studentNameCol = 1;
             int subjectNameCol = 2;
             int theoreticalScoreCol = 3;
@@ -283,7 +280,7 @@ public class ExcelUtils {
                     continue; // Bỏ qua dòng trống
                 }
 
-                ImportResponse importResponse = new ImportResponse("Success", i + 1); // Row number (1-based)
+                ImportResponse importResponse = new ImportResponse("Success", i + 1);
                 StringBuilder errorBuilder = new StringBuilder();
 
                 try {
@@ -305,15 +302,10 @@ public class ExcelUtils {
                         examDetailRequest.setPracticalScore(practicalScore);
                     }
 
-                    // Lấy classId
-                    String classIdString = getCellValue(row.getCell(classIdCol));
-                    if (classIdString == null || classIdString.trim().isEmpty()) {
-                        throw new IllegalArgumentException("Class ID cannot be empty");
-                    }
-                    int classId = Integer.parseInt(classIdString);
+                    // Set classId từ tham số
                     examDetailRequest.setClassId(classId);
 
-                    // Gọi hàm validate và xử lý import
+                    // Kiểm tra và xử lý import
                     String validationMessage = validateExamMark(examDetailRequest);
                     if (validationMessage != null) {
                         importResponse.setMessage(validationMessage);
@@ -321,25 +313,17 @@ public class ExcelUtils {
                         continue;
                     }
 
-                    examDetailService.updateStudentExamScore(examDetailRequest,classId);
+                    examDetailService.updateStudentExamScore(examDetailRequest, classId);
                 } catch (Exception e) {
                     errorBuilder.append("Error in row ").append(i + 1).append(": ").append(e.getMessage()).append("; ");
                     importResponse.setMessage(errorBuilder.toString());
                 }
 
-                if (errorBuilder.length() > 0) {
-                    importResults.add(importResponse);
-                } else {
-                    importResults.add(importResponse);
-                }
+                importResults.add(importResponse);
             }
 
-            if (importResults.isEmpty()) {
-                importResults.add(new ImportResponse("File format is incorrect.", -1));
-            }
+            return importResults;
         }
-
-        return importResults;
     }
     private static String validateExamMark(SubjectExamScoreRequest examDetailRequest) {
         StringBuilder errorMessage = new StringBuilder();
