@@ -14,6 +14,6 @@ import java.util.List;
 @NoArgsConstructor
 
 public class StudentExamScoreResponse {
-    private String studentName;
+    private String rollNumber;
     private List<SubjectExamScoreRequest> subjects;
 }

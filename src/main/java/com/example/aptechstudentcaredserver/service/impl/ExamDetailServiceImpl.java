@@ -52,8 +52,8 @@ public class ExamDetailServiceImpl implements ExamDetailService {
 
                 // Add the subject exam score to the list (removing studentId)
                 subjectScores.add(SubjectExamScoreRequest.builder()
-                        .studentName(member.getUser().getUserDetail().getFullName()) // Set studentName here
-                        .subjectName(subject.getSubjectName())
+                        .rollNumber(member.getUser().getUserDetail().getRollNumber()) // Set studentName here
+                        .subjectCode(subject.getSubjectCode())
                         .theoreticalScore(theoreticalScore)
                         .practicalScore(practicalScore)
                         .classId(classId)
@@ -62,7 +62,7 @@ public class ExamDetailServiceImpl implements ExamDetailService {
 
             // Build response object for each student
             StudentExamScoreResponse response = StudentExamScoreResponse.builder()
-                    .studentName(member.getUser().getUserDetail().getFullName())
+                    .rollNumber(member.getUser().getUserDetail().getRollNumber())
                     .subjects(subjectScores)
                     .build();
 
@@ -79,13 +79,13 @@ public class ExamDetailServiceImpl implements ExamDetailService {
         // Find the student by name in the class
         User student = classMembers.stream()
                 .map(GroupClass::getUser)
-                .filter(u -> u.getUserDetail().getFullName().equals(scoreRequest.getStudentName()))
+                .filter(u -> u.getUserDetail().getRollNumber().equals(scoreRequest.getRollNumber()))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Student '" + scoreRequest.getStudentName() + "' not found in the specified class"));
+                .orElseThrow(() -> new RuntimeException("Student '" + scoreRequest.getRollNumber() + "' not found in the specified class"));
 
         // Find the subject
-        Subject subject = subjectRepository.findBySubjectName(scoreRequest.getSubjectName())
-                .orElseThrow(() -> new RuntimeException("Subject '" + scoreRequest.getSubjectName() + "' not found"));
+        Subject subject = subjectRepository.findBySubjectCode(scoreRequest.getSubjectCode())
+                .orElseThrow(() -> new RuntimeException("Subject '" + scoreRequest.getSubjectCode() + "' not found"));
 
         // Update or create the theoretical score
         ExamDetail theoreticalDetail = examDetailRepository.findByUserIdAndSubjectIdAndExamType(
@@ -125,14 +125,14 @@ public class ExamDetailServiceImpl implements ExamDetailService {
 
         // Create response
         SubjectExamScoreRequest subjectScore = SubjectExamScoreRequest.builder()
-                .studentName(user.getUserDetail().getFullName()) // Set studentName here
-                .subjectName(subject.getSubjectName())
+                .rollNumber(user.getUserDetail().getRollNumber())
+                .subjectCode(subject.getSubjectCode())
                 .theoreticalScore(theoreticalScore)
                 .practicalScore(practicalScore)
                 .build();
 
         return StudentExamScoreResponse.builder()
-                .studentName(user.getUserDetail().getFullName())
+                .rollNumber(user.getUserDetail().getRollNumber())
                 .subjects(List.of(subjectScore))
                 .build();
     }

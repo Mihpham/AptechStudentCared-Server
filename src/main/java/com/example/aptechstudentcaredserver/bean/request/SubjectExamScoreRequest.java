@@ -15,8 +15,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 
 public class SubjectExamScoreRequest {
-    private String studentName;
-    private String subjectName;
+    private String rollNumber;
+    private String subjectCode;
     private BigDecimal theoreticalScore;
     private BigDecimal practicalScore;
     private int classId;

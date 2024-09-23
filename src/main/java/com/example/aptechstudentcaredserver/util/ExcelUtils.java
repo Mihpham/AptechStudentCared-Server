@@ -285,8 +285,8 @@ public class ExcelUtils {
 
                 try {
                     SubjectExamScoreRequest examDetailRequest = new SubjectExamScoreRequest();
-                    examDetailRequest.setStudentName(getCellValue(row.getCell(studentNameCol)));
-                    examDetailRequest.setSubjectName(getCellValue(row.getCell(subjectNameCol)));
+                    examDetailRequest.setRollNumber(getCellValue(row.getCell(studentNameCol)));
+                    examDetailRequest.setSubjectCode(getCellValue(row.getCell(subjectNameCol)));
 
                     // Lấy điểm lý thuyết
                     String theoreticalScoreString = getCellValue(row.getCell(theoreticalScoreCol));
@@ -329,12 +329,12 @@ public class ExcelUtils {
         StringBuilder errorMessage = new StringBuilder();
 
         // Kiểm tra studentName
-        if (examDetailRequest.getStudentName() == null || examDetailRequest.getStudentName().trim().isEmpty()) {
+        if (examDetailRequest.getRollNumber() == null || examDetailRequest.getRollNumber().trim().isEmpty()) {
             errorMessage.append("Student name cannot be empty. ");
         }
 
         // Kiểm tra subjectName
-        if (examDetailRequest.getSubjectName() == null || examDetailRequest.getSubjectName().trim().isEmpty()) {
+        if (examDetailRequest.getSubjectCode() == null || examDetailRequest.getSubjectCode().trim().isEmpty()) {
             errorMessage.append("Subject name cannot be empty. ");
         }
 
