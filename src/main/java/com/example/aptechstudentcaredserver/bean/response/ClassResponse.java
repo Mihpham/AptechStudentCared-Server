@@ -1,6 +1,6 @@
 package com.example.aptechstudentcaredserver.bean.response;
 
-import com.example.aptechstudentcaredserver.enums.DayOfWeek;
+import com.example.aptechstudentcaredserver.enums.DayOfWeeks;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,7 +17,7 @@ public class ClassResponse {
     private String className;
     private String center;
     private String hour;
-    private List<DayOfWeek> days;
+    private List<DayOfWeeks> days;
     private LocalDateTime createdAt;
     private String status;
     private String sem;

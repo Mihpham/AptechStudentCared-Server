@@ -1,6 +1,6 @@
 package com.example.aptechstudentcaredserver.bean.request;
 
-import com.example.aptechstudentcaredserver.enums.DayOfWeek;
+import com.example.aptechstudentcaredserver.enums.DayOfWeeks;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +16,7 @@ public class ClassRequest {
     private String className;
     private String center;
     private String hour;
-    private List<DayOfWeek> days;
+    private List<DayOfWeeks> days;
     private String status;
     private String sem;
     private String courseCode;

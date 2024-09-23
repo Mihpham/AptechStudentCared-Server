@@ -54,8 +54,8 @@ public class User {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<UserCourse> userCourses;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private List<Schedule> schedules;
+//    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+//    private List<Schedule> schedules;
 
     @Enumerated(EnumType.STRING)
     private Status status;
