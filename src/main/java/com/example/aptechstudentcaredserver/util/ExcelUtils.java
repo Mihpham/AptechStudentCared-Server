@@ -2,9 +2,11 @@ package com.example.aptechstudentcaredserver.util;
 
 import com.example.aptechstudentcaredserver.bean.request.StudentRequest;
 import com.example.aptechstudentcaredserver.bean.request.SubjectExamScoreRequest;
+import com.example.aptechstudentcaredserver.bean.request.SubjectRequest;
 import com.example.aptechstudentcaredserver.bean.response.ImportResponse;
 import com.example.aptechstudentcaredserver.service.ExamDetailService;
 import com.example.aptechstudentcaredserver.service.StudentService;
+import com.example.aptechstudentcaredserver.service.SubjectService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.web.multipart.MultipartFile;
@@ -360,6 +362,109 @@ public class ExcelUtils {
         return errorMessage.length() > 0 ? errorMessage.toString() : null;
     }
 
+    public static List<ImportResponse> parseSubjectExcelFile(MultipartFile file, SubjectService subjectService) throws IOException {
+        List<ImportResponse> importResults = new ArrayList<>();
+
+        try (InputStream is = file.getInputStream();
+             Workbook workbook = new XSSFWorkbook(is)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+            if (sheet == null) {
+                throw new IllegalArgumentException("No sheets found in the file");
+            }
+
+            Row firstRow = sheet.getRow(0);
+            if (firstRow == null) {
+                importResults.add(new ImportResponse("File format is incorrect.", -1));
+                return importResults;
+            }
+
+            int requiredColumns = 3; // Adjust based on the number of columns you expect for subjects
+
+            if (firstRow.getPhysicalNumberOfCells() < requiredColumns) {
+                importResults.add(new ImportResponse("File format is incorrect. The file does not contain enough columns. Expected at least " + requiredColumns + " (Subject Name, Subject Code, Total Hours).", -1));
+                return importResults;
+            }
+
+            int subjectNameIndex = 1;
+            int subjectCodeIndex = 2;
+            int totalHoursIndex = 3;
+
+            for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) { // Skip header row
+                Row row = sheet.getRow(i);
+                if (row == null) {
+                    continue;
+                }
+
+                ImportResponse importResponse = new ImportResponse("Success", i); // Row number (1-based)
+                StringBuilder errorBuilder = new StringBuilder();
+
+                try {
+                    SubjectRequest subject = new SubjectRequest();
+                    subject.setSubjectName(getCellValue(row.getCell(subjectNameIndex)));
+                    subject.setSubjectCode(getCellValue(row.getCell(subjectCodeIndex)));
+
+                    String totalHoursString = getCellValue(row.getCell(totalHoursIndex));
+                    if (totalHoursString != null && !totalHoursString.trim().isEmpty()) {
+                        try { 
+                            double totalHoursDouble = Double.parseDouble(totalHoursString);
+                            subject.setTotalHours((int) totalHoursDouble); // Cast to int
+                        } catch (NumberFormatException e) {
+                            System.out.println("Invalid total hours: " + totalHoursString);
+                        }
+                    }
+
+
+                    // Validate subject data
+                    String validationMessage = validateSubject(subject);
+                    if (validationMessage != null) {
+                        importResponse.setMessage(validationMessage);
+                    } else {
+                        subjectService.createSubject(subject); // Assuming you have a method to create a subject
+                    }
+
+                } catch (Exception e) {
+                    errorBuilder.append(e.getMessage());
+                    importResponse.setMessage(errorBuilder.toString());
+                }
+
+                if (errorBuilder.length() > 0) {
+                    importResults.add(new ImportResponse(errorBuilder.toString(), i + 1));
+                } else {
+                    importResults.add(importResponse);
+                }
+            }
+
+            if (importResults.isEmpty()) {
+                importResults.add(new ImportResponse("File format is incorrect.", -1));
+            }
+        }
+
+        return importResults;
+    }
+
+    private static String validateSubject(SubjectRequest subject) {
+        StringBuilder errors = new StringBuilder();
+
+        // Validate Subject Name
+        if (subject.getSubjectName() == null || subject.getSubjectName().isEmpty()) {
+            errors.append("Subject Name is missing. ");
+        }
+
+        // Validate Subject Code
+        if (subject.getSubjectCode() == null || subject.getSubjectCode().isEmpty()) {
+            errors.append("Subject Code is missing. ");
+        }
+
+        // Validate Total Hours
+        if (subject.getTotalHours() == null) {
+            errors.append("Total Hours is missing. ");
+        } else if (subject.getTotalHours() <= 0) {
+            errors.append("Total Hours must be greater than 0. ");
+        }
+
+        return errors.length() > 0 ? errors.toString() : null;
+    }
 
 }
 
