@@ -38,7 +38,7 @@ public class ExcelUtils {
                 importResults.add(new ImportResponse("File format is incorrect.", -1));
                 return importResults;
             }
-            int requiredColumns = 13; // Adjust this based on the number of columns you expect
+            int requiredColumns = 12; // Adjust this based on the number of columns you expect
 
             // Check if the first row contains the required number of columns
             if (firstRow.getPhysicalNumberOfCells() < requiredColumns) {
@@ -58,18 +58,18 @@ public class ExcelUtils {
                 return importResults;
             }
 
-            int rollNumberIndex = 1; // Bỏ qua cột đầu tiên (index 0)
-            int fullNameIndex = 2;   // Điều chỉnh các chỉ số cột theo sau
-            int genderIndex = 3;
-            int classNameIndex = 4;
-            int dobIndex = 5;
-            int phoneNumberIndex = 6;
-            int addressIndex = 7;
-            int coursesIndex = 8;
-            int parentFullNameIndex = 9;
-            int studentRelationIndex = 10;
-            int parentPhoneIndex = 11;
-            int parentGenderIndex = 12;
+//            int rollNumberIndex = 1; // Bỏ qua cột đầu tiên (index 0)
+            int fullNameIndex = 1;   // Điều chỉnh các chỉ số cột theo sau
+            int genderIndex = 2;
+            int classNameIndex = 3;
+            int dobIndex = 4;
+            int phoneNumberIndex = 5;
+            int addressIndex = 6;
+            int coursesIndex = 7;
+            int parentFullNameIndex = 8;
+            int studentRelationIndex = 9;
+            int parentPhoneIndex = 10;
+            int parentGenderIndex = 11;
 
             for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) { // Bỏ qua dòng tiêu đề
                 Row row = sheet.getRow(i);
@@ -82,7 +82,7 @@ public class ExcelUtils {
 
                 try {
                     StudentRequest student = new StudentRequest();
-                    student.setRollNumber(getCellValue(row.getCell(rollNumberIndex)));
+//                    student.setRollNumber(getCellValue(row.getCell(rollNumberIndex)));
                     student.setFullName(getCellValue(row.getCell(fullNameIndex)));
                     student.setGender(getCellValue(row.getCell(genderIndex)));
                     student.setClassName(getCellValue(row.getCell(classNameIndex)));
@@ -165,10 +165,10 @@ public class ExcelUtils {
     private static String validateStudent(StudentRequest student) {
         StringBuilder errors = new StringBuilder();
 
-        // Validate Roll Number
-        if (student.getRollNumber() == null || student.getRollNumber().isEmpty()) {
-            errors.append("Roll Number is missing. ");
-        }
+//        // Validate Roll Number
+//        if (student.getRollNumber() == null || student.getRollNumber().isEmpty()) {
+//            errors.append("Roll Number is missing. ");
+//        }
 
         // Validate Full Name
         if (student.getFullName() == null || student.getFullName().isEmpty()) {

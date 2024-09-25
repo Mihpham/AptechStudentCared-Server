@@ -1,5 +1,6 @@
 package com.example.aptechstudentcaredserver.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -20,18 +21,12 @@ public class Schedule {
     @Column(name = "end_date", nullable = false)
     private LocalDateTime endDate;
 
-    @OneToMany(mappedBy = "schedule")
+    @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Attendance> attendances;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @ManyToOne
-    @JoinColumn(name = "subject_id", nullable = false)
-    private Subject subject;
-
-    @ManyToOne
     @JoinColumn(name = "class_id", nullable = false)
+    @JsonIgnore
     private Class classes;
 }

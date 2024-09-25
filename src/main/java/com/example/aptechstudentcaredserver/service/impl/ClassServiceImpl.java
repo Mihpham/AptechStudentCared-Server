@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.service.impl;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
+import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
 import com.example.aptechstudentcaredserver.bean.response.StudentResponse;
 import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.*;
@@ -43,6 +44,34 @@ public class ClassServiceImpl implements ClassService {
         return listClass.stream()
                 .map(this::convertToClassResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public CourseWithClassesResponse findClassWithSubjectByClassId(int classId) {
+        Class existingClass = classRepository.findById(classId)
+                .orElseThrow(() -> new NotFoundException("Class not found with id: " + classId));
+
+        Course course = existingClass.getCourse();
+        if (course == null) {
+            throw new NotFoundException("No course found for the class");
+        }
+
+        List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
+
+        Map<String, List<String>> subjectsBySemester = courseSubjects.stream()
+                .collect(Collectors.groupingBy(
+                        cs -> cs.getSemester().getName(),
+                        Collectors.mapping(cs -> cs.getSubject().getSubjectCode(), Collectors.toList())
+                ));
+
+        return new CourseWithClassesResponse(
+                existingClass.getId(),
+                existingClass.getClassName(),
+                course.getCourseName(),
+                course.getCourseCode(),
+                course.getCourseCompTime(),
+                subjectsBySemester
+        );
     }
 
     @Override
@@ -96,8 +125,9 @@ public class ClassServiceImpl implements ClassService {
         newClass.setClassName(classRequest.getClassName());
         newClass.setCenter(classRequest.getCenter());
         newClass.setHour(classRequest.getHour());
-        newClass.setDays(classRequest.getDays());
+        newClass.setDays(classRequest.getDays()); // Set trực tiếp từ ClassRequest
         newClass.setStatus(Status.STUDYING);
+
         Course course = courseRepository.findByCourseCode(classRequest.getCourseCode());
         if (course == null) {
             throw new NotFoundException("Course not found with code: " + classRequest.getCourseCode());
@@ -110,7 +140,6 @@ public class ClassServiceImpl implements ClassService {
 
         newClass.setCreatedAt(LocalDateTime.now());
         newClass.setUpdatedAt(LocalDateTime.now());
-
 
         classRepository.save(newClass);
     }
@@ -256,8 +285,6 @@ public class ClassServiceImpl implements ClassService {
                 })
                 .collect(Collectors.toList());
 
-
-        // Chỉ lấy UserSubject cho lớp hiện tại
         List<UserSubject> userSubjects = userSubjectRepository.findByClassroom(classEntity);
 
         Map<String, String> subjectTeacherMap = userSubjects.stream()
