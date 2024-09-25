@@ -14,7 +14,7 @@ import java.util.Map;
 public class CourseRequest {
     private int id;
     private String courseName;
-    private String courseCode;
+//    private String courseCode;
     private String courseCompTime;
     private Map<String, List<String>> semesters = new HashMap<>();
 }
