@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -52,7 +53,6 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         Attendance savedAttendance = attendanceRepository.save(attendance);
 
-        // Tạo và trả về AttendanceResponse với thông tin ngày
         return new AttendanceResponse(
                 savedAttendance.getId(),
                 user.getUserDetail().getFullName(),
@@ -67,9 +67,26 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public List<Attendance> getAttendancesByScheduleId(int scheduleId) {
-        return attendanceRepository.findByScheduleId(scheduleId);
+    public List<AttendanceResponse> findAllAttendances() {
+        List<Attendance> attendances = attendanceRepository.findAll();
+        return attendances.stream()
+                .map(this::mapAttendanceToResponse)
+                .collect(Collectors.toList());
     }
 
-
+    private AttendanceResponse mapAttendanceToResponse(Attendance attendance) {
+        User user = attendance.getUser();
+        return new AttendanceResponse(
+                attendance.getId(),
+                user != null ? user.getUserDetail().getFullName() : "Unknown",
+                attendance.getAttendance1(),
+                attendance.getAttendance2(),
+                attendance.getCheckin1(),
+                attendance.getCheckin2(),
+                attendance.getNote(),
+                attendance.getCreatedAt(),
+                attendance.getSchedule().getStartDate()
+        );
+    }
 }
+
