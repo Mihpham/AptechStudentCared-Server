@@ -14,10 +14,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 
-public class SubjectExamScoreRequest {
+public class StudentExamScoreRequest {
+    private int classId;
+    private String className;
     private String rollNumber;
+    private String studentName;
     private String subjectCode;
     private BigDecimal theoreticalScore;
     private BigDecimal practicalScore;
-    private int classId;
 }
