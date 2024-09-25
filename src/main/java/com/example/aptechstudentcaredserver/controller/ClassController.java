@@ -31,7 +31,7 @@ public class ClassController {
 
     @GetMapping("/class/{classId}")
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
-    public ResponseEntity<CourseWithClassesResponse> f(@PathVariable int classId) {
+    public ResponseEntity<CourseWithClassesResponse> findClassWithSubjectByClassId(@PathVariable int classId) {
         CourseWithClassesResponse classDetails = classService.findClassWithSubjectByClassId(classId);
         return new ResponseEntity<>(classDetails, HttpStatus.OK);
     }
