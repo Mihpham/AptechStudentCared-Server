@@ -16,5 +16,6 @@ public interface StudentService {
     public StudentResponse findStudentById(int studentId);
     public StudentResponse updateStudent(int studentId, StudentRequest studentRq);
     public void deleteStudent(int studentId);
+    public boolean checkRollNumberExists(String rollNumber);
 }
 

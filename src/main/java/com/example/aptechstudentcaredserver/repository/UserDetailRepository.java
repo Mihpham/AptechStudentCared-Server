@@ -7,5 +7,5 @@ import java.util.Optional;
 
 public interface UserDetailRepository extends JpaRepository<UserDetail, Integer> {
     Optional<UserDetail> findByFullName(String fullName);
-
+    boolean existsByRollNumber(String rollNumber);
 }
