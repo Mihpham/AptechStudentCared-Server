@@ -1,6 +1,7 @@
 package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.ScheduleRequest;
+import com.example.aptechstudentcaredserver.bean.response.ScheduleResponse;
 import com.example.aptechstudentcaredserver.entity.Schedule;
 import com.example.aptechstudentcaredserver.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
@@ -17,34 +18,40 @@ public class ScheduleController {
 
     private final ScheduleService scheduleService;
 
-    @GetMapping("/{scheduleId}") // Endpoint mới
-    public ResponseEntity<Schedule> getScheduleById(@PathVariable int scheduleId) {
-            Schedule schedule = scheduleService.getScheduleById(scheduleId);
+    @GetMapping("/{scheduleId}")
+    public ResponseEntity<ScheduleResponse> getScheduleById(@PathVariable int scheduleId) {
+        ScheduleResponse schedule = scheduleService.getScheduleById(scheduleId);
             return new ResponseEntity<>(schedule, HttpStatus.OK);
     }
 
-    @GetMapping("/class/{classId}")
-    public ResponseEntity<List<Schedule>> getSchedulesByClassId(@PathVariable int classId) {
-        List<Schedule> schedules = scheduleService.getSchedulesByClassId(classId);
+    @GetMapping("/class/{classId}/subject/{subjectId}")
+    public ResponseEntity<List<ScheduleResponse>> getSchedulesByClassAndSubjectId(
+            @PathVariable int classId,
+            @PathVariable int subjectId) {
+        List<ScheduleResponse> schedules = scheduleService.getSchedulesByClassAndSubjectId(classId, subjectId);
         return new ResponseEntity<>(schedules, HttpStatus.OK);
     }
 
-    @PostMapping("/create/class/{classId}")
-    public ResponseEntity<List<Schedule>> createSchedule(
+
+
+    @PostMapping("/create/class/{classId}/subject/{subjectId}")
+    public ResponseEntity<List<ScheduleResponse>> createSchedule(
             @PathVariable int classId,
+            @PathVariable int subjectId,
             @RequestBody ScheduleRequest request) {
 
-        List<Schedule> schedules = scheduleService.createSchedule(request, classId);
-        return new ResponseEntity<>(schedules, HttpStatus.CREATED);
+        List<ScheduleResponse> responses = scheduleService.createSchedule(request, classId, subjectId);
+        return new ResponseEntity<>(responses, HttpStatus.CREATED);
     }
 
-    @PutMapping("/class/{classId}")
-    public ResponseEntity<List<Schedule>> updateSchedule(
+    @PutMapping("/class/{classId}/subject/{subjectId}")
+    public ResponseEntity<List<ScheduleResponse>> updateSchedule(
             @PathVariable int classId,
+            @PathVariable int subjectId,
             @RequestBody ScheduleRequest request) {
 
-        List<Schedule> schedules = scheduleService.updateSchedule(request, classId);
-        return new ResponseEntity<>(schedules, HttpStatus.CREATED);
+        List<ScheduleResponse> responses = scheduleService.updateSchedule(request, classId, subjectId);
+        return new ResponseEntity<>(responses, HttpStatus.OK);
     }
 
 }

@@ -26,6 +26,10 @@ public class Schedule {
     private List<Attendance> attendances;
 
     @ManyToOne
+    @JoinColumn(name = "subject_id", nullable = false)
+    private Subject subject;
+
+    @ManyToOne
     @JoinColumn(name = "class_id", nullable = false)
     @JsonIgnore
     private Class classes;

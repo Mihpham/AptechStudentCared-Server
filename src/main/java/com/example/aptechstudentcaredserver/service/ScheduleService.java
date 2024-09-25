@@ -1,17 +1,18 @@
 package com.example.aptechstudentcaredserver.service;
 
 import com.example.aptechstudentcaredserver.bean.request.ScheduleRequest;
-import com.example.aptechstudentcaredserver.entity.Schedule;
+import com.example.aptechstudentcaredserver.bean.response.ScheduleResponse;
 
 import java.util.List;
 
 public interface ScheduleService {
-    Schedule getScheduleById(int scheduleId);
+    ScheduleResponse getScheduleById(int scheduleId);
 
-    List<Schedule> getSchedulesByClassId(int classId);
+    List<ScheduleResponse> getSchedulesByClassAndSubjectId(int classId, int subjectId);
 
-    List<Schedule> createSchedule(ScheduleRequest scheduleRq, int classId);
 
-    List<Schedule> updateSchedule(ScheduleRequest scheduleRq, int classId);
+    List<ScheduleResponse> createSchedule(ScheduleRequest scheduleRq, int classId, int subjectId);
+
+    List<ScheduleResponse> updateSchedule(ScheduleRequest scheduleRq, int classId, int subjectId);
 
 }
