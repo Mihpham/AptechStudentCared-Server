@@ -1,6 +1,6 @@
 package com.example.aptechstudentcaredserver.controller;
 
-import com.example.aptechstudentcaredserver.bean.request.SubjectExamScoreRequest;
+import com.example.aptechstudentcaredserver.bean.request.StudentExamScoreRequest;
 import com.example.aptechstudentcaredserver.bean.response.ImportResponse;
 import com.example.aptechstudentcaredserver.bean.response.StudentExamScoreResponse;
 import com.example.aptechstudentcaredserver.service.ExamDetailService;
@@ -28,7 +28,7 @@ public class ExamDetailController {
     @PutMapping("/update-score/{classId}")
     public ResponseEntity<StudentExamScoreResponse> updateStudentExamScore(
             @PathVariable int classId,
-            @RequestBody SubjectExamScoreRequest scoreRequest) {
+            @RequestBody StudentExamScoreRequest scoreRequest) {
         StudentExamScoreResponse updatedExamScore = examDetailService.updateStudentExamScore(scoreRequest, classId);
         return ResponseEntity.ok(updatedExamScore);
     }
