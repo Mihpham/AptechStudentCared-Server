@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class AttendanceResponse {
     private int id;
+    private int scheduleId;
+    private int studentId;
     private String studentName;
     private String attendanceStatus1;
     private String attendanceStatus2;

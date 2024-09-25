@@ -7,7 +7,7 @@ import com.example.aptechstudentcaredserver.entity.Attendance;
 import java.util.List;
 
 public interface AttendanceService {
-    public AttendanceResponse updateOrCreateAttendance(int userId, int scheduleId, AttendanceRequest request);
+    public AttendanceResponse   updateOrCreateAttendance(int userId, int scheduleId, AttendanceRequest request);
     List<AttendanceResponse> findAllAttendances();
 
 }

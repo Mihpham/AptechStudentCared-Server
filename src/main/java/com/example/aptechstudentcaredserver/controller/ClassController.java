@@ -29,11 +29,11 @@ public class ClassController {
         return new ResponseEntity<>(classResponses, HttpStatus.OK);
     }
 
-    @GetMapping("/subjects")
+    @GetMapping("/class/{classId}")
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
-    public ResponseEntity<List<CourseWithClassesResponse>> findAllCoursesWithSubjects() {
-        List<CourseWithClassesResponse> classResponses = classService.findAllCoursesWithSubjects();
-        return new ResponseEntity<>(classResponses, HttpStatus.OK);
+    public ResponseEntity<CourseWithClassesResponse> f(@PathVariable int classId) {
+        CourseWithClassesResponse classDetails = classService.findClassWithSubjectByClassId(classId);
+        return new ResponseEntity<>(classDetails, HttpStatus.OK);
     }
 
     @GetMapping("/{classId}")

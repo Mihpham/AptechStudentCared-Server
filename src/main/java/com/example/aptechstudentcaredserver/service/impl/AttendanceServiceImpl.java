@@ -55,6 +55,8 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         return new AttendanceResponse(
                 savedAttendance.getId(),
+                user.getId(),
+                schedule.getId(),
                 user.getUserDetail().getFullName(),
                 savedAttendance.getAttendance1(),
                 savedAttendance.getAttendance2(),
@@ -76,9 +78,12 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     private AttendanceResponse mapAttendanceToResponse(Attendance attendance) {
         User user = attendance.getUser();
+        Schedule schedule = attendance.getSchedule();
         return new AttendanceResponse(
                 attendance.getId(),
-                user != null ? user.getUserDetail().getFullName() : "Unknown",
+                schedule.getId(),
+                user.getId(),
+                user.getUserDetail().getFullName(),
                 attendance.getAttendance1(),
                 attendance.getAttendance2(),
                 attendance.getCheckin1(),

@@ -13,9 +13,9 @@ import java.util.Map;
 @NoArgsConstructor
 public class CourseWithClassesResponse {
     private int id;
+    private String className;
     private String courseName;
     private String courseCode;
     private String courseCompTime;
     private Map<String, List<String>> semesters;
-    private Map<Integer, String> classes;
 }

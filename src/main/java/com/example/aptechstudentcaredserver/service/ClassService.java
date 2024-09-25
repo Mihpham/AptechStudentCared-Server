@@ -11,9 +11,10 @@ import java.util.Map;
 public interface ClassService {
 
     public List<ClassResponse> findAllClass();
-    public List<CourseWithClassesResponse> findAllCoursesWithSubjects() ;
 
-        Map<String, List<String>> getAllSubjectsBySemester(int classId, String semesterName);
+    public CourseWithClassesResponse findClassWithSubjectByClassId(int classId);
+
+    Map<String, List<String>> getAllSubjectsBySemester(int classId, String semesterName);
 
     public ClassResponse findClassById(int classId);
 
@@ -23,5 +24,5 @@ public interface ClassService {
 
     public void deleteClass(int classId);
 
-    void assignTeacherToSubject(int classId,String subjectCode, String teacherName);
+    void assignTeacherToSubject(int classId, String subjectCode, String teacherName);
 }
