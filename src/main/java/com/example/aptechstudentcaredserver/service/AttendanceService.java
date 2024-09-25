@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface AttendanceService {
     public AttendanceResponse updateOrCreateAttendance(int userId, int scheduleId, AttendanceRequest request);
-    List<AttendanceResponse> findAllAttendances(); // New method for finding all attendances
+    List<AttendanceResponse> findAllAttendances();
 
 }
 

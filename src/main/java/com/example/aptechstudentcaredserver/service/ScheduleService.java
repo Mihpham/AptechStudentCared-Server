@@ -6,7 +6,7 @@ import com.example.aptechstudentcaredserver.entity.Schedule;
 import java.util.List;
 
 public interface ScheduleService {
-    Schedule getScheduleById(int scheduleId); // Thêm phương thức mới
+    Schedule getScheduleById(int scheduleId);
 
     List<Schedule> getSchedulesByClassId(int classId);
 

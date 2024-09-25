@@ -27,7 +27,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         return scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new NotFoundException("Schedule not found"));
     }
-    
+
     @Override
     public List<Schedule> getSchedulesByClassId(int classId) {
         return scheduleRepository.findByClassesId(classId);
@@ -67,13 +67,6 @@ public class ScheduleServiceImpl implements ScheduleService {
     private List<Schedule> createNewSchedules(ScheduleRequest request, Class classEntity) {
         List<DayOfWeeks> classDays = classEntity.getDays();
         List<Schedule> schedules = new ArrayList<>();
-        String[] hours = classEntity.getHour().split("-");
-        LocalDateTime startTime = LocalDateTime.parse(request.getStartDate().toLocalDate() + "T" + hours[0]);
-        LocalDateTime endTime = LocalDateTime.parse(request.getStartDate().toLocalDate() + "T" + hours[1]);
-
-        if (endTime.isBefore(startTime)) {
-            throw new RuntimeException("End time must be after start time.");
-        }
 
         LocalDateTime currentDate = request.getStartDate();
         while (!currentDate.isAfter(request.getEndDate())) {
@@ -81,8 +74,10 @@ public class ScheduleServiceImpl implements ScheduleService {
                 if (currentDate.getDayOfWeek().getValue() == day.getValue()) {
                     Schedule schedule = new Schedule();
                     schedule.setClasses(classEntity);
-                    schedule.setStartDate(startTime.withDayOfMonth(currentDate.getDayOfMonth()));
-                    schedule.setEndDate(endTime.withDayOfMonth(currentDate.getDayOfMonth()));
+
+                    schedule.setStartDate(currentDate);
+                    schedule.setEndDate(currentDate);
+
                     schedules.add(schedule);
                 }
             }
@@ -91,4 +86,5 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         return schedules;
     }
+
 }
