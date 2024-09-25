@@ -1,5 +1,6 @@
 package com.example.aptechstudentcaredserver.service;
 
+import com.example.aptechstudentcaredserver.bean.request.AssignTeacherRequest;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
@@ -24,5 +25,5 @@ public interface ClassService {
 
     public void deleteClass(int classId);
 
-    void assignTeacherToSubject(int classId, String subjectCode, String teacherName);
+    void assignTeacherToSubject(int classId, AssignTeacherRequest assignTeacherRequest);
 }

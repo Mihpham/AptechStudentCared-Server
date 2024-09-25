@@ -23,5 +23,5 @@ public class ClassResponse {
     private String sem;
     private CourseResponse course;
     private List<StudentResponse> students;
-    private Map<String, String> subjectTeacherMap;
+    private List<SubjectTeacherResponse> subjectTeachers;
 }

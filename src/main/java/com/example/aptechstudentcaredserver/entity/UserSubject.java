@@ -1,5 +1,6 @@
 package com.example.aptechstudentcaredserver.entity;
 
+import com.example.aptechstudentcaredserver.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -24,6 +25,9 @@ public class UserSubject {
     @ManyToOne
     @JoinColumn(name = "class_id")
     private Class classroom;
+
+    @Enumerated(EnumType.STRING)
+    private Status status;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", nullable = false, updatable = false)

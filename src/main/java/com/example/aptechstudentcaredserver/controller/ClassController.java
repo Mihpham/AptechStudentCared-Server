@@ -73,7 +73,7 @@ public class ClassController {
             @PathVariable int classId,
             @RequestBody AssignTeacherRequest request) {
         try {
-            classService.assignTeacherToSubject(classId, request.getSubjectCode(), request.getTeacherName());
+            classService.assignTeacherToSubject(classId, request);
             return ResponseEntity.ok("Assign Teacher successfully");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
