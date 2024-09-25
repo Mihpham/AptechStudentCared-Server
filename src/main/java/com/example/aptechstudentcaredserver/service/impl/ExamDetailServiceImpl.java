@@ -1,13 +1,12 @@
 package com.example.aptechstudentcaredserver.service.impl;
 
-import com.example.aptechstudentcaredserver.bean.request.SubjectExamScoreRequest;
+import com.example.aptechstudentcaredserver.bean.request.StudentExamScoreRequest;
 import com.example.aptechstudentcaredserver.bean.response.StudentExamScoreResponse;
 import com.example.aptechstudentcaredserver.entity.ExamDetail;
 import com.example.aptechstudentcaredserver.entity.GroupClass;
 import com.example.aptechstudentcaredserver.entity.Subject;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.enums.MarkType;
-import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.ExamDetailRepository;
 import com.example.aptechstudentcaredserver.repository.GroupClassRepository;
 import com.example.aptechstudentcaredserver.repository.SubjectRepository;
@@ -20,7 +19,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -37,53 +35,51 @@ public class ExamDetailServiceImpl implements ExamDetailService {
 
         for (GroupClass member : classMembers) {
             List<Subject> subjects = subjectRepository.findAll();
-            List<SubjectExamScoreRequest> subjectScores = new ArrayList<>();
 
             for (Subject subject : subjects) {
-                // Check for theoretical score
-                Optional<ExamDetail> theoreticalDetailOpt = examDetailRepository.findByUserIdAndSubjectIdAndExamType(
-                        member.getUser().getId(), subject.getId(), MarkType.THEORETICAL);
-                BigDecimal theoreticalScore = theoreticalDetailOpt.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
+                // Fetch or default theoretical and practical scores
+                BigDecimal theoreticalScore = examDetailRepository
+                        .findByUserIdAndSubjectIdAndExamType(member.getUser().getId(), subject.getId(), MarkType.THEORETICAL)
+                        .map(ExamDetail::getScore)
+                        .orElse(BigDecimal.ZERO);
 
-                // Check for practical score
-                Optional<ExamDetail> practicalDetailOpt = examDetailRepository.findByUserIdAndSubjectIdAndExamType(
-                        member.getUser().getId(), subject.getId(), MarkType.PRACTICAL);
-                BigDecimal practicalScore = practicalDetailOpt.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
+                BigDecimal practicalScore = examDetailRepository
+                        .findByUserIdAndSubjectIdAndExamType(member.getUser().getId(), subject.getId(), MarkType.PRACTICAL)
+                        .map(ExamDetail::getScore)
+                        .orElse(BigDecimal.ZERO);
 
-                // Add the subject exam score to the list (removing studentId)
-                subjectScores.add(SubjectExamScoreRequest.builder()
-                        .rollNumber(member.getUser().getUserDetail().getRollNumber()) // Set studentName here
+                // Build response for each subject, while including student details
+                StudentExamScoreResponse response = StudentExamScoreResponse.builder()
+                        .className(member.getClasses().getClassName()) // Assuming this field exists in GroupClass
+                        .rollNumber(member.getUser().getUserDetail().getRollNumber())
+                        .studentName(member.getUser().getUserDetail().getFullName())
                         .subjectCode(subject.getSubjectCode())
                         .theoreticalScore(theoreticalScore)
                         .practicalScore(practicalScore)
-                        .classId(classId)
-                        .build());
+                        .build();
+
+                examScores.add(response);
             }
-
-            // Build response object for each student
-            StudentExamScoreResponse response = StudentExamScoreResponse.builder()
-                    .rollNumber(member.getUser().getUserDetail().getRollNumber())
-                    .subjects(subjectScores)
-                    .build();
-
-            examScores.add(response);
         }
+
         return examScores;
     }
 
     @Override
-    public StudentExamScoreResponse updateStudentExamScore(SubjectExamScoreRequest scoreRequest, int classId) {
+    public StudentExamScoreResponse updateStudentExamScore(StudentExamScoreRequest scoreRequest, int classId) {
         // Find the class members
         List<GroupClass> classMembers = groupClassRepository.findByClassesId(classId);
 
-        // Find the student by name in the class
+        // Find the student by both rollNumber and fullName in the class
         User student = classMembers.stream()
                 .map(GroupClass::getUser)
-                .filter(u -> u.getUserDetail().getRollNumber().equals(scoreRequest.getRollNumber()))
+                .filter(u -> u.getUserDetail().getRollNumber().equals(scoreRequest.getRollNumber()) &&
+                        u.getUserDetail().getFullName().equals(scoreRequest.getStudentName()))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Student '" + scoreRequest.getRollNumber() + "' not found in the specified class"));
+                .orElseThrow(() -> new RuntimeException("Student with rollNumber '" + scoreRequest.getRollNumber() +
+                        "' and name '" + scoreRequest.getStudentName() + "' not found in the specified class"));
 
-        // Find the subject
+        // Find the subject by code
         Subject subject = subjectRepository.findBySubjectCode(scoreRequest.getSubjectCode())
                 .orElseThrow(() -> new RuntimeException("Subject '" + scoreRequest.getSubjectCode() + "' not found"));
 
@@ -109,31 +105,34 @@ public class ExamDetailServiceImpl implements ExamDetailService {
         practicalDetail.setUpdatedAt(LocalDateTime.now());
         examDetailRepository.save(practicalDetail);
 
-        // Convert to response object
+        // Return the updated response for the subject
         return convertToResponse(student, subject);
     }
 
+
     private StudentExamScoreResponse convertToResponse(User user, Subject subject) {
-        // Fetch scores for response
+        // Fetch scores for theoretical and practical exams
         BigDecimal theoreticalScore = examDetailRepository.findByUserIdAndSubjectIdAndExamType(
                         user.getId(), subject.getId(), MarkType.THEORETICAL)
-                .map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
+                .map(ExamDetail::getScore)
+                .orElse(BigDecimal.ZERO);
 
         BigDecimal practicalScore = examDetailRepository.findByUserIdAndSubjectIdAndExamType(
                         user.getId(), subject.getId(), MarkType.PRACTICAL)
-                .map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
+                .map(ExamDetail::getScore)
+                .orElse(BigDecimal.ZERO);
 
-        // Create response
-        SubjectExamScoreRequest subjectScore = SubjectExamScoreRequest.builder()
-                .rollNumber(user.getUserDetail().getRollNumber())
+        // Create and return response with student details (rollNumber, fullName) and subject details
+        return StudentExamScoreResponse.builder()
+                .className(user.getGroupClasses().stream()
+                        .findFirst() // Assuming user is linked to one class, adjust if multiple classes
+                        .map(groupClass -> groupClass.getClasses().getClassName())
+                        .orElse("Unknown Class"))
+                .rollNumber(user.getUserDetail().getRollNumber()) // Ensure rollNumber is included
+                .studentName(user.getUserDetail().getFullName())  // Ensure fullName is included
                 .subjectCode(subject.getSubjectCode())
                 .theoreticalScore(theoreticalScore)
                 .practicalScore(practicalScore)
-                .build();
-
-        return StudentExamScoreResponse.builder()
-                .rollNumber(user.getUserDetail().getRollNumber())
-                .subjects(List.of(subjectScore))
                 .build();
     }
 }
