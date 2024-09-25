@@ -31,11 +31,9 @@ public class ClassServiceImpl implements ClassService {
     private final CourseRepository courseRepository;
     private final CourseSubjectRepository courseSubjectRepository;
     private final SemesterRepository semesterRepository;
-    private final UserDetailRepository userDetailRepository;
     private final UserRepository userRepository;
     private final UserSubjectRepository userSubjectRepository;
-    private final SubjectRepository subjectRepository;
-
+    
     @Override
     public List<ClassResponse> findAllClass() {
         List<Class> listClass = classRepository.findAll();
@@ -145,7 +143,6 @@ public class ClassServiceImpl implements ClassService {
         existingClass.setUpdatedAt(LocalDateTime.now());
         classRepository.save(existingClass);
 
-
         return convertToClassResponse(existingClass);
     }
 
@@ -158,45 +155,43 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public void assignTeacherToSubject(String subjectCode, String teacherName) {
-        // Tìm giáo viên mới dựa trên tên
+    public void assignTeacherToSubject(int classId, String subjectCode, String teacherName) {
+        Class existingClass = classRepository.findById(classId)
+                .orElseThrow(() -> new RuntimeException("Class not found with id: " + classId));
+
         User newTeacher = userRepository.findByUserDetailFullName(teacherName);
         if (newTeacher == null || !newTeacher.getRole().getRoleName().equals("TEACHER")) {
-            throw new RuntimeException("Giáo viên không hợp lệ");
+            throw new RuntimeException("Invalid teacher");
         }
 
-        // Lấy tất cả CourseSubject và lọc theo tên môn học
-        List<CourseSubject> courseSubjects = courseSubjectRepository.findAll();
+        List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(existingClass.getCourse().getId());
         List<CourseSubject> filteredCourseSubjects = courseSubjects.stream()
                 .filter(cs -> cs.getSubject().getSubjectCode().equals(subjectCode))
                 .collect(Collectors.toList());
 
         if (filteredCourseSubjects.isEmpty()) {
-            throw new RuntimeException("Môn học không hợp lệ hoặc không được gán trong khóa học");
+            throw new RuntimeException("Invalid subject or not assigned in the course");
         }
 
-        // Lặp qua các CourseSubject để kiểm tra và gán giáo viên
+        List<UserSubject> userSubjectsForClass = userSubjectRepository.findByClassroom(existingClass);
+
         for (CourseSubject courseSubject : filteredCourseSubjects) {
             Subject subject = courseSubject.getSubject();
 
-            Optional<UserSubject> existingUserSubject = userSubjectRepository.findByUserAndSubject(newTeacher, subject);
+            Optional<UserSubject> existingUserSubject = userSubjectsForClass.stream()
+                    .filter(us -> us.getSubject().equals(subject))
+                    .findFirst();
+
             if (existingUserSubject.isPresent()) {
-                throw new RuntimeException("Giáo viên đã được gán cho môn học này");
-            }
-
-            // Kiểm tra UserSubject hiện tại
-            Optional<UserSubject> userSubjectOptional = userSubjectRepository.findBySubject(subject);
-
-            if (userSubjectOptional.isPresent()) {
-                UserSubject userSubject = userSubjectOptional.get();
+                UserSubject userSubject = existingUserSubject.get();
                 userSubject.setUser(newTeacher);
                 userSubject.setUpdatedAt(LocalDateTime.now());
                 userSubjectRepository.save(userSubject);
             } else {
-                // Nếu không tìm thấy UserSubject, tạo mới
                 UserSubject newUserSubject = new UserSubject();
                 newUserSubject.setUser(newTeacher);
                 newUserSubject.setSubject(subject);
+                newUserSubject.setClassroom(existingClass);
                 newUserSubject.setCreatedAt(LocalDateTime.now());
                 newUserSubject.setUpdatedAt(LocalDateTime.now());
                 userSubjectRepository.save(newUserSubject);
@@ -204,19 +199,15 @@ public class ClassServiceImpl implements ClassService {
         }
     }
 
-
-
-
     private ClassResponse convertToClassResponse(Class classEntity) {
         List<GroupClass> groupClasses = groupClassRepository.findByClassesId(classEntity.getId());
-
         Course course = classEntity.getCourse();
         CourseResponse courseResponse = null;
-        List<CourseSubject> courseSubjects = null; // Định nghĩa biến này
+
+        // Lấy danh sách các môn học của khóa học
+        List<CourseSubject> courseSubjects = course != null ? courseSubjectRepository.findByCourseId(course.getId()) : List.of();
 
         if (course != null) {
-            courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
-
             String currentSemester = classEntity.getSemester() != null ? classEntity.getSemester().getName() : null;
 
             Map<String, List<String>> semesterSubjects = courseSubjects.stream()
@@ -235,61 +226,45 @@ public class ClassServiceImpl implements ClassService {
             );
         }
 
-        Semester semester = classEntity.getSemester();
-        String semesterName = semester != null ? semester.getName() : null;
+        String semesterName = classEntity.getSemester() != null ? classEntity.getSemester().getName() : null;
 
         List<StudentResponse> studentResponses = groupClasses.stream()
-                .filter(groupClass -> groupClass.getUser() != null
-                        && groupClass.getUser().getRole() != null
-                        && groupClass.getUser().getRole().getRoleName().equals("STUDENT"))
                 .map(groupClass -> {
                     User user = groupClass.getUser();
                     List<String> courses = userCourseRepository.findByUserId(user.getId()).stream()
                             .map(userCourse -> userCourse.getCourse().getCourseName())
                             .collect(Collectors.toList());
 
-                    UserDetail userDetail = user.getUserDetail();
-                    String parentFullName = null;
-                    String parentRelation = null;
-                    String parentPhone = null;
-                    String parentGender = null;
-
-                    if (userDetail != null && userDetail.getParent() != null) {
-                        Parent parent = userDetail.getParent();
-                        parentFullName = parent.getFullName();
-                        parentRelation = parent.getStudentRelation();
-                        parentPhone = parent.getPhone();
-                        parentGender = parent.getGender();
-                    }
-
                     return new StudentResponse(
                             user.getId(),
-                            userDetail != null ? userDetail.getImage() : null,
-                            userDetail != null ? userDetail.getRollNumber() : null,
-                            userDetail != null ? userDetail.getFullName() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getImage() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getFullName() : null,
                             user.getEmail(),
-                            userDetail != null ? userDetail.getAddress() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getAddress() : null,
                             classEntity.getClassName(),
-                            userDetail != null ? userDetail.getGender() : null,
-                            userDetail != null ? userDetail.getDob() : null,
-                            userDetail != null ? userDetail.getPhone() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getGender() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getDob() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
                             courses,
                             groupClass.getStatus() != null ? groupClass.getStatus().name() : null,
-                            parentFullName,
-                            parentRelation,
-                            parentPhone,
-                            parentGender
+                            user.getUserDetail() != null ? user.getUserDetail().getParent().getFullName() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getParent().getStudentRelation() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getParent().getPhone() : null,
+                            user.getUserDetail() != null ? user.getUserDetail().getParent().getGender() : null
                     );
                 })
                 .collect(Collectors.toList());
 
-        List<UserSubject> userSubjects = userSubjectRepository.findBySubjectIn(courseSubjects.stream()
-                .map(CourseSubject::getSubject)
-                .collect(Collectors.toList()));
+
+        // Chỉ lấy UserSubject cho lớp hiện tại
+        List<UserSubject> userSubjects = userSubjectRepository.findByClassroom(classEntity);
 
         Map<String, String> subjectTeacherMap = userSubjects.stream()
-                .collect(Collectors.toMap(userSubject -> userSubject.getSubject().getSubjectCode(),
-                        userSubject -> userSubject.getUser().getUserDetail().getFullName())); // Lấy tên giáo viên từ UserDetail
+                .collect(Collectors.toMap(
+                        userSubject -> userSubject.getSubject().getSubjectCode(),
+                        userSubject -> userSubject.getUser().getUserDetail().getFullName()
+                ));
 
         return new ClassResponse(
                 classEntity.getId(),
@@ -305,6 +280,4 @@ public class ClassServiceImpl implements ClassService {
                 subjectTeacherMap
         );
     }
-
-
 }
