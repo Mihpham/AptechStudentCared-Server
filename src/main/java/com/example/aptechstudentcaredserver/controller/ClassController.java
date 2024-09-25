@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.controller;
 import com.example.aptechstudentcaredserver.bean.request.AssignTeacherRequest;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
+import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
 import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
 import com.example.aptechstudentcaredserver.service.ClassService;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,13 @@ public class ClassController {
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
     public ResponseEntity<List<ClassResponse>> findAllClass() {
         List<ClassResponse> classResponses = classService.findAllClass();
+        return new ResponseEntity<>(classResponses, HttpStatus.OK);
+    }
+
+    @GetMapping("/subjects")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<CourseWithClassesResponse>> findAllCoursesWithSubjects() {
+        List<CourseWithClassesResponse> classResponses = classService.findAllCoursesWithSubjects();
         return new ResponseEntity<>(classResponses, HttpStatus.OK);
     }
 

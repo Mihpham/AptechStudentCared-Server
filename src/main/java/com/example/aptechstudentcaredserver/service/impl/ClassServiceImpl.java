@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.service.impl;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
+import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
 import com.example.aptechstudentcaredserver.bean.response.StudentResponse;
 import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.*;
@@ -44,6 +45,45 @@ public class ClassServiceImpl implements ClassService {
                 .map(this::convertToClassResponse)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<CourseWithClassesResponse> findAllCoursesWithSubjects() {
+        List<Course> courses = courseRepository.findAll();
+        if (courses.isEmpty()) {
+            throw new EmptyListException("No courses found.");
+        }
+
+        return courses.stream()
+                .map(course -> {
+                    // Get the list of class IDs and names associated with the course
+                    List<Class> classes = classRepository.findByCourseId(course.getId());
+                    Map<Integer, String> classMap = classes.stream()
+                            .collect(Collectors.toMap(Class::getId, Class::getClassName));
+
+                    // Get the subjects associated with the course
+                    List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
+
+                    // Group subjects by semester
+                    Map<String, List<String>> subjectsBySemester = courseSubjects.stream()
+                            .collect(Collectors.groupingBy(
+                                    cs -> cs.getSemester().getName(),
+                                    Collectors.mapping(cs -> cs.getSubject().getSubjectCode(), Collectors.toList())
+                            ));
+
+                    return new CourseWithClassesResponse(
+                            course.getId(),
+                            course.getCourseName(),
+                            course.getCourseCode(),
+                            course.getCourseCompTime(),
+                            subjectsBySemester,
+                            classMap
+                    );
+                })
+                .collect(Collectors.toList());
+    }
+
+
+
 
     @Override
     public ClassResponse findClassById(int classId) {
@@ -256,8 +296,6 @@ public class ClassServiceImpl implements ClassService {
                 })
                 .collect(Collectors.toList());
 
-
-        // Chỉ lấy UserSubject cho lớp hiện tại
         List<UserSubject> userSubjects = userSubjectRepository.findByClassroom(classEntity);
 
         Map<String, String> subjectTeacherMap = userSubjects.stream()

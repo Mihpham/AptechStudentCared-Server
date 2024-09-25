@@ -2,6 +2,8 @@ package com.example.aptechstudentcaredserver.service;
 
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
+import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
+import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -9,8 +11,9 @@ import java.util.Map;
 public interface ClassService {
 
     public List<ClassResponse> findAllClass();
+    public List<CourseWithClassesResponse> findAllCoursesWithSubjects() ;
 
-    Map<String, List<String>> getAllSubjectsBySemester(int classId, String semesterName);
+        Map<String, List<String>> getAllSubjectsBySemester(int classId, String semesterName);
 
     public ClassResponse findClassById(int classId);
 
