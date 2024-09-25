@@ -1,7 +1,7 @@
 package com.example.aptechstudentcaredserver.util;
 
+import com.example.aptechstudentcaredserver.bean.request.StudentExamScoreRequest;
 import com.example.aptechstudentcaredserver.bean.request.StudentRequest;
-import com.example.aptechstudentcaredserver.bean.request.SubjectExamScoreRequest;
 import com.example.aptechstudentcaredserver.bean.request.SubjectRequest;
 import com.example.aptechstudentcaredserver.bean.response.ImportResponse;
 import com.example.aptechstudentcaredserver.service.ExamDetailService;
@@ -286,7 +286,7 @@ public class ExcelUtils {
                 StringBuilder errorBuilder = new StringBuilder();
 
                 try {
-                    SubjectExamScoreRequest examDetailRequest = new SubjectExamScoreRequest();
+                    StudentExamScoreRequest examDetailRequest = new StudentExamScoreRequest();
                     examDetailRequest.setRollNumber(getCellValue(row.getCell(studentNameCol)));
                     examDetailRequest.setSubjectCode(getCellValue(row.getCell(subjectNameCol)));
 
@@ -327,7 +327,7 @@ public class ExcelUtils {
             return importResults;
         }
     }
-    private static String validateExamMark(SubjectExamScoreRequest examDetailRequest) {
+    private static String validateExamMark(StudentExamScoreRequest examDetailRequest) {
         StringBuilder errorMessage = new StringBuilder();
 
         // Kiểm tra studentName
