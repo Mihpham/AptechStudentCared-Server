@@ -1,5 +1,6 @@
 package com.example.aptechstudentcaredserver.bean.response;
 
+import com.example.aptechstudentcaredserver.bean.request.StudentExamScoreRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,9 +16,5 @@ import java.util.List;
 
 public class StudentExamScoreResponse {
     private String className;
-    private String rollNumber;
-    private String studentName;
-    private String subjectCode;
-    private BigDecimal theoreticalScore;
-    private BigDecimal practicalScore;
+    private List<StudentExamScoreRequest> listExamScore;
 }

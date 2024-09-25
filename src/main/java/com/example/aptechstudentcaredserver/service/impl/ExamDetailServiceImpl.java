@@ -7,6 +7,7 @@ import com.example.aptechstudentcaredserver.entity.GroupClass;
 import com.example.aptechstudentcaredserver.entity.Subject;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.enums.MarkType;
+import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.ExamDetailRepository;
 import com.example.aptechstudentcaredserver.repository.GroupClassRepository;
 import com.example.aptechstudentcaredserver.repository.SubjectRepository;
@@ -31,26 +32,39 @@ public class ExamDetailServiceImpl implements ExamDetailService {
     @Override
     public List<StudentExamScoreResponse> getExamScoresByClass(int classId) {
         List<GroupClass> classMembers = groupClassRepository.findByClassesId(classId);
-        List<StudentExamScoreResponse> examScores = new ArrayList<>();
+        List<StudentExamScoreResponse> examScoresResponse = new ArrayList<>();
 
+        // Fetch class name based on classId (assuming the class entity holds the name)
+        String className = classMembers.stream()
+                .findFirst()
+                .map(member -> member.getClasses().getClassName())
+                .orElse("Unknown Class");
+
+        // Loop through each class member (students)
         for (GroupClass member : classMembers) {
+            List<StudentExamScoreRequest> scoresList = new ArrayList<>();
+
+            // Fetch all subjects for the class
             List<Subject> subjects = subjectRepository.findAll();
 
             for (Subject subject : subjects) {
-                // Fetch or default theoretical and practical scores
+                // Fetch scores for both theoretical and practical exams
                 BigDecimal theoreticalScore = examDetailRepository
-                        .findByUserIdAndSubjectIdAndExamType(member.getUser().getId(), subject.getId(), MarkType.THEORETICAL)
+                        .findByUserIdAndSubjectIdAndExamType(member.getUser().getId(),
+                                subject.getId(), MarkType.THEORETICAL)
                         .map(ExamDetail::getScore)
                         .orElse(BigDecimal.ZERO);
 
                 BigDecimal practicalScore = examDetailRepository
-                        .findByUserIdAndSubjectIdAndExamType(member.getUser().getId(), subject.getId(), MarkType.PRACTICAL)
+                        .findByUserIdAndSubjectIdAndExamType(member.getUser().getId(),
+                                subject.getId(), MarkType.PRACTICAL)
                         .map(ExamDetail::getScore)
                         .orElse(BigDecimal.ZERO);
 
-                // Build response for each subject, while including student details
-                StudentExamScoreResponse response = StudentExamScoreResponse.builder()
-                        .className(member.getClasses().getClassName()) // Assuming this field exists in GroupClass
+                // Create a new score request for each subject
+                StudentExamScoreRequest scoreRequest = StudentExamScoreRequest.builder()
+                        .classId(classId) // Set the classId
+                        .className(className) // Set the className
                         .rollNumber(member.getUser().getUserDetail().getRollNumber())
                         .studentName(member.getUser().getUserDetail().getFullName())
                         .subjectCode(subject.getSubjectCode())
@@ -58,11 +72,19 @@ public class ExamDetailServiceImpl implements ExamDetailService {
                         .practicalScore(practicalScore)
                         .build();
 
-                examScores.add(response);
+                scoresList.add(scoreRequest);
             }
+
+            // Create response for each student
+            StudentExamScoreResponse response = StudentExamScoreResponse.builder()
+                    .className(className)
+                    .listExamScore(scoresList)
+                    .build();
+
+            examScoresResponse.add(response);
         }
 
-        return examScores;
+        return examScoresResponse;
     }
 
     @Override
@@ -70,18 +92,19 @@ public class ExamDetailServiceImpl implements ExamDetailService {
         // Find the class members
         List<GroupClass> classMembers = groupClassRepository.findByClassesId(classId);
 
-        // Find the student by both rollNumber and fullName in the class
+        // Find the student by rollNumber and fullName
         User student = classMembers.stream()
                 .map(GroupClass::getUser)
                 .filter(u -> u.getUserDetail().getRollNumber().equals(scoreRequest.getRollNumber()) &&
                         u.getUserDetail().getFullName().equals(scoreRequest.getStudentName()))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Student with rollNumber '" + scoreRequest.getRollNumber() +
-                        "' and name '" + scoreRequest.getStudentName() + "' not found in the specified class"));
+                .orElseThrow(() -> new NotFoundException("Student with rollNumber '" + scoreRequest.getRollNumber()
+                        + "' and name '" + scoreRequest.getStudentName() + "' not found in the specified class"));
 
         // Find the subject by code
         Subject subject = subjectRepository.findBySubjectCode(scoreRequest.getSubjectCode())
-                .orElseThrow(() -> new RuntimeException("Subject '" + scoreRequest.getSubjectCode() + "' not found"));
+                .orElseThrow(() -> new NotFoundException("Subject '" + scoreRequest.getSubjectCode()
+                        + "' not found"));
 
         // Update or create the theoretical score
         ExamDetail theoreticalDetail = examDetailRepository.findByUserIdAndSubjectIdAndExamType(
@@ -105,10 +128,9 @@ public class ExamDetailServiceImpl implements ExamDetailService {
         practicalDetail.setUpdatedAt(LocalDateTime.now());
         examDetailRepository.save(practicalDetail);
 
-        // Return the updated response for the subject
+        // Build the updated response for the subject
         return convertToResponse(student, subject);
     }
-
 
     private StudentExamScoreResponse convertToResponse(User user, Subject subject) {
         // Fetch scores for theoretical and practical exams
@@ -122,17 +144,30 @@ public class ExamDetailServiceImpl implements ExamDetailService {
                 .map(ExamDetail::getScore)
                 .orElse(BigDecimal.ZERO);
 
-        // Create and return response with student details (rollNumber, fullName) and subject details
-        return StudentExamScoreResponse.builder()
+        // Create a new score request for the response
+        StudentExamScoreRequest scoreRequest = StudentExamScoreRequest.builder()
+                .classId(user.getGroupClasses().stream()
+                        .findFirst() // Assuming user is linked to one class
+                        .map(groupClass -> groupClass.getClasses().getId())
+                        .orElseThrow(() -> new NotFoundException("Class not found with")))
                 .className(user.getGroupClasses().stream()
-                        .findFirst() // Assuming user is linked to one class, adjust if multiple classes
+                        .findFirst() // Assuming user is linked to one class
                         .map(groupClass -> groupClass.getClasses().getClassName())
-                        .orElse("Unknown Class"))
-                .rollNumber(user.getUserDetail().getRollNumber()) // Ensure rollNumber is included
-                .studentName(user.getUserDetail().getFullName())  // Ensure fullName is included
+                        .orElse("Unknown Class")) // Set the className
+                .rollNumber(user.getUserDetail().getRollNumber())
+                .studentName(user.getUserDetail().getFullName())
                 .subjectCode(subject.getSubjectCode())
                 .theoreticalScore(theoreticalScore)
                 .practicalScore(practicalScore)
+                .build();
+
+        // Create and return the response containing class information and scores
+        return StudentExamScoreResponse.builder()
+                .className(user.getGroupClasses().stream()
+                        .findFirst() // Assuming user is linked to one class
+                        .map(groupClass -> groupClass.getClasses().getClassName())
+                        .orElse("Unknown Class"))
+                .listExamScore(List.of(scoreRequest)) // Wrap in a list
                 .build();
     }
 }
