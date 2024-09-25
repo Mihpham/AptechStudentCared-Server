@@ -94,7 +94,7 @@ public class CourseServiceTest {
         CourseRequest courseRequest = new CourseRequest();
         courseRequest.setCourseName("Math");
 
-        when(courseRepository.findByCourseCode("Math")).thenReturn(new Course());
+        when(courseRepository.findByCourseName("Math")).thenReturn(new Course());
 
         assertThrows(DuplicateException.class, () -> courseService.createCourse(courseRequest));
     }

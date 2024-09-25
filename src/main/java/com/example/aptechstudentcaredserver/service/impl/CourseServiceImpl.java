@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -54,22 +53,23 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public void createCourse(CourseRequest request) {
-        String generatedCourseCode = generateCourseCode(request.getCourseName());
         Course existCourseByName = courseRepository.findByCourseName(request.getCourseName());
         if (existCourseByName != null) {
-            throw new DuplicateException("Course with name '" + request.getCourseName() + "' already exists.");
+            throw new DuplicateException("Course with name '" + request.getCourseName() + "' already exists");
         }
-        Course existCourseByCode = courseRepository.findByCourseCode(generatedCourseCode);
+
+        Course existCourseByCode = courseRepository.findByCourseCode(request.getCourseCode());
         if (existCourseByCode != null) {
-            throw new DuplicateException("Course with code '" + generatedCourseCode + "' already exists.");
+            throw new DuplicateException("Course with code '" + request.getCourseCode() + "' already exists");
         }
 
         if (request.getSemesters() == null || request.getSemesters().isEmpty()) {
             throw new NotFoundException("At least one semester and subject must be provided");
         }
+
         Course course = new Course();
         course.setCourseName(request.getCourseName());
-        course.setCourseCode(generatedCourseCode); // Sử dụng mã khóa học tự động tạo
+        course.setCourseCode(request.getCourseCode());
         course.setCourseCompTime(request.getCourseCompTime());
         course.setCreatedAt(LocalDateTime.now());
         course.setUpdatedAt(LocalDateTime.now());
@@ -92,28 +92,30 @@ public class CourseServiceImpl implements CourseService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new NotFoundException("Course with ID " + courseId + " not found"));
 
+        // Kiểm tra tên và mã khóa học trùng lặp
         Course existCourseByName = courseRepository.findByCourseName(request.getCourseName());
         if (existCourseByName != null && existCourseByName.getId() != courseId) {
             throw new DuplicateException("Course with name '" + request.getCourseName() + "' already exists.");
         }
 
-        String generatedCourseCode = generateCourseCode(request.getCourseName());
-
-        Course existCourseByCode = courseRepository.findByCourseCode(generatedCourseCode);
+        Course existCourseByCode = courseRepository.findByCourseCode(request.getCourseCode());
         if (existCourseByCode != null && existCourseByCode.getId() != courseId) {
-            throw new DuplicateException("Course with code '" + generatedCourseCode + "' already exists.");
+            throw new DuplicateException("Course with code '" + request.getCourseCode() + "' already exists.");
         }
 
+        // Cập nhật thông tin khóa học
         course.setCourseName(request.getCourseName());
-        course.setCourseCode(generatedCourseCode);
+        course.setCourseCode(request.getCourseCode());
         course.setCourseCompTime(request.getCourseCompTime());
         course.setUpdatedAt(LocalDateTime.now());
 
         courseRepository.save(course);
 
+        // Xử lý các môn học và kỳ học
         List<CourseSubject> courseSubjectsToSave = new ArrayList<>();
         List<CourseSubject> courseSubjectsToDelete = courseSubjectRepository.findByCourseId(courseId);
 
+        // Xoá các môn học không còn trong yêu cầu
         List<CourseSubject> subjectsToDelete = courseSubjectsToDelete.stream()
                 .filter(cs -> !request.getSemesters().containsKey(cs.getSemester().getName()) ||
                         !request.getSemesters().get(cs.getSemester().getName()).contains(cs.getSubject().getSubjectCode()))
@@ -127,8 +129,10 @@ public class CourseServiceImpl implements CourseService {
         } catch (NotFoundException e) {
             throw e;
         }
+
         return convertToCourseResponse(course);
     }
+
 
 
     @Override
@@ -201,27 +205,4 @@ public class CourseServiceImpl implements CourseService {
                 semesterSubjects
         );
     }
-
-    public String generateCourseCode(String subjectName) {
-        List<String> ignoreWords = Arrays.asList("in", "on", "at", "of", "the", "and", "a", "an", "to", "for");
-
-        String[] words = subjectName.trim().split("\\s+");
-        if (words.length == 1) {
-            return words[0].toUpperCase().substring(0, Math.min(words[0].length(), 6));
-        }
-        StringBuilder code = new StringBuilder();
-        for (String word : words) {
-            if (!ignoreWords.contains(word.toLowerCase())) {
-                if (code.length() < 6) {
-                    code.append(Character.toUpperCase(word.charAt(0)));
-                } else {
-                    break; // Đảm bảo mã không quá 6 ký tự
-                }
-            }
-        }
-
-        return code.toString();
-    }
-
-
 }

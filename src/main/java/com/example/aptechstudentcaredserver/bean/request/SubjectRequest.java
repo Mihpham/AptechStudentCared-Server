@@ -14,8 +14,8 @@ public class SubjectRequest {
     @NotNull(message = "Subject name cannot be null")
     private String subjectName;
 
-//    @NotBlank(message = "Subject code cannot be blank")
-//    private String subjectCode;
+    @NotBlank(message = "Subject code cannot be blank")
+    private String subjectCode;
 
     @NotNull(message = "Total hours cannot be null")
     private Integer totalHours;

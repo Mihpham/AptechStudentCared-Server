@@ -35,4 +35,3 @@ src/main/resources/application.properties
 target/classes/application.properties
 db_school.sql
 .idea/misc.xml
-target/classes/application.properties
