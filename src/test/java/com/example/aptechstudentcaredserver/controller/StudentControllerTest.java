@@ -232,46 +232,12 @@ class StudentControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-//    @Test
-//    @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
-//    void updateStudent_existingStudentId_shouldReturnSuccessMessage() throws Exception {
-//        StudentRequest studentRequest = StudentRequest.builder()
-//                .image("updated_image.png")
-//                .rollNumber("S001")
-//                .fullName("John Doe Updated")
-//                .password("new_password")
-//                .gender("Male")
-//                .className("Class 2")
-//                .dob("2000-01-01")
-//                .phoneNumber("0987654321")
-//                .email("john.updated@example.com")
-//                .address("789 New St")
-//                .courses(Set.of("Physics", "Biology"))
-//                .status("Active")
-//                .parentFullName("Jane Doe")
-//                .studentRelation("Mother")
-//                .parentPhone("1234567890")
-//                .parentGender("Female")
-//                .build();
-//
-//        doNothing().when(studentService).updateStudent(anyInt(), any(StudentRequest.class));
-//
-//        mockMvc.perform(put("/api/students/1")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content("{ \"fullName\": \"John Doe Updated\", \"email\": \"john.updated@example.com\", \"phoneNumber\": \"0987654321\", \"gender\": \"Male\", \"className\": \"Class 2\" }"))
-//                .andExpect(status().isOk())
-//                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-//                .andExpect(jsonPath("$.message").value("Student updated successfully"));
-//
-//        verify(studentService, times(1)).updateStudent(anyInt(), any(StudentRequest.class));
-//    }
 
     @Test
     @WithMockUser(username = "admin@example.com", roles = {"ADMIN"})
     void updateStudent_nonExistingStudentId_shouldReturnNotFound() throws Exception {
         StudentRequest studentRequest = StudentRequest.builder()
                 .image("updated_image.png")
-                .rollNumber("S001")
                 .fullName("John Doe Updated")
                 .password("new_password")
                 .gender("Male")
