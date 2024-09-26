@@ -46,6 +46,28 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public List<UserResponse> findUsersByRoleName(String roleName) {
+        List<User> users = userRepository.findByRoleRoleName(roleName);
+
+        if (users.isEmpty()) {
+            throw new EmptyListException("No users found with role: " + roleName);
+        }
+
+        return users.stream()
+                .map(this::convertUserToUserResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public long countUsersByRoleName(String roleName) {
+        List<User> users = userRepository.findByRoleRoleName(roleName);
+        if (users.isEmpty()) {
+            return userRepository.count();
+        }
+        return users.size();
+    }
+
+    @Override
     public UserResponse findUserById(int id) {
         return userRepository.findById(id)
                 .map(this::convertUserToUserResponse)

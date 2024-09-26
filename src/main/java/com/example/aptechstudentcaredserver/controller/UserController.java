@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.controller;
 import com.example.aptechstudentcaredserver.bean.request.ChangePasswordRequest;
 import com.example.aptechstudentcaredserver.bean.response.UserResponse;
 import com.example.aptechstudentcaredserver.entity.User;
+import com.example.aptechstudentcaredserver.exception.EmptyListException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.UserRepository;
 import com.example.aptechstudentcaredserver.service.CloudinaryService;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +39,41 @@ public class UserController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+
+    @GetMapping("/role/{roleName}")
+    public ResponseEntity<List<UserResponse>> getUsersByRoleName(@PathVariable String roleName) {
+        List<UserResponse> users = userService.findUsersByRoleName(roleName);
+        return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/role/total/{roleName}")
+    public ResponseEntity<Map<String, Long>> countUsersByRoleName(@PathVariable(required = false) String roleName) {
+        try {
+            long totalAccount;
+
+            // Nếu không có roleName, lấy tất cả tài khoản
+            if (roleName == null || roleName.isEmpty()) {
+                totalAccount = userService.countAllUsers();  // Hàm này sẽ đếm tất cả các tài khoản
+            } else {
+                totalAccount = userService.countUsersByRoleName(roleName);  // Đếm tài khoản theo roleName
+            }
+
+            Map<String, Long> response = new HashMap<>();
+            response.put("totalAccount", totalAccount);
+
+            return ResponseEntity.ok(response);  // Trả về với status 200 và JSON body
+        } catch (EmptyListException e) {
+            Map<String, Long> response = new HashMap<>();
+            response.put("totalAccount", 0L);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);  // Trả về với status 404
+        } catch (Exception e) {
+            Map<String, Long> response = new HashMap<>();
+            response.put("totalAccount", 0L);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);  // Trả về với status 500
+        }
+    }
+
+
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable int id) {
@@ -108,6 +145,5 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "An error occurred"));
         }
     }
-
 
 }
