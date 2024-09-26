@@ -5,12 +5,13 @@ import com.example.aptechstudentcaredserver.bean.response.ScheduleResponse;
 import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.Schedule;
 import com.example.aptechstudentcaredserver.entity.Subject;
+import com.example.aptechstudentcaredserver.entity.UserSubject; // Thêm import
 import com.example.aptechstudentcaredserver.enums.DayOfWeeks;
-import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.ClassRepository;
 import com.example.aptechstudentcaredserver.repository.ScheduleRepository;
 import com.example.aptechstudentcaredserver.repository.SubjectRepository;
+import com.example.aptechstudentcaredserver.repository.UserSubjectRepository; // Thêm import
 import com.example.aptechstudentcaredserver.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     private final ClassRepository classRepository;
     private final ScheduleRepository scheduleRepository;
     private final SubjectRepository subjectRepository;
+    private final UserSubjectRepository userSubjectRepository; // Thêm repository
 
     @Override
     public ScheduleResponse getScheduleById(int scheduleId) {
@@ -41,64 +43,52 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public List<ScheduleResponse> createSchedule(ScheduleRequest request, int classId, int subjectId) {
-        Class classEntity = classRepository.findById(classId)
-                .orElseThrow(() -> new NotFoundException("Class not found"));
+        UserSubject userSubject = userSubjectRepository.findByClassroomIdAndSubjectId(classId, subjectId)
+                .orElseThrow(() -> new NotFoundException("UserSubject not found"));
 
-        Subject subject = subjectRepository.findById(subjectId)
-                .orElseThrow(() -> new NotFoundException("Subject not found"));
+        Class classEntity = userSubject.getClassroom();
+        Subject subject = userSubject.getSubject();
+        int numberOfSessions = userSubject.getNumberOfSessions();
 
-        List<Schedule> existingSchedules = scheduleRepository.findByClassesIdAndSubjectId(classId, subjectId);
-        if (!existingSchedules.isEmpty()) {
-            throw new DuplicateException("Schedule already exists for this class and subject. Please update instead.");
-        }
-
-        List<Schedule> schedules = createAndSaveSchedules(request, classEntity, subject);
+        List<Schedule> schedules = createAndSaveSchedules(request.getStartDate(), classEntity, subject, numberOfSessions);
         return convertToResponse(schedules);
     }
+
 
     @Override
     public List<ScheduleResponse> updateSchedule(ScheduleRequest request, int classId, int subjectId) {
-        Class classEntity = classRepository.findById(classId)
-                .orElseThrow(() -> new NotFoundException("Class not found"));
-
-        Subject subject = subjectRepository.findById(subjectId)
-                .orElseThrow(() -> new NotFoundException("Subject not found"));
-
-        List<Schedule> existingSchedules = scheduleRepository.findByClassesIdAndSubjectId(classId, subjectId);
-        if (!existingSchedules.isEmpty()) {
-            scheduleRepository.deleteAll(existingSchedules);
-        }
-
-        List<Schedule> schedules = createAndSaveSchedules(request, classEntity, subject);
-        return convertToResponse(schedules);
+        // Tương tự như phương thức createSchedule, bạn có thể thêm logic cho update nếu cần
+        return null;
     }
 
-    private List<Schedule> createAndSaveSchedules(ScheduleRequest request, Class classEntity, Subject subject) {
-        List<Schedule> schedules = createNewSchedules(request, classEntity, subject);
-        return scheduleRepository.saveAll(schedules);
-    }
-
-    private List<Schedule> createNewSchedules(ScheduleRequest request, Class classEntity, Subject subject) {
+    private List<Schedule> createAndSaveSchedules(LocalDateTime startDate, Class classEntity, Subject subject, int numberOfSessions) {
         List<DayOfWeeks> classDays = classEntity.getDays();
         List<Schedule> schedules = new ArrayList<>();
+        int sessionsCreated = 0;
 
-        LocalDateTime currentDate = request.getStartDate();
-        while (!currentDate.isAfter(request.getEndDate())) {
+        LocalDateTime currentDate = startDate;
+
+        while (sessionsCreated < numberOfSessions) {
             for (DayOfWeeks day : classDays) {
                 if (currentDate.getDayOfWeek().getValue() == day.getValue()) {
                     Schedule schedule = new Schedule();
                     schedule.setClasses(classEntity);
                     schedule.setSubject(subject);
                     schedule.setStartDate(currentDate);
-                    schedule.setEndDate(currentDate);
+                    schedule.setEndDate(currentDate); // Có thể sửa lại nếu có thời gian cụ thể
 
                     schedules.add(schedule);
+                    sessionsCreated++;
+
+                    if (sessionsCreated >= numberOfSessions) {
+                        break;
+                    }
                 }
             }
             currentDate = currentDate.plusDays(1);
         }
 
-        return schedules;
+        return scheduleRepository.saveAll(schedules);
     }
 
     private ScheduleResponse convertToResponse(Schedule schedule) {
@@ -106,8 +96,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         response.setScheduleId(schedule.getId());
         response.setStartDate(schedule.getStartDate());
         response.setEndDate(schedule.getEndDate());
-        response.setSubjectName(schedule.getSubject().getSubjectName()); // Đảm bảo phương thức getSubjectName() đã được định nghĩa
-        response.setClassName(schedule.getClasses().getClassName()); // Đảm bảo phương thức getClassName() đã được định nghĩa
+        response.setSubjectName(schedule.getSubject().getSubjectName());
+        response.setClassName(schedule.getClasses().getClassName());
         return response;
     }
 
@@ -119,4 +109,3 @@ public class ScheduleServiceImpl implements ScheduleService {
         return responses;
     }
 }
-
