@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SubjectTeacherResponse {
+    private int subjectId;
+    private int teacherId;
     private String subjectCode;
     private String teacherName;
     private String status;

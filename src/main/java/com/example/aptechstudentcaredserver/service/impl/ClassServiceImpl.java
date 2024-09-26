@@ -288,11 +288,17 @@ public class ClassServiceImpl implements ClassService {
         List<UserSubject> userSubjects = userSubjectRepository.findByClassroom(classEntity);
 
         List<SubjectTeacherResponse> subjectTeacherResponses = userSubjects.stream()
-                .map(userSubject -> new SubjectTeacherResponse(
-                        userSubject.getSubject().getSubjectCode(),
-                        userSubject.getUser().getUserDetail().getFullName(),
-                        userSubject.getStatus().name()
-                ))
+                .map(userSubject -> {
+                    Subject subject = userSubject.getSubject();
+                    User teacher = userSubject.getUser();
+                    return new SubjectTeacherResponse(
+                            subject.getId(),
+                            teacher.getId(),
+                            subject.getSubjectCode(),
+                            teacher.getUserDetail().getFullName(),
+                            userSubject.getStatus().name()
+                    );
+                })
                 .collect(Collectors.toList());
 
         return new ClassResponse(
