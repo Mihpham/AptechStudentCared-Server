@@ -47,32 +47,22 @@ public class UserController {
     }
 
     @GetMapping("/role/total/{roleName}")
-    public ResponseEntity<Map<String, Long>> countUsersByRoleName(@PathVariable(required = false) String roleName) {
+    public ResponseEntity<Map<String, Long>> countUsersByRoleName(@PathVariable String roleName) {
         try {
-            long totalAccount;
+            long totalAccount = userService.countUsersByRoleName(roleName);
 
-            // Nếu không có roleName, lấy tất cả tài khoản
-            if (roleName == null || roleName.isEmpty()) {
-                totalAccount = userService.countAllUsers();  // Hàm này sẽ đếm tất cả các tài khoản
-            } else {
-                totalAccount = userService.countUsersByRoleName(roleName);  // Đếm tài khoản theo roleName
-            }
-
+            // Sử dụng HashMap để đảm bảo kiểu chính xác
             Map<String, Long> response = new HashMap<>();
             response.put("totalAccount", totalAccount);
 
-            return ResponseEntity.ok(response);  // Trả về với status 200 và JSON body
-        } catch (EmptyListException e) {
-            Map<String, Long> response = new HashMap<>();
-            response.put("totalAccount", 0L);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);  // Trả về với status 404
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
+            // Trả về lỗi hệ thống
             Map<String, Long> response = new HashMap<>();
             response.put("totalAccount", 0L);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);  // Trả về với status 500
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-
 
 
     @GetMapping("/{id}")
