@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
 
@@ -22,7 +23,11 @@ public class Class {
 
     private String center;
 
-    private String hour;
+    @Column(name = "start_hour", nullable = false)
+    private LocalTime startHour;
+
+    @Column(name = "end_hour", nullable = false)
+    private LocalTime endHour;
 
     @ElementCollection(targetClass = DayOfWeeks.class)
     @CollectionTable(name = "class_days", joinColumns = @JoinColumn(name = "class_id"))
