@@ -7,4 +7,5 @@ import java.time.LocalDateTime;
 @Data
 public class ScheduleRequest {
     private LocalDateTime startDate;
+    private LocalDateTime endDate;
 }
