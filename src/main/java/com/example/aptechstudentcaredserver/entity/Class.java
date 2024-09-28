@@ -1,10 +1,12 @@
 package com.example.aptechstudentcaredserver.entity;
 
+import com.example.aptechstudentcaredserver.enums.DayOfWeeks;
 import com.example.aptechstudentcaredserver.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
 
@@ -21,9 +23,17 @@ public class Class {
 
     private String center;
 
-    private String hour;
+    @Column(name = "start_hour", nullable = false)
+    private LocalTime startHour;
 
-    private String days;
+    @Column(name = "end_hour", nullable = false)
+    private LocalTime endHour;
+
+    @ElementCollection(targetClass = DayOfWeeks.class)
+    @CollectionTable(name = "class_days", joinColumns = @JoinColumn(name = "class_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "days")
+    private List<DayOfWeeks> days;
 
     @Enumerated(EnumType.STRING)
     private Status status;

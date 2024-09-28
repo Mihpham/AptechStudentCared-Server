@@ -6,4 +6,5 @@ import lombok.Data;
 public class AssignTeacherRequest {
     private String subjectCode;
     private String teacherName;
+    private String status;
 }

@@ -14,11 +14,14 @@ public enum Status {
     /**
      * Status for student
      */
-    DELAY,DROPOUT,GRADUATED,
+    DELAY,DROPPED,GRADUATED,
 
     /**
      * Status for teacher
      */
     TEACHING,ONLEAVE,LEAVE,
-
+    /**
+     * Status for subject
+     */
+     LOCK,
 }

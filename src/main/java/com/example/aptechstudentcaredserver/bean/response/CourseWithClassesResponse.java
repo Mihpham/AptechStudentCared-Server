@@ -1,20 +1,21 @@
 package com.example.aptechstudentcaredserver.bean.response;
 
-import com.example.aptechstudentcaredserver.bean.request.StudentExamScoreRequest;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+
 
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-
-public class StudentExamScoreResponse {
+public class CourseWithClassesResponse {
+    private int id;
     private String className;
-    private List<StudentExamScoreRequest> listExamScore;
+    private String courseName;
+    private String courseCode;
+    private String courseCompTime;
+    private Map<String, List<String>> semesters;
 }

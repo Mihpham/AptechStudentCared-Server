@@ -1,9 +1,8 @@
 package com.example.aptechstudentcaredserver.service.impl;
 
+import com.example.aptechstudentcaredserver.bean.request.AssignTeacherRequest;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
-import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
-import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
-import com.example.aptechstudentcaredserver.bean.response.StudentResponse;
+import com.example.aptechstudentcaredserver.bean.response.*;
 import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.*;
 import com.example.aptechstudentcaredserver.enums.Status;
@@ -43,6 +42,34 @@ public class ClassServiceImpl implements ClassService {
         return listClass.stream()
                 .map(this::convertToClassResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public CourseWithClassesResponse findClassWithSubjectByClassId(int classId) {
+        Class existingClass = classRepository.findById(classId)
+                .orElseThrow(() -> new NotFoundException("Class not found with id: " + classId));
+
+        Course course = existingClass.getCourse();
+        if (course == null) {
+            throw new NotFoundException("No course found for the class");
+        }
+
+        List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(course.getId());
+
+        Map<String, List<String>> subjectsBySemester = courseSubjects.stream()
+                .collect(Collectors.groupingBy(
+                        cs -> cs.getSemester().getName(),
+                        Collectors.mapping(cs -> cs.getSubject().getSubjectCode(), Collectors.toList())
+                ));
+
+        return new CourseWithClassesResponse(
+                existingClass.getId(),
+                existingClass.getClassName(),
+                course.getCourseName(),
+                course.getCourseCode(),
+                course.getCourseCompTime(),
+                subjectsBySemester
+        );
     }
 
     @Override
@@ -95,9 +122,11 @@ public class ClassServiceImpl implements ClassService {
         Class newClass = new Class();
         newClass.setClassName(classRequest.getClassName());
         newClass.setCenter(classRequest.getCenter());
-        newClass.setHour(classRequest.getHour());
+        newClass.setStartHour(classRequest.getStartHour()); // Sử dụng giờ bắt đầu
+        newClass.setEndHour(classRequest.getEndHour());     // Sử dụng giờ kết thúc
         newClass.setDays(classRequest.getDays());
         newClass.setStatus(Status.STUDYING);
+
         Course course = courseRepository.findByCourseCode(classRequest.getCourseCode());
         if (course == null) {
             throw new NotFoundException("Course not found with code: " + classRequest.getCourseCode());
@@ -111,7 +140,6 @@ public class ClassServiceImpl implements ClassService {
         newClass.setCreatedAt(LocalDateTime.now());
         newClass.setUpdatedAt(LocalDateTime.now());
 
-
         classRepository.save(newClass);
     }
 
@@ -122,7 +150,8 @@ public class ClassServiceImpl implements ClassService {
 
         existingClass.setClassName(classRequest.getClassName());
         existingClass.setCenter(classRequest.getCenter());
-        existingClass.setHour(classRequest.getHour());
+        existingClass.setStartHour(classRequest.getStartHour());
+        existingClass.setEndHour(classRequest.getEndHour());
         existingClass.setDays(classRequest.getDays());
         existingClass.setStatus(Status.valueOf(classRequest.getStatus()));
 
@@ -146,6 +175,9 @@ public class ClassServiceImpl implements ClassService {
         return convertToClassResponse(existingClass);
     }
 
+
+
+
     @Override
     public void deleteClass(int classId) {
         Class existingClass = classRepository.findById(classId)
@@ -155,23 +187,30 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public void assignTeacherToSubject(int classId, String subjectCode, String teacherName) {
+    public void assignTeacherToSubject(int classId, AssignTeacherRequest request) {
         Class existingClass = classRepository.findById(classId)
                 .orElseThrow(() -> new RuntimeException("Class not found with id: " + classId));
 
-        User newTeacher = userRepository.findByUserDetailFullName(teacherName);
+        User newTeacher = userRepository.findByUserDetailFullName(request.getTeacherName());
         if (newTeacher == null || !newTeacher.getRole().getRoleName().equals("TEACHER")) {
             throw new RuntimeException("Invalid teacher");
         }
 
         List<CourseSubject> courseSubjects = courseSubjectRepository.findByCourseId(existingClass.getCourse().getId());
         List<CourseSubject> filteredCourseSubjects = courseSubjects.stream()
-                .filter(cs -> cs.getSubject().getSubjectCode().equals(subjectCode))
+                .filter(cs -> cs.getSubject().getSubjectCode().equals(request.getSubjectCode()))
                 .collect(Collectors.toList());
 
         if (filteredCourseSubjects.isEmpty()) {
             throw new RuntimeException("Invalid subject or not assigned in the course");
         }
+
+        // Lấy số giờ học từ lớp và môn học
+        int totalClassHours = existingClass.getEndHour().getHour() - existingClass.getStartHour().getHour();
+        int totalSubjectHours = filteredCourseSubjects.get(0).getSubject().getTotalHours(); // Giả định rằng môn học đã được xác định
+
+        // Tính số buổi học
+        int numberOfSessions = (int) Math.ceil((double) totalSubjectHours / totalClassHours);
 
         List<UserSubject> userSubjectsForClass = userSubjectRepository.findByClassroom(existingClass);
 
@@ -185,7 +224,9 @@ public class ClassServiceImpl implements ClassService {
             if (existingUserSubject.isPresent()) {
                 UserSubject userSubject = existingUserSubject.get();
                 userSubject.setUser(newTeacher);
+                userSubject.setStatus(Status.valueOf(request.getStatus()));
                 userSubject.setUpdatedAt(LocalDateTime.now());
+                userSubject.setNumberOfSessions(numberOfSessions);
                 userSubjectRepository.save(userSubject);
             } else {
                 UserSubject newUserSubject = new UserSubject();
@@ -194,17 +235,20 @@ public class ClassServiceImpl implements ClassService {
                 newUserSubject.setClassroom(existingClass);
                 newUserSubject.setCreatedAt(LocalDateTime.now());
                 newUserSubject.setUpdatedAt(LocalDateTime.now());
+                newUserSubject.setStatus(Status.ACTIVE);
+                newUserSubject.setNumberOfSessions(numberOfSessions);
                 userSubjectRepository.save(newUserSubject);
             }
         }
     }
+
+
 
     private ClassResponse convertToClassResponse(Class classEntity) {
         List<GroupClass> groupClasses = groupClassRepository.findByClassesId(classEntity.getId());
         Course course = classEntity.getCourse();
         CourseResponse courseResponse = null;
 
-        // Lấy danh sách các môn học của khóa học
         List<CourseSubject> courseSubjects = course != null ? courseSubjectRepository.findByCourseId(course.getId()) : List.of();
 
         if (course != null) {
@@ -256,28 +300,35 @@ public class ClassServiceImpl implements ClassService {
                 })
                 .collect(Collectors.toList());
 
-
-        // Chỉ lấy UserSubject cho lớp hiện tại
         List<UserSubject> userSubjects = userSubjectRepository.findByClassroom(classEntity);
 
-        Map<String, String> subjectTeacherMap = userSubjects.stream()
-                .collect(Collectors.toMap(
-                        userSubject -> userSubject.getSubject().getSubjectCode(),
-                        userSubject -> userSubject.getUser().getUserDetail().getFullName()
-                ));
+        List<SubjectTeacherResponse> subjectTeacherResponses = userSubjects.stream()
+                .map(userSubject -> {
+                    Subject subject = userSubject.getSubject();
+                    User teacher = userSubject.getUser();
+                    return new SubjectTeacherResponse(
+                            subject.getId(),
+                            teacher.getId(),
+                            subject.getSubjectCode(),
+                            teacher.getUserDetail().getFullName(),
+                            userSubject.getStatus().name()
+                    );
+                })
+                .collect(Collectors.toList());
 
         return new ClassResponse(
                 classEntity.getId(),
                 classEntity.getClassName(),
                 classEntity.getCenter(),
-                classEntity.getHour(),
+                classEntity.getStartHour(),
+                classEntity.getEndHour(),
                 classEntity.getDays(),
                 classEntity.getCreatedAt(),
                 classEntity.getStatus().name(),
                 semesterName,
                 courseResponse,
                 studentResponses,
-                subjectTeacherMap
+                subjectTeacherResponses
         );
     }
 }

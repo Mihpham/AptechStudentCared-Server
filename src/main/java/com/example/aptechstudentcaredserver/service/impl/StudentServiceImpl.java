@@ -106,6 +106,10 @@ public class StudentServiceImpl implements StudentService {
 
         updateUserDetails(user, userDetail, studentRq);
 
+        if (studentRq.getStatus() != null) {
+            user.setStatus(Status.valueOf(studentRq.getStatus()));
+        }
+
         if (studentRq.getFullName() != null && !studentRq.getFullName().equals(oldFullName)) {
             String newEmail = emailGeneratorService.generateUniqueEmail(studentRq.getFullName());
             user.setEmail(newEmail);
@@ -241,7 +245,6 @@ public class StudentServiceImpl implements StudentService {
         if (studentRq.getFullName() != null) userDetail.setFullName(studentRq.getFullName());
         if (studentRq.getImage() != null) userDetail.setImage(studentRq.getImage());
         if (studentRq.getEmail() != null) user.setEmail(studentRq.getEmail());
-//        if (studentRq.getRollNumber() != null) userDetail.setRollNumber(studentRq.getRollNumber());
         if (studentRq.getPhoneNumber() != null) userDetail.setPhone(studentRq.getPhoneNumber());
     }
 

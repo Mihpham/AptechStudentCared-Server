@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.controller;
 import com.example.aptechstudentcaredserver.bean.request.AssignTeacherRequest;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
+import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
 import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.service.ClassService;
@@ -32,6 +33,13 @@ public class ClassController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(List.of()); // Return empty list or handle it accordingly
         }
+    }
+
+    @GetMapping("/class/{classId}")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
+    public ResponseEntity<CourseWithClassesResponse> findClassWithSubjectByClassId(@PathVariable int classId) {
+        CourseWithClassesResponse classDetails = classService.findClassWithSubjectByClassId(classId);
+        return new ResponseEntity<>(classDetails, HttpStatus.OK);
     }
 
     @GetMapping("/{classId}")
@@ -106,7 +114,7 @@ public class ClassController {
             @PathVariable int classId,
             @RequestBody AssignTeacherRequest request) {
         try {
-            classService.assignTeacherToSubject(classId, request.getSubjectCode(), request.getTeacherName());
+            classService.assignTeacherToSubject(classId, request);
             return ResponseEntity.ok("Assign Teacher successfully");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
