@@ -18,4 +18,8 @@ public interface UserService {
 
     void changePassword(int userId, ChangePasswordRequest changePasswordRequest);
 
+    List<UserResponse> findUsersByRoleName(String roleName);
+
+
+    long countUsersByRoleName(String roleName);
 }
