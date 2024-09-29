@@ -1,5 +1,6 @@
 package com.example.aptechstudentcaredserver.entity;
 
+import com.example.aptechstudentcaredserver.enums.Status;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -33,4 +34,9 @@ public class Schedule {
     @JoinColumn(name = "class_id", nullable = false)
     @JsonIgnore
     private Class classes;
+
+    @Enumerated(EnumType.STRING)
+    private Status status;
+
+    private String note;
 }

@@ -13,6 +13,8 @@ public class ScheduleResponse {
     private int scheduleId;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private String subjectName;
+    private String subjectCode;
     private String className;
+    private String status;
+    private String note;
 }
