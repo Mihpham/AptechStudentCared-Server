@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -66,6 +67,19 @@ public class ClassController {
     public ResponseEntity<ResponseMessage> deleteClass(@PathVariable int classId) {
         classService.deleteClass(classId);
         return new ResponseEntity<>(new ResponseMessage("Class deleted successfully"), HttpStatus.ACCEPTED);
+    }
+
+    @GetMapping("/{classId}/subjects")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
+    public ResponseEntity<?> getAllSubjectsBySemester(
+            @PathVariable int classId,
+            @RequestParam(required = false) String semesterName) {
+        try {
+            Map<String, List<String>> semesterSubjects = classService.getAllSubjectsBySemester(classId, semesterName);
+            return new ResponseEntity<>(semesterSubjects, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.NOT_FOUND);
+        }
     }
 
     @PutMapping("/{classId}/assign-teacher")

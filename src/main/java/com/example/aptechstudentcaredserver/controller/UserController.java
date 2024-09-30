@@ -1,6 +1,7 @@
 package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.ChangePasswordRequest;
+import com.example.aptechstudentcaredserver.bean.response.UpdateUserStatusResponse;
 import com.example.aptechstudentcaredserver.bean.response.UserResponse;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.exception.EmptyListException;
@@ -44,6 +45,12 @@ public class UserController {
     public ResponseEntity<List<UserResponse>> getUsersByRoleName(@PathVariable String roleName) {
         List<UserResponse> users = userService.findUsersByRoleName(roleName);
         return ResponseEntity.ok(users);
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<UpdateUserStatusResponse> updateUserStatus(@PathVariable int id) {
+        UpdateUserStatusResponse response = userService.updateUserStatus(id);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/role/total/{roleName}")

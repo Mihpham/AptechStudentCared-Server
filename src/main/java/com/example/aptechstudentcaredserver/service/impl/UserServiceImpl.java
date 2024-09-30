@@ -1,6 +1,7 @@
 package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.ChangePasswordRequest;
+import com.example.aptechstudentcaredserver.bean.response.UpdateUserStatusResponse;
 import com.example.aptechstudentcaredserver.bean.response.UserResponse;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.entity.UserDetail;
@@ -65,6 +66,27 @@ public class UserServiceImpl implements UserService {
             return userRepository.count();
         }
         return users.size();
+    }
+
+    @Override
+    public UpdateUserStatusResponse updateUserStatus(int userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
+
+        // Toggle the user's status
+        if (user.getStatus() == Status.ACTIVE) {
+            user.setStatus(Status.INACTIVE);
+        } else {
+            user.setStatus(Status.ACTIVE);
+        }
+
+        userRepository.save(user);
+
+        // Return response indicating success
+        return UpdateUserStatusResponse.builder()
+                .message("User status updated successfully.")
+                .updatedStatus(user.getStatus())
+                .build();
     }
 
     @Override
