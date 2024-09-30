@@ -9,7 +9,7 @@ import java.awt.*;
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Integer> {
     Course findByCourseName(String courseName);
-
     Course findByCourseCode(String courseCode);
-
+    boolean existsByCourseNameAndIdNot(String courseName, int courseId);
+    boolean existsByCourseCodeAndIdNot(String courseCode, int courseId);
 }

@@ -27,8 +27,8 @@ public class Subject {
     @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<UserSubject> userSubjects;
 
-//    @OneToMany(mappedBy = "subject")
-//    private List<Schedule> schedules;
+    @OneToMany(mappedBy = "subject")
+    private List<Schedule> schedules;
 
     @OneToMany(mappedBy = "subject")
     private List<ExamDetail> examDetails;

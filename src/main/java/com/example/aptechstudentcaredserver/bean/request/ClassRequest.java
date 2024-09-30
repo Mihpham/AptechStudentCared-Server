@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalTime;
 import java.util.List;
 
 @Data
@@ -15,7 +16,8 @@ import java.util.List;
 public class ClassRequest {
     private String className;
     private String center;
-    private String hour;
+    private LocalTime startHour;
+    private LocalTime endHour;
     private List<DayOfWeeks> days;
     private String status;
     private String sem;

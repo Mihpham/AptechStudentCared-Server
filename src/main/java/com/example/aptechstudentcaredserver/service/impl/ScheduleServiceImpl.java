@@ -1,13 +1,17 @@
 package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.ScheduleRequest;
+import com.example.aptechstudentcaredserver.bean.response.ScheduleResponse;
 import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.Schedule;
+import com.example.aptechstudentcaredserver.entity.Subject;
+import com.example.aptechstudentcaredserver.entity.UserSubject;
 import com.example.aptechstudentcaredserver.enums.DayOfWeeks;
+import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
-import com.example.aptechstudentcaredserver.repository.ClassRepository;
 import com.example.aptechstudentcaredserver.repository.ScheduleRepository;
+import com.example.aptechstudentcaredserver.repository.UserSubjectRepository;
 import com.example.aptechstudentcaredserver.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,72 +23,153 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ScheduleServiceImpl implements ScheduleService {
-    private final ClassRepository classRepository;
     private final ScheduleRepository scheduleRepository;
+    private final UserSubjectRepository userSubjectRepository;
 
     @Override
-    public Schedule getScheduleById(int scheduleId) {
-        return scheduleRepository.findById(scheduleId)
+    public ScheduleResponse getScheduleById(int scheduleId) {
+        Schedule schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new NotFoundException("Schedule not found"));
+        return convertToResponse(schedule);
     }
 
     @Override
-    public List<Schedule> getSchedulesByClassId(int classId) {
-        return scheduleRepository.findByClassesId(classId);
+    public List<ScheduleResponse> getSchedulesByClassAndSubjectId(int classId, int subjectId) {
+        List<Schedule> schedules = scheduleRepository.findByClassesIdAndSubjectId(classId, subjectId);
+        return convertToResponse(schedules);
     }
 
     @Override
-    public List<Schedule> createSchedule(ScheduleRequest request, int classId) {
-        Class classEntity = classRepository.findById(classId)
-                .orElseThrow(() -> new NotFoundException("Class not found"));
+    public List<ScheduleResponse> createSchedule(ScheduleRequest request, int classId, int subjectId) {
+        UserSubject userSubject = userSubjectRepository.findByClassroomIdAndSubjectId(classId, subjectId)
+                .orElseThrow(() -> new NotFoundException("UserSubject not found"));
 
-        List<Schedule> existingSchedules = scheduleRepository.findByClassesId(classId);
+        Class classEntity = userSubject.getClassroom();
+        Subject subject = userSubject.getSubject();
+
+        // Check if any schedules already exist
+        List<Schedule> existingSchedules = scheduleRepository.findByClassesIdAndSubjectId(classId, subjectId);
         if (!existingSchedules.isEmpty()) {
-            throw new DuplicateException("Schedule already exists for this class. Please update instead.");
+            throw new DuplicateException("Schedule already exists for this class and subject.");
         }
 
-        return createAndSaveSchedules(request, classEntity);
+        int numberOfSessions = userSubject.getNumberOfSessions();
+        List<Schedule> schedules = createAndSaveSchedules(request.getStartDate(), request.getStatus(), request.getNote(), classEntity, subject, numberOfSessions);
+        return convertToResponse(schedules);
     }
 
     @Override
-    public List<Schedule> updateSchedule(ScheduleRequest request, int classId) {
-        Class classEntity = classRepository.findById(classId)
-                .orElseThrow(() -> new NotFoundException("Class not found"));
-
-        List<Schedule> existingSchedules = scheduleRepository.findByClassesId(classId);
-        if (!existingSchedules.isEmpty()) {
-            scheduleRepository.deleteAll(existingSchedules);
+    public List<ScheduleResponse> updateSchedule(ScheduleRequest request, int classId, int subjectId) {
+        // Retrieve existing schedules
+        List<Schedule> existingSchedules = scheduleRepository.findByClassesIdAndSubjectId(classId, subjectId);
+        if (existingSchedules.isEmpty()) {
+            throw new NotFoundException("No existing schedules found for this class and subject.");
         }
 
-        return createAndSaveSchedules(request, classEntity);
+        List<Schedule> updatedSchedules = new ArrayList<>();
+        LocalDateTime newStartDate = request.getStartDate();
+        LocalDateTime newEndDate = request.getEndDate();
+
+        // Update existing schedules and extend if needed
+        for (Schedule existingSchedule : existingSchedules) {
+            if (existingSchedule.getEndDate().isBefore(newStartDate)) {
+                // If the existing schedule ends before the new start date, we can extend it
+                existingSchedule.setEndDate(newEndDate);
+                updatedSchedules.add(existingSchedule);
+            } else if (existingSchedule.getStartDate().isAfter(newEndDate)) {
+                // If the existing schedule starts after the new end date, keep it as is
+                updatedSchedules.add(existingSchedule);
+            }
+        }
+
+        // Create new schedules if there's a gap
+        if (newStartDate.isAfter(existingSchedules.get(existingSchedules.size() - 1).getEndDate())) {
+            Class classEntity = existingSchedules.get(0).getClasses();
+            Subject subject = existingSchedules.get(0).getSubject();
+            List<Schedule> newSchedules = createAndSaveSchedules(newStartDate, request.getStatus(), request.getNote(), classEntity, subject, calculateNumberOfSessions(newStartDate, newEndDate));
+            updatedSchedules.addAll(newSchedules);
+        }
+
+        scheduleRepository.saveAll(updatedSchedules);
+        return convertToResponse(updatedSchedules);
     }
 
-    private List<Schedule> createAndSaveSchedules(ScheduleRequest request, Class classEntity) {
-        List<Schedule> schedules = createNewSchedules(request, classEntity);
-        return scheduleRepository.saveAll(schedules);
+    @Override
+    public ScheduleResponse updateScheduleById(int scheduleId, ScheduleRequest request) {
+        Schedule existingSchedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new NotFoundException("Schedule not found"));
+
+        if (!existingSchedule.getStartDate().equals(request.getStartDate())) {
+            List<Schedule> conflictingSchedules = scheduleRepository.findByStartDateAndClassesId(
+                    request.getStartDate(), existingSchedule.getClasses().getId());
+            if (!conflictingSchedules.isEmpty()) {
+                throw new DuplicateException("A schedule already exists for this start date.");
+            }
+        }
+
+        existingSchedule.setStartDate(request.getStartDate());
+        existingSchedule.setEndDate(request.getStartDate());
+        existingSchedule.setStatus(Status.valueOf(request.getStatus()));
+        existingSchedule.setNote(request.getNote());
+
+        Schedule updatedSchedule = scheduleRepository.save(existingSchedule);
+
+        return convertToResponse(updatedSchedule);
     }
 
-    private List<Schedule> createNewSchedules(ScheduleRequest request, Class classEntity) {
+
+    private List<Schedule> createAndSaveSchedules(LocalDateTime startDate, String status, String note, Class classEntity, Subject subject, int numberOfSessions) {
         List<DayOfWeeks> classDays = classEntity.getDays();
         List<Schedule> schedules = new ArrayList<>();
+        int sessionsCreated = 0;
+        LocalDateTime currentDate = startDate;
 
-        LocalDateTime currentDate = request.getStartDate();
-        while (!currentDate.isAfter(request.getEndDate())) {
+        while (sessionsCreated < numberOfSessions) {
             for (DayOfWeeks day : classDays) {
                 if (currentDate.getDayOfWeek().getValue() == day.getValue()) {
                     Schedule schedule = new Schedule();
                     schedule.setClasses(classEntity);
-
+                    schedule.setSubject(subject);
                     schedule.setStartDate(currentDate);
                     schedule.setEndDate(currentDate);
+                    schedule.setStatus(Status.SCHEDULED);
+                    schedule.setNote(note);
 
                     schedules.add(schedule);
+                    sessionsCreated++;
+
+                    if (sessionsCreated >= numberOfSessions) {
+                        break;
+                    }
                 }
             }
             currentDate = currentDate.plusDays(1);
         }
 
-        return schedules;
+        return scheduleRepository.saveAll(schedules);
     }
 
+    private int calculateNumberOfSessions(LocalDateTime startDate, LocalDateTime endDate) {
+        return (int) java.time.Duration.between(startDate.toLocalDate().atStartOfDay(), endDate.toLocalDate().atStartOfDay()).toDays() + 1;
+    }
+
+    private ScheduleResponse convertToResponse(Schedule schedule) {
+        ScheduleResponse response = new ScheduleResponse();
+        response.setScheduleId(schedule.getId());
+        response.setStartDate(schedule.getStartDate());
+        response.setEndDate(schedule.getEndDate());
+        response.setSubjectCode(schedule.getSubject().getSubjectCode());
+        response.setClassName(schedule.getClasses().getClassName());
+        response.setStatus(schedule.getStatus().name());
+        response.setNote(schedule.getNote());
+        return response;
+    }
+
+    private List<ScheduleResponse> convertToResponse(List<Schedule> schedules) {
+        List<ScheduleResponse> responses = new ArrayList<>();
+        for (Schedule schedule : schedules) {
+            responses.add(convertToResponse(schedule));
+        }
+        return responses;
+    }
 }
