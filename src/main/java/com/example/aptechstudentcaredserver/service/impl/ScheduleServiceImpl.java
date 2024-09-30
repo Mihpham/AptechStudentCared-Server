@@ -7,6 +7,7 @@ import com.example.aptechstudentcaredserver.entity.Schedule;
 import com.example.aptechstudentcaredserver.entity.Subject;
 import com.example.aptechstudentcaredserver.entity.UserSubject;
 import com.example.aptechstudentcaredserver.enums.DayOfWeeks;
+import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.ScheduleRepository;
@@ -53,7 +54,7 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
 
         int numberOfSessions = userSubject.getNumberOfSessions();
-        List<Schedule> schedules = createAndSaveSchedules(request.getStartDate(), classEntity, subject, numberOfSessions);
+        List<Schedule> schedules = createAndSaveSchedules(request.getStartDate(), request.getStatus(), request.getNote(), classEntity, subject, numberOfSessions);
         return convertToResponse(schedules);
     }
 
@@ -85,15 +86,39 @@ public class ScheduleServiceImpl implements ScheduleService {
         if (newStartDate.isAfter(existingSchedules.get(existingSchedules.size() - 1).getEndDate())) {
             Class classEntity = existingSchedules.get(0).getClasses();
             Subject subject = existingSchedules.get(0).getSubject();
-            List<Schedule> newSchedules = createAndSaveSchedules(newStartDate, classEntity, subject, calculateNumberOfSessions(newStartDate, newEndDate));
+            List<Schedule> newSchedules = createAndSaveSchedules(newStartDate, request.getStatus(), request.getNote(), classEntity, subject, calculateNumberOfSessions(newStartDate, newEndDate));
             updatedSchedules.addAll(newSchedules);
         }
 
-        scheduleRepository.saveAll(updatedSchedules); // Save all updated schedules
+        scheduleRepository.saveAll(updatedSchedules);
         return convertToResponse(updatedSchedules);
     }
 
-    private List<Schedule> createAndSaveSchedules(LocalDateTime startDate, Class classEntity, Subject subject, int numberOfSessions) {
+    @Override
+    public ScheduleResponse updateScheduleById(int scheduleId, ScheduleRequest request) {
+        Schedule existingSchedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new NotFoundException("Schedule not found"));
+
+        if (!existingSchedule.getStartDate().equals(request.getStartDate())) {
+            List<Schedule> conflictingSchedules = scheduleRepository.findByStartDateAndClassesId(
+                    request.getStartDate(), existingSchedule.getClasses().getId());
+            if (!conflictingSchedules.isEmpty()) {
+                throw new DuplicateException("A schedule already exists for this start date.");
+            }
+        }
+
+        existingSchedule.setStartDate(request.getStartDate());
+        existingSchedule.setEndDate(request.getStartDate());
+        existingSchedule.setStatus(Status.valueOf(request.getStatus()));
+        existingSchedule.setNote(request.getNote());
+
+        Schedule updatedSchedule = scheduleRepository.save(existingSchedule);
+
+        return convertToResponse(updatedSchedule);
+    }
+
+
+    private List<Schedule> createAndSaveSchedules(LocalDateTime startDate, String status, String note, Class classEntity, Subject subject, int numberOfSessions) {
         List<DayOfWeeks> classDays = classEntity.getDays();
         List<Schedule> schedules = new ArrayList<>();
         int sessionsCreated = 0;
@@ -106,7 +131,9 @@ public class ScheduleServiceImpl implements ScheduleService {
                     schedule.setClasses(classEntity);
                     schedule.setSubject(subject);
                     schedule.setStartDate(currentDate);
-                    schedule.setEndDate(currentDate); // Assuming end date is the same for a single session
+                    schedule.setEndDate(currentDate);
+                    schedule.setStatus(Status.SCHEDULED);
+                    schedule.setNote(note);
 
                     schedules.add(schedule);
                     sessionsCreated++;
@@ -131,8 +158,10 @@ public class ScheduleServiceImpl implements ScheduleService {
         response.setScheduleId(schedule.getId());
         response.setStartDate(schedule.getStartDate());
         response.setEndDate(schedule.getEndDate());
-        response.setSubjectName(schedule.getSubject().getSubjectName());
+        response.setSubjectCode(schedule.getSubject().getSubjectCode());
         response.setClassName(schedule.getClasses().getClassName());
+        response.setStatus(schedule.getStatus().name());
+        response.setNote(schedule.getNote());
         return response;
     }
 
