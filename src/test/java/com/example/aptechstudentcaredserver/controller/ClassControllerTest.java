@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.controller;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
+import com.example.aptechstudentcaredserver.enums.DayOfWeeks;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.service.ClassService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -91,8 +94,9 @@ public class ClassControllerTest {
         ClassRequest classRequest = new ClassRequest();
         classRequest.setClassName("Class A");
         classRequest.setCenter("Center 1");
-        classRequest.setHour("10:00 AM"); // Set hour
-        classRequest.setDays("MONDAY,TUESDAY"); // Set days
+        classRequest.setStartHour(LocalTime.of(8, 30)); ;  // 8:30 AM
+        classRequest.setEndHour(LocalTime.of(10, 0)); ;    // 10:00 AM
+        classRequest.setDays(Arrays.asList(DayOfWeeks.MONDAY, DayOfWeeks.WEDNESDAY));
         classRequest.setStatus("ACTIVE"); // Set status
         classRequest.setSem("Fall 2024"); // Set semester
         classRequest.setCourseCode("CS101"); // Set course code
@@ -128,8 +132,9 @@ public class ClassControllerTest {
         ClassRequest classRequest = new ClassRequest();
         classRequest.setClassName("Class B");
         classRequest.setCenter("Main Center"); // Add all required fields
-        classRequest.setHour("10:00 AM");
-        classRequest.setDays("MONDAY,TUESDAY"); // Use valid day format
+        classRequest.setStartHour(LocalTime.of(8, 30)); ;  // 8:30 AM
+        classRequest.setEndHour(LocalTime.of(10, 0)); ;    // 10:00 AM
+        classRequest.setDays(Arrays.asList(DayOfWeeks.MONDAY, DayOfWeeks.WEDNESDAY));
         classRequest.setStatus("ACTIVE");
         classRequest.setSem("Fall 2024");
         classRequest.setCourseCode("CS101");
