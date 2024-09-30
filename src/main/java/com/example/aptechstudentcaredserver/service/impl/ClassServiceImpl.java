@@ -5,6 +5,7 @@ import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.*;
 import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.*;
+import com.example.aptechstudentcaredserver.enums.MarkType;
 import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.EmptyListException;
@@ -14,6 +15,8 @@ import com.example.aptechstudentcaredserver.service.ClassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +35,11 @@ public class ClassServiceImpl implements ClassService {
     private final SemesterRepository semesterRepository;
     private final UserRepository userRepository;
     private final UserSubjectRepository userSubjectRepository;
-    
+    private final ExamDetailRepository examDetailRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final StudentPerformanceRepository studentPerformanceRepository;
+    private final SubjectRepository subjectRepository;
+
     @Override
     public List<ClassResponse> findAllClass() {
         List<Class> listClass = classRepository.findAll();
@@ -103,12 +110,92 @@ public class ClassServiceImpl implements ClassService {
 
         Map<String, List<String>> semesterSubjects = courseSubjects.stream()
                 .collect(Collectors.groupingBy(
-                        cs -> cs.getSemester().getName().toUpperCase(), // Convert semester name to uppercase
-                        Collectors.mapping(cs -> cs.getSubject().getSubjectName(), Collectors.toList()) // Map to subject names
+                        cs -> cs.getSemester().getName().toUpperCase(),
+                        Collectors.mapping(cs -> cs.getSubject().getSubjectCode(), Collectors.toList())
                 ));
 
         return semesterSubjects;
     }
+
+    @Override
+    public StudentPerformanceResponse saveStudentPerformance(int userId, int subjectId, int classId) {
+        User student = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Student not found with id " + userId));
+
+        Class existingClass = classRepository.findById(classId)
+                .orElseThrow(() -> new NotFoundException("Class not found with id " + classId));
+
+        // Lấy danh sách attendance cho học sinh
+        List<Attendance> attendances = attendanceRepository.findByUserId(student.getId());
+        long totalClasses = attendanceRepository.countByUserIdAndSchedule_Classes_Id(userId, classId);
+
+        // Khởi tạo biến cho điểm và phần trăm attendance
+        BigDecimal attendancePercentage = BigDecimal.ZERO;
+        BigDecimal theoreticalScore = BigDecimal.ZERO;
+        BigDecimal practicalScore = BigDecimal.ZERO;
+
+        // Kiểm tra để tránh chia cho 0
+        if (totalClasses > 0) {
+            long countAbsentWithoutPermission = attendances.stream()
+                    .filter(a -> "A".equals(a.getAttendance1())) // Vắng không phép
+                    .count();
+
+            long countAbsentWithPermission = attendances.stream()
+                    .filter(a -> "PA".equals(a.getAttendance1()) || "P".equals(a.getAttendance1())) // Vắng có phép
+                    .count();
+
+            // Tính phần trăm attendance theo công thức
+            double attendanceRatio = (double) (totalClasses - countAbsentWithoutPermission) / totalClasses;
+            attendancePercentage = BigDecimal.valueOf(attendanceRatio * 100).setScale(2, RoundingMode.HALF_UP);
+        }
+
+        // Lấy điểm từ ExamDetail (không cần phải có điểm để tính phần trăm attendance)
+        Optional<ExamDetail> theoreticalExamDetail = examDetailRepository.findByUserIdAndExamType(student.getId(), MarkType.THEORETICAL);
+        Optional<ExamDetail> practicalExamDetail = examDetailRepository.findByUserIdAndExamType(student.getId(), MarkType.PRACTICAL);
+
+        // Cập nhật điểm lý thuyết và thực hành
+        theoreticalScore = theoreticalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
+        practicalScore = practicalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
+
+        // Lưu hoặc cập nhật vào StudentPerformance
+        StudentPerformance performance;
+        Optional<StudentPerformance> existingPerformance = studentPerformanceRepository.findByUserIdAndSubjectId(student.getId(), subjectId);
+
+        if (existingPerformance.isPresent()) {
+            // Cập nhật bản ghi
+            performance = existingPerformance.get();
+            performance.setAttendancePercentage(attendancePercentage);
+            performance.setTheoryExamScore(theoreticalScore);
+            performance.setPracticalExamScore(practicalScore);
+        } else {
+            // Nếu không tồn tại, tạo mới
+            performance = new StudentPerformance();
+            performance.setUser(student);
+            performance.setAttendancePercentage(attendancePercentage);
+            performance.setTheoryExamScore(theoreticalScore);
+            performance.setPracticalExamScore(practicalScore);
+            performance.setSubject(subjectRepository.findById(subjectId)
+                    .orElseThrow(() -> new NotFoundException("Subject not found")));
+            performance.setCreatedAt(LocalDateTime.now());
+        }
+
+        // Lưu vào repository
+        studentPerformanceRepository.save(performance);
+
+        // Tạo và trả về StudentPerformanceResponse
+        StudentPerformanceResponse response = new StudentPerformanceResponse();
+        response.setStudentName(student.getUserDetail().getFullName());
+        response.setSubjectCode(performance.getSubject().getSubjectCode());
+        response.setTheoreticalScore(theoreticalScore);
+        response.setPracticalScore(practicalScore);
+        response.setAttendancePercentage(attendancePercentage);
+
+        return response;
+    }
+
+
+
+
 
 
     @Override
@@ -176,8 +263,6 @@ public class ClassServiceImpl implements ClassService {
     }
 
 
-
-
     @Override
     public void deleteClass(int classId) {
         Class existingClass = classRepository.findById(classId)
@@ -241,7 +326,6 @@ public class ClassServiceImpl implements ClassService {
             }
         }
     }
-
 
 
     private ClassResponse convertToClassResponse(Class classEntity) {

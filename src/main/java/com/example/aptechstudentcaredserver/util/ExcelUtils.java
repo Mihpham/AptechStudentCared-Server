@@ -44,7 +44,6 @@ public class ExcelUtils {
             if (firstRow.getPhysicalNumberOfCells() < requiredColumns) {
                 importResults.add(new ImportResponse("File format is incorrect. The file does not contain enough columns. Expected at least " + requiredColumns +"\"STT\"," +
                         "\"Roll Number\"," +
-                        "\"Full Name\"," +
                         "\"Gender\"," +
                         "\"Class Name\"," +
                         "\"Date of Birth\"," +
@@ -406,7 +405,7 @@ public class ExcelUtils {
 
                     String totalHoursString = getCellValue(row.getCell(totalHoursIndex));
                     if (totalHoursString != null && !totalHoursString.trim().isEmpty()) {
-                        try { 
+                        try {
                             double totalHoursDouble = Double.parseDouble(totalHoursString);
                             subject.setTotalHours((int) totalHoursDouble); // Cast to int
                         } catch (NumberFormatException e) {

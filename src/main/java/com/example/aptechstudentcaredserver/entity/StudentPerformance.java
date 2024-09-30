@@ -28,15 +28,15 @@ public class StudentPerformance {
     @Column(name = "practical_exam_score", precision = 5, scale = 2)
     private BigDecimal practicalExamScore;
 
-    @Column(name = "evaluation_score", precision = 5, scale = 2)
-    private BigDecimal evaluationScore;
+//    @Column(name = "evaluation_score", precision = 5, scale = 2)
+//    private BigDecimal evaluationScore;
 
-    @Column(name = "final_score", precision = 5, scale = 2)
-    private BigDecimal finalScore;
+    //    @Column(name = "final_score", precision = 5, scale = 2)
+//    private BigDecimal finalScore;
+// Thêm trường cho phần trăm
+    @Column(name = "attendance_percentage", precision = 5, scale = 2)
+    private BigDecimal attendancePercentage; // Hoặc kiểu khác nếu cần
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "attendance_id", nullable = false)
-    private Attendance attendance;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", nullable = false, updatable = false)

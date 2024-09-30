@@ -5,6 +5,7 @@ import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
 import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
+import com.example.aptechstudentcaredserver.bean.response.StudentPerformanceResponse;
 import com.example.aptechstudentcaredserver.service.ClassService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -80,6 +81,16 @@ public class ClassController {
         } catch (RuntimeException e) {
             return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.NOT_FOUND);
         }
+    }
+
+    @GetMapping("/class/{classId}/user/{userId}/subject/{subjectId}")
+    public ResponseEntity<StudentPerformanceResponse> saveStudentPerformance(
+            @PathVariable int userId,
+            @PathVariable int subjectId,
+            @PathVariable int classId) {
+
+        StudentPerformanceResponse response = classService.saveStudentPerformance(userId, subjectId, classId);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{classId}/assign-teacher")
