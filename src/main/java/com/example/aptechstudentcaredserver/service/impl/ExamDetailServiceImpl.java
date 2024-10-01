@@ -113,24 +113,33 @@ public class ExamDetailServiceImpl implements ExamDetailService {
         theoreticalDetail.setUser(student);
         theoreticalDetail.setSubject(subject);
         theoreticalDetail.setExamType(MarkType.THEORETICAL);
-        theoreticalDetail.setScore(scoreRequest.getTheoreticalScore());
+
+        // Chỉ cập nhật điểm lý thuyết nếu không null
+        if (scoreRequest.getTheoreticalScore() != null) {
+            theoreticalDetail.setScore(scoreRequest.getTheoreticalScore());
+        }
         theoreticalDetail.setUpdatedAt(LocalDateTime.now());
         examDetailRepository.save(theoreticalDetail);
 
-        // Update or create the practical score
+        // Cập nhật hoặc tạo điểm thực hành
         ExamDetail practicalDetail = examDetailRepository.findByUserIdAndSubjectIdAndExamType(
                         student.getId(), subject.getId(), MarkType.PRACTICAL)
                 .orElse(new ExamDetail());
         practicalDetail.setUser(student);
         practicalDetail.setSubject(subject);
         practicalDetail.setExamType(MarkType.PRACTICAL);
-        practicalDetail.setScore(scoreRequest.getPracticalScore());
+
+        // Chỉ cập nhật điểm thực hành nếu không null
+        if (scoreRequest.getPracticalScore() != null) {
+            practicalDetail.setScore(scoreRequest.getPracticalScore());
+        }
         practicalDetail.setUpdatedAt(LocalDateTime.now());
         examDetailRepository.save(practicalDetail);
 
-        // Build the updated response for the subject
+        // Tạo và trả về phản hồi cho môn học đã cập nhật
         return convertToResponse(student, subject);
     }
+
 
     private StudentExamScoreResponse convertToResponse(User user, Subject subject) {
         // Fetch scores for theoretical and practical exams

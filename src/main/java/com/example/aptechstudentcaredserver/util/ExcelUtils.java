@@ -43,7 +43,7 @@ public class ExcelUtils {
             // Check if the first row contains the required number of columns
             if (firstRow.getPhysicalNumberOfCells() < requiredColumns) {
                 importResults.add(new ImportResponse("File format is incorrect. The file does not contain enough columns. Expected at least " + requiredColumns +"\"STT\"," +
-                        "\"Roll Number\"," +
+//                        "\"Roll Number\"," +
                         "\"Full Name\"," +
                         "\"Gender\"," +
                         "\"Class Name\"," +
@@ -246,7 +246,7 @@ public class ExcelUtils {
         return errors.length() > 0 ? errors.toString() : null;
     }
 
-    public static List<ImportResponse> parseExamExcelFile(MultipartFile file, ExamDetailService examDetailService,int classId) throws IOException {
+    public static List<ImportResponse> parseExamExcelFile(MultipartFile file, ExamDetailService examDetailService, int classId) throws IOException {
         List<ImportResponse> importResults = new ArrayList<>();
 
         try (InputStream is = file.getInputStream();
@@ -263,22 +263,16 @@ public class ExcelUtils {
                 return importResults;
             }
 
-            int requiredColumns = 5;
-            if (firstRow.getPhysicalNumberOfCells() < requiredColumns) {
-                importResults.add(new ImportResponse("File format is incorrect. The file does not contain enough columns. Expected at least " + requiredColumns + ".", -1));
-                return importResults;
-            }
-
-            // Cấu hình các cột trong file Excel
-            int studentNameCol = 1;
-            int subjectNameCol = 2;
-            int theoreticalScoreCol = 3;
-            int practicalScoreCol = 4;
-            int classIdCol = 5;
+            int classNameCol = 1; // Giả định cột className là cột 1
+            int studentNameCol = 2; // Giả định cột studentName là cột 2
+            int rollNumberCol = 3; // Giả định cột rollNumber là cột 3
+            int subjectCodeCol = 4; // Giả định cột subjectCode là cột 4
+            int theoreticalScoreCol = 5; // Giả định cột theoreticalScore là cột 5
+            int practicalScoreCol = 6; // Giả định cột practicalScore là cột 6
 
             for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) { // Bỏ qua dòng tiêu đề
                 Row row = sheet.getRow(i);
-                if (row == null) {
+                if (row == null || isRowEmpty(row)) {
                     continue; // Bỏ qua dòng trống
                 }
 
@@ -287,8 +281,11 @@ public class ExcelUtils {
 
                 try {
                     StudentExamScoreRequest examDetailRequest = new StudentExamScoreRequest();
-                    examDetailRequest.setRollNumber(getCellValue(row.getCell(studentNameCol)));
-                    examDetailRequest.setSubjectCode(getCellValue(row.getCell(subjectNameCol)));
+
+                    examDetailRequest.setClassName(getCellValue(row.getCell(classNameCol)));
+                    examDetailRequest.setRollNumber(getCellValue(row.getCell(rollNumberCol)));
+                    examDetailRequest.setStudentName(getCellValue(row.getCell(studentNameCol)));
+                    examDetailRequest.setSubjectCode(getCellValue(row.getCell(subjectCodeCol)));
 
                     // Lấy điểm lý thuyết
                     String theoreticalScoreString = getCellValue(row.getCell(theoreticalScoreCol));
@@ -304,9 +301,6 @@ public class ExcelUtils {
                         examDetailRequest.setPracticalScore(practicalScore);
                     }
 
-                    // Set classId từ tham số
-                    examDetailRequest.setClassId(classId);
-
                     // Kiểm tra và xử lý import
                     String validationMessage = validateExamMark(examDetailRequest);
                     if (validationMessage != null) {
@@ -315,6 +309,25 @@ public class ExcelUtils {
                         continue;
                     }
 
+                    // Kiểm tra điểm lý thuyết và thực hành
+                    StringBuilder scoreErrorBuilder = new StringBuilder();
+                    if (examDetailRequest.getTheoreticalScore() != null &&
+                            examDetailRequest.getTheoreticalScore().compareTo(BigDecimal.ZERO) < 0) {
+                        scoreErrorBuilder.append("Theoretical score cannot be negative. ");
+                    }
+                    if (examDetailRequest.getPracticalScore() != null &&
+                            examDetailRequest.getPracticalScore().compareTo(BigDecimal.ZERO) < 0) {
+                        scoreErrorBuilder.append("Practical score cannot be negative. ");
+                    }
+
+                    // Nếu có lỗi, thêm thông báo
+                    if (scoreErrorBuilder.length() > 0) {
+                        importResponse.setMessage(scoreErrorBuilder.toString());
+                        importResults.add(importResponse);
+                        continue;
+                    }
+
+                    // Gọi service để cập nhật điểm thi nếu có ít nhất một trong hai điểm không phải là null
                     examDetailService.updateStudentExamScore(examDetailRequest, classId);
                 } catch (Exception e) {
                     errorBuilder.append("Error in row ").append(i + 1).append(": ").append(e.getMessage()).append("; ");
@@ -327,36 +340,47 @@ public class ExcelUtils {
             return importResults;
         }
     }
-    private static String validateExamMark(StudentExamScoreRequest examDetailRequest) {
+
+    // Hàm kiểm tra xem dòng có rỗng hay không
+    private static boolean isRowEmpty(Row row) {
+        for (int i = 0; i < row.getPhysicalNumberOfCells(); i++) {
+            Cell cell = row.getCell(i);
+            if (cell != null && cell.getCellType() != CellType.BLANK) {
+                return false; // Nếu có ô không trống, dòng không rỗng
+            }
+        }
+        return true; // Nếu tất cả các ô đều trống
+    }
+    public static String validateExamMark(StudentExamScoreRequest examDetailRequest) {
         StringBuilder errorMessage = new StringBuilder();
 
-        // Kiểm tra studentName
+        // Kiểm tra rollNumber
         if (examDetailRequest.getRollNumber() == null || examDetailRequest.getRollNumber().trim().isEmpty()) {
-            errorMessage.append("Student name cannot be empty. ");
+            errorMessage.append("Roll number is required. ");
         }
 
-        // Kiểm tra subjectName
+        // Kiểm tra subjectCode
         if (examDetailRequest.getSubjectCode() == null || examDetailRequest.getSubjectCode().trim().isEmpty()) {
-            errorMessage.append("Subject name cannot be empty. ");
+            errorMessage.append("Subject code is required. ");
         }
 
         // Kiểm tra theoreticalScore
-        if (examDetailRequest.getTheoreticalScore() == null) {
-            errorMessage.append("Theoretical score cannot be null. ");
-        } else if (examDetailRequest.getTheoreticalScore().compareTo(BigDecimal.ZERO) < 0) {
-            errorMessage.append("Theoretical score cannot be negative. ");
+        if (examDetailRequest.getTheoreticalScore() != null) {
+            if (examDetailRequest.getTheoreticalScore().compareTo(BigDecimal.ZERO) < 0) {
+                errorMessage.append("Theoretical score cannot be negative. ");
+            }
         }
 
         // Kiểm tra practicalScore
-        if (examDetailRequest.getPracticalScore() == null) {
-            errorMessage.append("Practical score cannot be null. ");
-        } else if (examDetailRequest.getPracticalScore().compareTo(BigDecimal.ZERO) < 0) {
-            errorMessage.append("Practical score cannot be negative. ");
+        if (examDetailRequest.getPracticalScore() != null) {
+            if (examDetailRequest.getPracticalScore().compareTo(BigDecimal.ZERO) < 0) {
+                errorMessage.append("Practical score cannot be negative. ");
+            }
         }
 
-        // Kiểm tra classId
-        if (examDetailRequest.getClassId() <= 0) {
-            errorMessage.append("Class ID must be greater than 0. ");
+        // Không kiểm tra null cho điểm, chỉ thông báo lỗi nếu cả hai điểm đều không có giá trị
+        if (examDetailRequest.getTheoreticalScore() == null && examDetailRequest.getPracticalScore() == null) {
+            errorMessage.append("At least one score (theoretical or practical) must be provided. ");
         }
 
         return errorMessage.length() > 0 ? errorMessage.toString() : null;
