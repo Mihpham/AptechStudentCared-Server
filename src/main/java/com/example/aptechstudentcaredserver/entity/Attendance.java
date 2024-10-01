@@ -37,9 +37,6 @@ public class Attendance {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
-    @OneToMany(mappedBy = "attendance", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<StudentPerformance> studentPerformances;
-
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

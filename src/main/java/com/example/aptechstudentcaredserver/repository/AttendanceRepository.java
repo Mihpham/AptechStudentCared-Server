@@ -12,5 +12,7 @@ import java.util.List;
 public interface AttendanceRepository extends JpaRepository<Attendance,Integer> {
     Attendance findByUserAndSchedule(User user, Schedule schedule);
     List<Attendance> findByScheduleId(int scheduleId);
+    List<Attendance> findByUserId(int userId);
+    long countByUserIdAndSchedule_Classes_Id(int userId, int classId);
 
 }

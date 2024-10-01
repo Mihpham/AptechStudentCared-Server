@@ -5,7 +5,7 @@ import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
 import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
-import com.example.aptechstudentcaredserver.exception.NotFoundException;
+import com.example.aptechstudentcaredserver.bean.response.StudentPerformanceResponse;
 import com.example.aptechstudentcaredserver.service.ClassService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,13 +27,8 @@ public class ClassController {
     @GetMapping
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
     public ResponseEntity<List<ClassResponse>> findAllClass() {
-        try {
-            List<ClassResponse> classResponses = classService.findAllClass();
-            return new ResponseEntity<>(classResponses, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(List.of()); // Return empty list or handle it accordingly
-        }
+        List<ClassResponse> classResponses = classService.findAllClass();
+        return new ResponseEntity<>(classResponses, HttpStatus.OK);
     }
 
     @GetMapping("/class/{classId}")
@@ -46,17 +41,8 @@ public class ClassController {
     @GetMapping("/{classId}")
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
     public ResponseEntity<ClassResponse> findClassById(@PathVariable int classId) {
-        try {
-            ClassResponse classResponse = classService.findClassById(classId);
-            if (classResponse == null) {
-                throw new NotFoundException("Class not found with ID: " + classId);
-            }
-            return new ResponseEntity<>(classResponse, HttpStatus.OK);
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+        ClassResponse classResponse = classService.findClassById(classId);
+        return new ResponseEntity<>(classResponse, HttpStatus.OK);
     }
 
     @PostMapping("/add")
@@ -67,46 +53,21 @@ public class ClassController {
             return ResponseEntity.status(HttpStatus.CREATED).body(new ResponseMessage("Class added successfully"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(new ResponseMessage(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ResponseMessage("An unexpected error occurred.")); // Handle other exceptions
         }
     }
 
     @PutMapping("/{classId}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Object> updateClass(@Valid @RequestBody ClassRequest classRequest, @PathVariable int classId) {
-        try {
-            ClassResponse updatedClass = classService.updateClass(classId, classRequest);
-
-            if (updatedClass == null) {
-                throw new NotFoundException("Class not found with ID: " + classId);
-            }
-            return new ResponseEntity<>(updatedClass, HttpStatus.ACCEPTED);
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMessage(e.getMessage()));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMessage(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ResponseMessage("An unexpected error occurred."));
-        }
+    public ResponseEntity<ClassResponse> updateClass(@RequestBody ClassRequest classRequest, @PathVariable int classId) {
+        ClassResponse updateClass = classService.updateClass(classId, classRequest);
+        return new ResponseEntity<>(updateClass, HttpStatus.ACCEPTED);
     }
 
     @DeleteMapping("/{classId}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseMessage> deleteClass(@PathVariable int classId) {
-        try {
-            classService.deleteClass(classId);
-            return new ResponseEntity<>(new ResponseMessage("Class deleted successfully"), HttpStatus.ACCEPTED);
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMessage(e.getMessage())); // Return 404
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseMessage(e.getMessage())); // Return 400
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ResponseMessage("An unexpected error occurred.")); // Return 500
-        }
+        classService.deleteClass(classId);
+        return new ResponseEntity<>(new ResponseMessage("Class deleted successfully"), HttpStatus.ACCEPTED);
     }
 
     @GetMapping("/{classId}/subjects")
@@ -122,6 +83,16 @@ public class ClassController {
         }
     }
 
+    @GetMapping("/class/{classId}/user/{userId}/subject/{subjectId}")
+    public ResponseEntity<StudentPerformanceResponse> saveStudentPerformance(
+            @PathVariable int userId,
+            @PathVariable int subjectId,
+            @PathVariable int classId) {
+
+        StudentPerformanceResponse response = classService.saveStudentPerformance(userId, subjectId, classId);
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/{classId}/assign-teacher")
     public ResponseEntity<String> assignTeacherToSubject(
             @PathVariable int classId,
@@ -131,9 +102,6 @@ public class ClassController {
             return ResponseEntity.ok("Assign Teacher successfully");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("An unexpected error occurred.");
         }
     }
 }

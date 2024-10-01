@@ -430,7 +430,7 @@ public class ExcelUtils {
 
                     String totalHoursString = getCellValue(row.getCell(totalHoursIndex));
                     if (totalHoursString != null && !totalHoursString.trim().isEmpty()) {
-                        try { 
+                        try {
                             double totalHoursDouble = Double.parseDouble(totalHoursString);
                             subject.setTotalHours((int) totalHoursDouble); // Cast to int
                         } catch (NumberFormatException e) {
