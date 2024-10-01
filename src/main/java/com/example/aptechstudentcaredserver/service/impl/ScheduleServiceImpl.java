@@ -60,38 +60,53 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public List<ScheduleResponse> updateSchedule(ScheduleRequest request, int classId, int subjectId) {
-        // Retrieve existing schedules
+        // Retrieve the user subject to get the number of sessions and class days
+        UserSubject userSubject = userSubjectRepository.findByClassroomIdAndSubjectId(classId, subjectId)
+                .orElseThrow(() -> new NotFoundException("UserSubject not found"));
+
         List<Schedule> existingSchedules = scheduleRepository.findByClassesIdAndSubjectId(classId, subjectId);
-        if (existingSchedules.isEmpty()) {
-            throw new NotFoundException("No existing schedules found for this class and subject.");
-        }
+        List<DayOfWeeks> classDays = userSubject.getClassroom().getDays();
 
-        List<Schedule> updatedSchedules = new ArrayList<>();
-        LocalDateTime newStartDate = request.getStartDate();
-        LocalDateTime newEndDate = request.getEndDate();
+        LocalDateTime currentDate = request.getStartDate();
+        LocalDateTime endDate = request.getEndDate();
+        List<Schedule> newSchedules = new ArrayList<>();
 
-        // Update existing schedules and extend if needed
-        for (Schedule existingSchedule : existingSchedules) {
-            if (existingSchedule.getEndDate().isBefore(newStartDate)) {
-                // If the existing schedule ends before the new start date, we can extend it
-                existingSchedule.setEndDate(newEndDate);
-                updatedSchedules.add(existingSchedule);
-            } else if (existingSchedule.getStartDate().isAfter(newEndDate)) {
-                // If the existing schedule starts after the new end date, keep it as is
-                updatedSchedules.add(existingSchedule);
+        // Iterate over the date range and add new schedules for the specified days
+        while (currentDate.isBefore(endDate) || currentDate.isEqual(endDate)) {
+            for (DayOfWeeks day : classDays) {
+                if (currentDate.getDayOfWeek().getValue() == day.getValue()) {
+                    // Capture the current date to avoid lambda final variable issue
+                    LocalDateTime finalCurrentDate = currentDate;
+
+                    // Check if the schedule already exists
+                    boolean exists = existingSchedules.stream()
+                            .anyMatch(schedule -> schedule.getStartDate().isEqual(finalCurrentDate));
+
+                    if (!exists) {
+                        // Create a new schedule
+                        Schedule newSchedule = new Schedule();
+                        newSchedule.setClasses(existingSchedules.get(0).getClasses());
+                        newSchedule.setSubject(existingSchedules.get(0).getSubject());
+                        newSchedule.setStartDate(finalCurrentDate);
+                        newSchedule.setEndDate(finalCurrentDate); // Assuming endDate is the same as startDate
+                        newSchedule.setStatus(Status.SCHEDULED);
+                        newSchedule.setNote(request.getNote());
+
+                        newSchedules.add(newSchedule);
+                    }
+                }
             }
+            currentDate = currentDate.plusDays(1);
         }
 
-        // Create new schedules if there's a gap
-        if (newStartDate.isAfter(existingSchedules.get(existingSchedules.size() - 1).getEndDate())) {
-            Class classEntity = existingSchedules.get(0).getClasses();
-            Subject subject = existingSchedules.get(0).getSubject();
-            List<Schedule> newSchedules = createAndSaveSchedules(newStartDate, request.getStatus(), request.getNote(), classEntity, subject, calculateNumberOfSessions(newStartDate, newEndDate));
-            updatedSchedules.addAll(newSchedules);
+        // Save the new schedules if any
+        if (!newSchedules.isEmpty()) {
+            scheduleRepository.saveAll(newSchedules);
         }
 
-        scheduleRepository.saveAll(updatedSchedules);
-        return convertToResponse(updatedSchedules);
+        // Combine existing schedules with new ones and return the response
+        existingSchedules.addAll(newSchedules);
+        return convertToResponse(existingSchedules);
     }
 
     @Override
