@@ -5,6 +5,7 @@ import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
 import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
+import com.example.aptechstudentcaredserver.bean.response.SubjectInfoResponse;
 import com.example.aptechstudentcaredserver.service.ClassService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -74,13 +75,12 @@ public class ClassController {
             @PathVariable int classId,
             @RequestParam(required = false) String semesterName) {
         try {
-            Map<String, List<String>> semesterSubjects = classService.getAllSubjectsBySemester(classId, semesterName);
+            Map<String, List<SubjectInfoResponse>> semesterSubjects = classService.getAllSubjectsBySemester(classId, semesterName);
             return new ResponseEntity<>(semesterSubjects, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.NOT_FOUND);
         }
     }
-
     @PutMapping("/{classId}/assign-teacher")
     public ResponseEntity<String> assignTeacherToSubject(
             @PathVariable int classId,

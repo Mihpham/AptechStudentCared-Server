@@ -35,50 +35,39 @@ public class StudentPerformanceServiceImpl implements StudentPerformanceService 
         Class existingClass = classRepository.findById(classId)
                 .orElseThrow(() -> new NotFoundException("Class not found with id " + classId));
 
-        // Retrieve attendance records for the student
         List<Attendance> attendances = attendanceRepository.findByUserId(student.getId());
         long totalClasses = attendanceRepository.countByUserIdAndSchedule_Classes_Id(userId, classId);
 
-        // Initialize variables for scores, attendance percentage, and counts
-        BigDecimal attendancePercentage = BigDecimal.ZERO;
-        BigDecimal theoreticalScore;
-        BigDecimal practicalScore;
-        // Initialize attendance counts
         int presentCount = 0;
         int presentWithPermissionCount = 0;
         int absentCount = 0;
+        BigDecimal attendancePercentage = BigDecimal.ZERO;
 
-// Check to avoid division by zero
         if (totalClasses > 0) {
             // Count attendance types
             presentCount = (int) attendances.stream()
-                    .filter(a -> "P".equals(a.getAttendance1())).count(); // Count present (status 1)
+                    .filter(a -> "P".equals(a.getAttendance1())).count();
             presentWithPermissionCount = (int) attendances.stream()
-                    .filter(a -> "PA".equals(a.getAttendance1())).count(); // Count present with permission (status 1)
+                    .filter(a -> "PA".equals(a.getAttendance1())).count();
             absentCount = (int) attendances.stream()
-                    .filter(a -> "A".equals(a.getAttendance1())).count(); // Count absent (status 1)
+                    .filter(a -> "A".equals(a.getAttendance1())).count();
 
-            // If you also want to count attendanceStatus2, you can add similar logic for it
             presentCount += (int) attendances.stream()
-                    .filter(a -> "P".equals(a.getAttendance2())).count(); // Count present (status 2)
+                    .filter(a -> "P".equals(a.getAttendance2())).count();
             presentWithPermissionCount += (int) attendances.stream()
-                    .filter(a -> "PA".equals(a.getAttendance2())).count(); // Count present with permission (status 2)
+                    .filter(a -> "PA".equals(a.getAttendance2())).count();
             absentCount += (int) attendances.stream()
-                    .filter(a -> "A".equals(a.getAttendance2())).count(); // Count absent (status 2)
+                    .filter(a -> "A".equals(a.getAttendance2())).count();
 
-            // Calculate attendance percentage
             double attendanceRatio = (double) (totalClasses - absentCount) / totalClasses;
             attendancePercentage = BigDecimal.valueOf(attendanceRatio * 100).setScale(2, RoundingMode.HALF_UP);
         }
 
+        Optional<ExamDetail> theoreticalExamDetail = examDetailRepository.findByUserIdAndExamTypeAndSubjectId(student.getId(), MarkType.THEORETICAL, subjectId);
+        Optional<ExamDetail> practicalExamDetail = examDetailRepository.findByUserIdAndExamTypeAndSubjectId(student.getId(), MarkType.PRACTICAL, subjectId);
 
-        // Retrieve scores from ExamDetail
-        Optional<ExamDetail> theoreticalExamDetail = examDetailRepository.findByUserIdAndExamType(student.getId(), MarkType.THEORETICAL);
-        Optional<ExamDetail> practicalExamDetail = examDetailRepository.findByUserIdAndExamType(student.getId(), MarkType.PRACTICAL);
-
-        // Update theoretical and practical scores
-        theoreticalScore = theoreticalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
-        practicalScore = practicalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
+        BigDecimal theoreticalScore = theoreticalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
+        BigDecimal practicalScore = practicalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
 
         // Calculate percentage for each score
         BigDecimal theoreticalMaxScore = new BigDecimal("20"); // Assume maximum score for theoretical is 20
@@ -119,6 +108,7 @@ public class StudentPerformanceServiceImpl implements StudentPerformanceService 
 
         studentPerformanceRepository.save(performance);
 
+        // Create response
         StudentPerformanceResponse response = new StudentPerformanceResponse();
         response.setStudentName(student.getUserDetail().getFullName());
         response.setSubjectCode(performance.getSubject().getSubjectCode());

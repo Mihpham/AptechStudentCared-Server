@@ -5,7 +5,6 @@ import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.*;
 import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.*;
-import com.example.aptechstudentcaredserver.enums.MarkType;
 import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.EmptyListException;
@@ -15,8 +14,6 @@ import com.example.aptechstudentcaredserver.service.ClassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -88,7 +85,7 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public Map<String, List<String>> getAllSubjectsBySemester(int classId, String semesterName) {
+    public Map<String, List<SubjectInfoResponse>> getAllSubjectsBySemester(int classId, String semesterName) {
         Class existingClass = classRepository.findById(classId)
                 .orElseThrow(() -> new NotFoundException("Class not found with id " + classId));
 
@@ -108,10 +105,10 @@ public class ClassServiceImpl implements ClassService {
             }
         }
 
-        Map<String, List<String>> semesterSubjects = courseSubjects.stream()
+        Map<String, List<SubjectInfoResponse>> semesterSubjects = courseSubjects.stream()
                 .collect(Collectors.groupingBy(
                         cs -> cs.getSemester().getName().toUpperCase(),
-                        Collectors.mapping(cs -> cs.getSubject().getSubjectCode(), Collectors.toList())
+                        Collectors.mapping(cs -> new SubjectInfoResponse(cs.getSubject().getId(), cs.getSubject().getSubjectCode()), Collectors.toList())
                 ));
 
         return semesterSubjects;

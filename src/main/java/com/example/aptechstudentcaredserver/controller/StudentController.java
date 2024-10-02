@@ -2,17 +2,21 @@ package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.StudentRequest;
 import com.example.aptechstudentcaredserver.bean.response.ImportResponse;
+import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
 import com.example.aptechstudentcaredserver.bean.response.StudentResponse;
+import com.example.aptechstudentcaredserver.bean.response.SubjectInfoResponse;
 import com.example.aptechstudentcaredserver.enums.ClassMemberStatus;
 import com.example.aptechstudentcaredserver.service.StudentService;
 import com.example.aptechstudentcaredserver.util.ExcelUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -72,6 +76,18 @@ public class StudentController {
             }
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error processing file: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{studentId}/subjects")
+    public ResponseEntity<?> getAllSubjectsBySemester(
+            @PathVariable int studentId,
+            @RequestParam(required = false) String semesterName) {
+        try {
+            Map<String, List<SubjectInfoResponse>> semesterSubjects = studentService.getAllSubjectsBySemester(studentId, semesterName);
+            return new ResponseEntity<>(semesterSubjects, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.NOT_FOUND);
         }
     }
 
