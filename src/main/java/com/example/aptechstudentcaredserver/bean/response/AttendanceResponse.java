@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -20,5 +21,5 @@ public class AttendanceResponse {
     private LocalDateTime checkin2;
     private String note;
     private LocalDateTime createdAt;
-    private LocalDateTime scheduleDate;
+    private LocalDate scheduleDate;
 }

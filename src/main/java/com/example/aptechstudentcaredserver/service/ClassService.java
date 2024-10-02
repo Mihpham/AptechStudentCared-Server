@@ -18,8 +18,6 @@ public interface ClassService {
 
     Map<String, List<String>> getAllSubjectsBySemester(int classId, String semesterName);
 
-    public StudentPerformanceResponse saveStudentPerformance(int userId, int subjectId, int classId);
-
     public ClassResponse findClassById(int classId);
 
     public void addClass(ClassRequest classRequest);

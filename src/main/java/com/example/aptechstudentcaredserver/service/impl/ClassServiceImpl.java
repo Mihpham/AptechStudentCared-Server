@@ -118,87 +118,6 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public StudentPerformanceResponse saveStudentPerformance(int userId, int subjectId, int classId) {
-        User student = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Student not found with id " + userId));
-
-        Class existingClass = classRepository.findById(classId)
-                .orElseThrow(() -> new NotFoundException("Class not found with id " + classId));
-
-        // Lấy danh sách attendance cho học sinh
-        List<Attendance> attendances = attendanceRepository.findByUserId(student.getId());
-        long totalClasses = attendanceRepository.countByUserIdAndSchedule_Classes_Id(userId, classId);
-
-        // Khởi tạo biến cho điểm và phần trăm attendance
-        BigDecimal attendancePercentage = BigDecimal.ZERO;
-        BigDecimal theoreticalScore = BigDecimal.ZERO;
-        BigDecimal practicalScore = BigDecimal.ZERO;
-
-        // Kiểm tra để tránh chia cho 0
-        if (totalClasses > 0) {
-            long countAbsentWithoutPermission = attendances.stream()
-                    .filter(a -> "A".equals(a.getAttendance1())) // Vắng không phép
-                    .count();
-
-            long countAbsentWithPermission = attendances.stream()
-                    .filter(a -> "PA".equals(a.getAttendance1()) || "P".equals(a.getAttendance1())) // Vắng có phép
-                    .count();
-
-            // Tính phần trăm attendance theo công thức
-            double attendanceRatio = (double) (totalClasses - countAbsentWithoutPermission) / totalClasses;
-            attendancePercentage = BigDecimal.valueOf(attendanceRatio * 100).setScale(2, RoundingMode.HALF_UP);
-        }
-
-        // Lấy điểm từ ExamDetail (không cần phải có điểm để tính phần trăm attendance)
-        Optional<ExamDetail> theoreticalExamDetail = examDetailRepository.findByUserIdAndExamType(student.getId(), MarkType.THEORETICAL);
-        Optional<ExamDetail> practicalExamDetail = examDetailRepository.findByUserIdAndExamType(student.getId(), MarkType.PRACTICAL);
-
-        // Cập nhật điểm lý thuyết và thực hành
-        theoreticalScore = theoreticalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
-        practicalScore = practicalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
-
-        // Lưu hoặc cập nhật vào StudentPerformance
-        StudentPerformance performance;
-        Optional<StudentPerformance> existingPerformance = studentPerformanceRepository.findByUserIdAndSubjectId(student.getId(), subjectId);
-
-        if (existingPerformance.isPresent()) {
-            // Cập nhật bản ghi
-            performance = existingPerformance.get();
-            performance.setAttendancePercentage(attendancePercentage);
-            performance.setTheoryExamScore(theoreticalScore);
-            performance.setPracticalExamScore(practicalScore);
-        } else {
-            // Nếu không tồn tại, tạo mới
-            performance = new StudentPerformance();
-            performance.setUser(student);
-            performance.setAttendancePercentage(attendancePercentage);
-            performance.setTheoryExamScore(theoreticalScore);
-            performance.setPracticalExamScore(practicalScore);
-            performance.setSubject(subjectRepository.findById(subjectId)
-                    .orElseThrow(() -> new NotFoundException("Subject not found")));
-            performance.setCreatedAt(LocalDateTime.now());
-        }
-
-        // Lưu vào repository
-        studentPerformanceRepository.save(performance);
-
-        // Tạo và trả về StudentPerformanceResponse
-        StudentPerformanceResponse response = new StudentPerformanceResponse();
-        response.setStudentName(student.getUserDetail().getFullName());
-        response.setSubjectCode(performance.getSubject().getSubjectCode());
-        response.setTheoreticalScore(theoreticalScore);
-        response.setPracticalScore(practicalScore);
-        response.setAttendancePercentage(attendancePercentage);
-
-        return response;
-    }
-
-
-
-
-
-
-    @Override
     public void addClass(ClassRequest classRequest) {
         Class existingClass = classRepository.findByClassName(classRequest.getClassName());
 
@@ -209,8 +128,8 @@ public class ClassServiceImpl implements ClassService {
         Class newClass = new Class();
         newClass.setClassName(classRequest.getClassName());
         newClass.setCenter(classRequest.getCenter());
-        newClass.setStartHour(classRequest.getStartHour()); // Sử dụng giờ bắt đầu
-        newClass.setEndHour(classRequest.getEndHour());     // Sử dụng giờ kết thúc
+        newClass.setStartHour(classRequest.getStartHour());
+        newClass.setEndHour(classRequest.getEndHour());
         newClass.setDays(classRequest.getDays());
         newClass.setStatus(Status.STUDYING);
 
@@ -261,7 +180,6 @@ public class ClassServiceImpl implements ClassService {
 
         return convertToClassResponse(existingClass);
     }
-
 
     @Override
     public void deleteClass(int classId) {
