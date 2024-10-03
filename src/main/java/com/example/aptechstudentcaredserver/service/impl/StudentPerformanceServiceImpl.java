@@ -15,6 +15,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,8 +36,15 @@ public class StudentPerformanceServiceImpl implements StudentPerformanceService 
         Class existingClass = classRepository.findById(classId)
                 .orElseThrow(() -> new NotFoundException("Class not found with id " + classId));
 
-        List<Attendance> attendances = attendanceRepository.findByUserId(student.getId());
-        long totalClasses = attendanceRepository.countByUserIdAndSchedule_Classes_Id(userId, classId);
+        // Lấy attendance cho userId
+        List<Attendance> attendances = attendanceRepository.findByUserId(userId);
+
+        // Lọc attendance theo classId và subjectId
+        List<Attendance> filteredAttendances = attendances.stream()
+                .filter(a -> a.getSchedule().getClasses().getId() == classId && a.getSchedule().getSubject().getId() == subjectId)
+                .collect(Collectors.toList());
+
+        long totalClasses = filteredAttendances.size();
 
         int presentCount = 0;
         int presentWithPermissionCount = 0;
@@ -44,19 +52,19 @@ public class StudentPerformanceServiceImpl implements StudentPerformanceService 
         BigDecimal attendancePercentage = BigDecimal.ZERO;
 
         if (totalClasses > 0) {
-            // Count attendance types
-            presentCount = (int) attendances.stream()
+            // Tính toán attendance types
+            presentCount = (int) filteredAttendances.stream()
                     .filter(a -> "P".equals(a.getAttendance1())).count();
-            presentWithPermissionCount = (int) attendances.stream()
+            presentWithPermissionCount = (int) filteredAttendances.stream()
                     .filter(a -> "PA".equals(a.getAttendance1())).count();
-            absentCount = (int) attendances.stream()
+            absentCount = (int) filteredAttendances.stream()
                     .filter(a -> "A".equals(a.getAttendance1())).count();
 
-            presentCount += (int) attendances.stream()
+            presentCount += (int) filteredAttendances.stream()
                     .filter(a -> "P".equals(a.getAttendance2())).count();
-            presentWithPermissionCount += (int) attendances.stream()
+            presentWithPermissionCount += (int) filteredAttendances.stream()
                     .filter(a -> "PA".equals(a.getAttendance2())).count();
-            absentCount += (int) attendances.stream()
+            absentCount += (int) filteredAttendances.stream()
                     .filter(a -> "A".equals(a.getAttendance2())).count();
 
             double attendanceRatio = (double) (totalClasses - absentCount) / totalClasses;
@@ -69,14 +77,14 @@ public class StudentPerformanceServiceImpl implements StudentPerformanceService 
         BigDecimal theoreticalScore = theoreticalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
         BigDecimal practicalScore = practicalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
 
-        // Calculate percentage for each score
-        BigDecimal theoreticalMaxScore = new BigDecimal("20"); // Assume maximum score for theoretical is 20
+        // Tính tỷ lệ phần trăm cho từng điểm số
+        BigDecimal theoreticalMaxScore = new BigDecimal("20"); // Giả định điểm tối đa cho lý thuyết là 20
         BigDecimal practicalMaxScore = new BigDecimal("20");
 
         BigDecimal theoreticalPercentage = theoreticalScore.divide(theoreticalMaxScore, 2, RoundingMode.HALF_UP).multiply(new BigDecimal("100"));
         BigDecimal practicalPercentage = practicalScore.divide(practicalMaxScore, 2, RoundingMode.HALF_UP).multiply(new BigDecimal("100"));
 
-        // Save or update StudentPerformance
+        // Lưu hoặc cập nhật StudentPerformance
         StudentPerformance performance;
         Optional<StudentPerformance> existingPerformance = studentPerformanceRepository.findByUserIdAndSubjectId(student.getId(), subjectId);
 
@@ -108,7 +116,7 @@ public class StudentPerformanceServiceImpl implements StudentPerformanceService 
 
         studentPerformanceRepository.save(performance);
 
-        // Create response
+        // Tạo response
         StudentPerformanceResponse response = new StudentPerformanceResponse();
         response.setStudentName(student.getUserDetail().getFullName());
         response.setSubjectCode(performance.getSubject().getSubjectCode());
@@ -123,5 +131,6 @@ public class StudentPerformanceServiceImpl implements StudentPerformanceService 
 
         return response;
     }
+
 
 }
