@@ -79,20 +79,6 @@ public class StudentController {
         }
     }
 
-    @GetMapping("/{studentId}/subjects")
-    public ResponseEntity<?> getAllSubjectsBySemester(
-            @PathVariable int studentId,
-            @RequestParam(required = false) String semesterName) {
-        try {
-            Map<String, List<SubjectInfoResponse>> semesterSubjects = studentService.getAllSubjectsBySemester(studentId, semesterName);
-            return new ResponseEntity<>(semesterSubjects, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.NOT_FOUND);
-        }
-    }
-
-
-
     @GetMapping("/{studentId}")
     public ResponseEntity<StudentResponse> getStudentInfo(@PathVariable("studentId") int studentId) {
         StudentResponse studentResponse = studentService.findStudentById(studentId);
