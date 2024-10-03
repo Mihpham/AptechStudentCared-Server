@@ -1,8 +1,8 @@
 package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.response.StudentPerformanceResponse;
-import com.example.aptechstudentcaredserver.entity.*;
 import com.example.aptechstudentcaredserver.entity.Class;
+import com.example.aptechstudentcaredserver.entity.*;
 import com.example.aptechstudentcaredserver.enums.MarkType;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.*;
@@ -15,7 +15,6 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +41,7 @@ public class StudentPerformanceServiceImpl implements StudentPerformanceService 
         // Lọc attendance theo classId và subjectId
         List<Attendance> filteredAttendances = attendances.stream()
                 .filter(a -> a.getSchedule().getClasses().getId() == classId && a.getSchedule().getSubject().getId() == subjectId)
-                .collect(Collectors.toList());
+                .toList();
 
         long totalClasses = filteredAttendances.size();
 
