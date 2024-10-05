@@ -16,7 +16,8 @@ import com.example.aptechstudentcaredserver.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,8 +68,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         List<Schedule> existingSchedules = scheduleRepository.findByClassesIdAndSubjectId(classId, subjectId);
         List<DayOfWeeks> classDays = userSubject.getClassroom().getDays();
 
-        LocalDateTime currentDate = request.getStartDate();
-        LocalDateTime endDate = request.getEndDate();
+        LocalDate currentDate = request.getStartDate();
+        LocalDate endDate = request.getEndDate();
         List<Schedule> newSchedules = new ArrayList<>();
 
         // Iterate over the date range and add new schedules for the specified days
@@ -76,7 +77,7 @@ public class ScheduleServiceImpl implements ScheduleService {
             for (DayOfWeeks day : classDays) {
                 if (currentDate.getDayOfWeek().getValue() == day.getValue()) {
                     // Capture the current date to avoid lambda final variable issue
-                    LocalDateTime finalCurrentDate = currentDate;
+                    LocalDate finalCurrentDate = currentDate;
 
                     // Check if the schedule already exists
                     boolean exists = existingSchedules.stream()
@@ -132,12 +133,19 @@ public class ScheduleServiceImpl implements ScheduleService {
         return convertToResponse(updatedSchedule);
     }
 
+    @Override
+    public void deleteScheduleById(int scheduleId) {
+        Schedule schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new NotFoundException("Schedule not found with id " + scheduleId));
 
-    private List<Schedule> createAndSaveSchedules(LocalDateTime startDate, String status, String note, Class classEntity, Subject subject, int numberOfSessions) {
+        scheduleRepository.delete(schedule);
+    }
+
+    private List<Schedule> createAndSaveSchedules(LocalDate startDate, String status, String note, Class classEntity, Subject subject, int numberOfSessions) {
         List<DayOfWeeks> classDays = classEntity.getDays();
         List<Schedule> schedules = new ArrayList<>();
         int sessionsCreated = 0;
-        LocalDateTime currentDate = startDate;
+        LocalDate currentDate = startDate;
 
         while (sessionsCreated < numberOfSessions) {
             for (DayOfWeeks day : classDays) {
@@ -164,8 +172,8 @@ public class ScheduleServiceImpl implements ScheduleService {
         return scheduleRepository.saveAll(schedules);
     }
 
-    private int calculateNumberOfSessions(LocalDateTime startDate, LocalDateTime endDate) {
-        return (int) java.time.Duration.between(startDate.toLocalDate().atStartOfDay(), endDate.toLocalDate().atStartOfDay()).toDays() + 1;
+    private int calculateNumberOfSessions(LocalDate startDate, LocalDate endDate) {
+        return (int) java.time.Duration.between(startDate.atStartOfDay(), endDate.atStartOfDay()).toDays() + 1;
     }
 
     private ScheduleResponse convertToResponse(Schedule schedule) {

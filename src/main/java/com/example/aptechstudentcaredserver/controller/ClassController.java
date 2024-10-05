@@ -5,15 +5,14 @@ import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
 import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
-import com.example.aptechstudentcaredserver.bean.response.StudentPerformanceResponse;
+import com.example.aptechstudentcaredserver.bean.response.SubjectInfoResponse;
 import com.example.aptechstudentcaredserver.service.ClassService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
@@ -76,23 +75,12 @@ public class ClassController {
             @PathVariable int classId,
             @RequestParam(required = false) String semesterName) {
         try {
-            Map<String, List<String>> semesterSubjects = classService.getAllSubjectsBySemester(classId, semesterName);
+            Map<String, List<SubjectInfoResponse>> semesterSubjects = classService.getAllSubjectsBySemester(classId, semesterName);
             return new ResponseEntity<>(semesterSubjects, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.NOT_FOUND);
         }
     }
-
-    @GetMapping("/class/{classId}/user/{userId}/subject/{subjectId}")
-    public ResponseEntity<StudentPerformanceResponse> saveStudentPerformance(
-            @PathVariable int userId,
-            @PathVariable int subjectId,
-            @PathVariable int classId) {
-
-        StudentPerformanceResponse response = classService.saveStudentPerformance(userId, subjectId, classId);
-        return ResponseEntity.ok(response);
-    }
-
     @PutMapping("/{classId}/assign-teacher")
     public ResponseEntity<String> assignTeacherToSubject(
             @PathVariable int classId,

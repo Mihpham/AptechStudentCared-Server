@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.service;
 import com.example.aptechstudentcaredserver.bean.request.ScheduleRequest;
 import com.example.aptechstudentcaredserver.bean.response.ScheduleResponse;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ScheduleService {
@@ -15,4 +16,6 @@ public interface ScheduleService {
     List<ScheduleResponse> createSchedule(ScheduleRequest scheduleRq, int classId, int subjectId);
 
     List<ScheduleResponse> updateSchedule(ScheduleRequest scheduleRq, int classId, int subjectId);
+
+    public void deleteScheduleById(int scheduleId);
 }

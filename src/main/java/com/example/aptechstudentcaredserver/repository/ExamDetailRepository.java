@@ -10,4 +10,7 @@ import java.util.Optional;
 public interface ExamDetailRepository extends JpaRepository<ExamDetail, Integer> {
     Optional<ExamDetail> findByUserIdAndSubjectIdAndExamType(int userId, int subjectId, MarkType examType);
     Optional<ExamDetail> findByUserIdAndExamType(int userId, MarkType examType);
+
+    Optional<ExamDetail> findByUserIdAndExamTypeAndSubjectId(int userId, MarkType examType, int subjectId);
+
 }

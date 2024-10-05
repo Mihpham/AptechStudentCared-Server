@@ -22,6 +22,10 @@ public class StudentPerformance {
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
 
+    private int presentCount;
+    private int presentWithPermissionCount;
+    private int absentCount;
+
     @Column(name = "theory_exam_score", precision = 5, scale = 2)
     private BigDecimal theoryExamScore;
 
@@ -31,12 +35,14 @@ public class StudentPerformance {
 //    @Column(name = "evaluation_score", precision = 5, scale = 2)
 //    private BigDecimal evaluationScore;
 
-    //    @Column(name = "final_score", precision = 5, scale = 2)
-//    private BigDecimal finalScore;
-// Thêm trường cho phần trăm
     @Column(name = "attendance_percentage", precision = 5, scale = 2)
-    private BigDecimal attendancePercentage; // Hoặc kiểu khác nếu cần
+    private BigDecimal attendancePercentage;
 
+    @Column(name = "practical_percentage")
+    private BigDecimal practicalPercentage;
+
+    @Column(name = "theoretical_percentage")
+    private BigDecimal theoreticalPercentage;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", nullable = false, updatable = false)
