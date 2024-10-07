@@ -216,7 +216,7 @@ public class CourseServiceImpl implements CourseService {
         };
 
         for (int i = 0; i < projectNames.length; i++) {
-            Optional<Subject> projectSubjectOpt = subjectRepository.findBySubjectName(projectCodes[i]);
+            Optional<Subject> projectSubjectOpt = subjectRepository.findBySubjectCode(projectCodes[i]);
 
             if (projectSubjectOpt.isEmpty()) {
                 SubjectRequest projectRequest = new SubjectRequest();
