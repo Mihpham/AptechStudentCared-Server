@@ -2,10 +2,7 @@ package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.AssignTeacherRequest;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
-import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
-import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
-import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
-import com.example.aptechstudentcaredserver.bean.response.SubjectInfoResponse;
+import com.example.aptechstudentcaredserver.bean.response.*;
 import com.example.aptechstudentcaredserver.service.ClassService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -69,18 +66,20 @@ public class ClassController {
         return new ResponseEntity<>(new ResponseMessage("Class deleted successfully"), HttpStatus.ACCEPTED);
     }
 
-    @GetMapping("/{classId}/subjects")
+    @GetMapping("/{classId}/user/{userId}/subjects")
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
     public ResponseEntity<?> getAllSubjectsBySemester(
             @PathVariable int classId,
+            @PathVariable int userId,
             @RequestParam(required = false) String semesterName) {
         try {
-            Map<String, List<SubjectInfoResponse>> semesterSubjects = classService.getAllSubjectsBySemester(classId, semesterName);
+            Map<String, List<StudentPerformanceResponse>> semesterSubjects = classService.getAllSubjectsBySemester(classId, semesterName, userId);
             return new ResponseEntity<>(semesterSubjects, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.NOT_FOUND);
         }
     }
+
     @PutMapping("/{classId}/assign-teacher")
     public ResponseEntity<String> assignTeacherToSubject(
             @PathVariable int classId,

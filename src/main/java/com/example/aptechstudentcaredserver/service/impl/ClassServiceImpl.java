@@ -5,6 +5,7 @@ import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.*;
 import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.*;
+import com.example.aptechstudentcaredserver.enums.MarkType;
 import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.EmptyListException;
@@ -14,6 +15,8 @@ import com.example.aptechstudentcaredserver.service.ClassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -30,12 +33,12 @@ public class ClassServiceImpl implements ClassService {
     private final CourseRepository courseRepository;
     private final CourseSubjectRepository courseSubjectRepository;
     private final SemesterRepository semesterRepository;
-    private final UserRepository userRepository;
-    private final UserSubjectRepository userSubjectRepository;
-    private final ExamDetailRepository examDetailRepository;
     private final AttendanceRepository attendanceRepository;
+    private final UserRepository userRepository;
+    private final ExamDetailRepository examDetailRepository;
+
+    private final UserSubjectRepository userSubjectRepository;
     private final StudentPerformanceRepository studentPerformanceRepository;
-    private final SubjectRepository subjectRepository;
 
     @Override
     public List<ClassResponse> findAllClass() {
@@ -85,7 +88,7 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public Map<String, List<SubjectInfoResponse>> getAllSubjectsBySemester(int classId, String semesterName) {
+    public Map<String, List<StudentPerformanceResponse>> getAllSubjectsBySemester(int classId, String semesterName, int userId) {
         Class existingClass = classRepository.findById(classId)
                 .orElseThrow(() -> new NotFoundException("Class not found with id " + classId));
 
@@ -105,10 +108,84 @@ public class ClassServiceImpl implements ClassService {
             }
         }
 
-        Map<String, List<SubjectInfoResponse>> semesterSubjects = courseSubjects.stream()
+        Map<String, List<StudentPerformanceResponse>> semesterSubjects = courseSubjects.stream()
                 .collect(Collectors.groupingBy(
                         cs -> cs.getSemester().getName().toUpperCase(),
-                        Collectors.mapping(cs -> new SubjectInfoResponse(cs.getSubject().getId(), cs.getSubject().getSubjectCode()), Collectors.toList())
+                        Collectors.mapping(cs -> {
+                            StudentPerformanceResponse response = new StudentPerformanceResponse();
+                            response.setId(cs.getSubject().getId());
+                            response.setSubjectCode(cs.getSubject().getSubjectCode());
+
+                            // Fetching attendance for the user
+                            List<Attendance> attendances = attendanceRepository.findByUserId(userId);
+                            List<Attendance> filteredAttendances = attendances.stream()
+                                    .filter(a -> a.getSchedule().getClasses().getId() == classId && a.getSchedule().getSubject().getId() == cs.getSubject().getId())
+                                    .toList();
+
+                            long totalClasses = filteredAttendances.size();
+                            int presentCount = (int) filteredAttendances.stream().filter(a -> "P".equals(a.getAttendance1())).count() +
+                                    (int) filteredAttendances.stream().filter(a -> "P".equals(a.getAttendance2())).count();
+                            int presentWithPermissionCount = (int) filteredAttendances.stream().filter(a -> "PA".equals(a.getAttendance1())).count() +
+                                    (int) filteredAttendances.stream().filter(a -> "PA".equals(a.getAttendance2())).count();
+                            int absentCount = (int) filteredAttendances.stream().filter(a -> "A".equals(a.getAttendance1())).count() +
+                                    (int) filteredAttendances.stream().filter(a -> "A".equals(a.getAttendance2())).count();
+
+                            BigDecimal attendancePercentage = totalClasses > 0
+                                    ? BigDecimal.valueOf((double) (totalClasses - absentCount) / totalClasses * 100).setScale(2, RoundingMode.HALF_UP)
+                                    : BigDecimal.ZERO;
+
+                            // Fetching performance data
+                            Optional<StudentPerformance> performanceOpt = studentPerformanceRepository.findByUserIdAndSubjectId(userId, cs.getSubject().getId());
+                            BigDecimal theoreticalPercentage = BigDecimal.ZERO;
+                            BigDecimal practicalPercentage = BigDecimal.ZERO;
+                            BigDecimal theoreticalScore = BigDecimal.ZERO;
+                            BigDecimal practicalScore = BigDecimal.ZERO;
+
+                            if (performanceOpt.isPresent()) {
+                                StudentPerformance performance = performanceOpt.get();
+                                theoreticalPercentage = performance.getTheoreticalPercentage();
+                                practicalPercentage = performance.getPracticalPercentage();
+                                theoreticalScore = performance.getTheoryExamScore();
+                                practicalScore = performance.getPracticalExamScore();
+                            } else {
+                                // Fetch scores from ExamDetail if performance data not available
+                                Optional<ExamDetail> theoreticalExamDetail = examDetailRepository.findByUserIdAndExamTypeAndSubjectId(userId, MarkType.THEORETICAL, cs.getSubject().getId());
+                                Optional<ExamDetail> practicalExamDetail = examDetailRepository.findByUserIdAndExamTypeAndSubjectId(userId, MarkType.PRACTICAL, cs.getSubject().getId());
+
+                                theoreticalScore = theoreticalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
+                                practicalScore = practicalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
+
+                                // Calculate percentages
+                                BigDecimal theoreticalMaxScore = new BigDecimal("20");
+                                BigDecimal practicalMaxScore = new BigDecimal("100");
+
+                                // Calculate theoretical percentage
+                                theoreticalPercentage = theoreticalScore.compareTo(BigDecimal.ZERO) > 0
+                                        ? theoreticalScore.divide(theoreticalMaxScore, 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
+                                        : BigDecimal.ZERO;
+
+                                // Calculate practical percentage
+                                if (practicalScore.compareTo(BigDecimal.valueOf(20)) <= 0) {
+                                    practicalPercentage = practicalScore.divide(new BigDecimal("20"), 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+                                } else if (practicalScore.compareTo(BigDecimal.valueOf(21)) >= 0 && practicalScore.compareTo(practicalMaxScore) <= 0) {
+                                    practicalPercentage = practicalScore;
+                                } else {
+                                    practicalPercentage = BigDecimal.ZERO;
+                                }
+                            }
+
+                            // Set response fields
+                            response.setTheoreticalPercentage(theoreticalPercentage);
+                            response.setPracticalPercentage(practicalPercentage);
+                            response.setTheoreticalScore(theoreticalScore);
+                            response.setPracticalScore(practicalScore);
+                            response.setPresentCount(presentCount);
+                            response.setPresentWithPermissionCount(presentWithPermissionCount);
+                            response.setAbsentCount(absentCount);
+                            response.setAttendancePercentage(attendancePercentage);
+
+                            return response;
+                        }, Collectors.toList())
                 ));
 
         return semesterSubjects;
@@ -207,9 +284,8 @@ public class ClassServiceImpl implements ClassService {
 
         // Lấy số giờ học từ lớp và môn học
         int totalClassHours = existingClass.getEndHour().getHour() - existingClass.getStartHour().getHour();
-        int totalSubjectHours = filteredCourseSubjects.get(0).getSubject().getTotalHours(); // Giả định rằng môn học đã được xác định
+        int totalSubjectHours = filteredCourseSubjects.get(0).getSubject().getTotalHours(); 
 
-        // Tính số buổi học
         int numberOfSessions = (int) Math.ceil((double) totalSubjectHours / totalClassHours);
 
         List<UserSubject> userSubjectsForClass = userSubjectRepository.findByClassroom(existingClass);
