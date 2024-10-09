@@ -4,6 +4,7 @@ import com.example.aptechstudentcaredserver.bean.request.AssignTeacherRequest;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
+import com.example.aptechstudentcaredserver.bean.response.StudentPerformanceResponse;
 import com.example.aptechstudentcaredserver.bean.response.SubjectInfoResponse;
 
 import java.util.List;
@@ -15,7 +16,7 @@ public interface ClassService {
 
     public CourseWithClassesResponse findClassWithSubjectByClassId(int classId);
 
-    Map<String, List<SubjectInfoResponse>> getAllSubjectsBySemester(int classId, String semesterName);
+    public Map<String, List<StudentPerformanceResponse>> getAllSubjectsBySemester(int classId, String semesterName, int userId);
 
     public ClassResponse findClassById(int classId);
 

@@ -1,9 +1,7 @@
 package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.CourseRequest;
-import com.example.aptechstudentcaredserver.bean.request.SubjectRequest;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
-import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
 import com.example.aptechstudentcaredserver.entity.Course;
 import com.example.aptechstudentcaredserver.entity.CourseSubject;
 import com.example.aptechstudentcaredserver.entity.Semester;
@@ -16,12 +14,14 @@ import com.example.aptechstudentcaredserver.repository.SemesterRepository;
 import com.example.aptechstudentcaredserver.repository.SubjectRepository;
 import com.example.aptechstudentcaredserver.service.CourseService;
 import com.example.aptechstudentcaredserver.service.SemesterService;
-import com.example.aptechstudentcaredserver.service.SubjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,7 +32,6 @@ public class CourseServiceImpl implements CourseService {
     private final SubjectRepository subjectRepository;
     private final CourseSubjectRepository courseSubjectRepository;
     private final SemesterService semesterService;
-    private final SubjectService subjectService;
 
     @Override
     public List<CourseResponse> getAllCourses() {
@@ -51,7 +50,6 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public void createCourse(CourseRequest request) {
-        // Kiểm tra xem khóa học đã tồn tại hay chưa
         Course existCourseByName = courseRepository.findByCourseName(request.getCourseName());
         if (existCourseByName != null) {
             throw new DuplicateException("Course with name '" + request.getCourseName() + "' already exists");
@@ -66,7 +64,6 @@ public class CourseServiceImpl implements CourseService {
             throw new NotFoundException("At least one semester and subject must be provided");
         }
 
-        // Tạo mới đối tượng Course
         Course course = new Course();
         course.setCourseName(request.getCourseName());
         course.setCourseCode(request.getCourseCode());
@@ -74,14 +71,9 @@ public class CourseServiceImpl implements CourseService {
         course.setCreatedAt(LocalDateTime.now());
         course.setUpdatedAt(LocalDateTime.now());
 
-        // Lưu khóa học vào cơ sở dữ liệu
         course = courseRepository.save(course);
-
-
-        // Lưu thông tin các môn học cho khóa học
         saveCourseSubjects(request, course);
     }
-
 
     @Override
     public CourseResponse updateCourse(int courseId, CourseRequest request) {
@@ -243,10 +235,9 @@ public class CourseServiceImpl implements CourseService {
             courseSubjectRepository.saveAll(courseSubjectsToSave);
         } catch (NotFoundException e) {
             courseRepository.delete(course);
+            throw e;
         }
     }
-
-
 
     private CourseResponse convertToCourseResponse(Course course) {
         if (course == null) {

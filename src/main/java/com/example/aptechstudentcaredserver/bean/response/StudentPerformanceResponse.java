@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 public class StudentPerformanceResponse {
+    private int id;
     private String studentName;
     private String subjectCode;
     private BigDecimal theoreticalScore;
