@@ -51,6 +51,14 @@ public class ClassServiceImpl implements ClassService {
                 .collect(Collectors.toList());
     }
 
+
+    public List<ClassResponse> getAllClassesByUser(User user) {
+        List<Class> classes = groupClassRepository.findClassesByUser(user);
+        return classes.stream()
+                .map(this::convertToClassResponse)  // Gọi hàm convertToClassResponse
+                .collect(Collectors.toList());      // Thu thập kết quả vào List
+    }
+
     @Override
     public CourseWithClassesResponse findClassWithSubjectByClassId(int classId) {
         Class existingClass = classRepository.findById(classId)

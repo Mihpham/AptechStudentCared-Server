@@ -1,6 +1,7 @@
 package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.CourseRequest;
+import com.example.aptechstudentcaredserver.bean.request.SubjectRequest;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
 import com.example.aptechstudentcaredserver.entity.Course;
 import com.example.aptechstudentcaredserver.entity.CourseSubject;
@@ -14,14 +15,12 @@ import com.example.aptechstudentcaredserver.repository.SemesterRepository;
 import com.example.aptechstudentcaredserver.repository.SubjectRepository;
 import com.example.aptechstudentcaredserver.service.CourseService;
 import com.example.aptechstudentcaredserver.service.SemesterService;
+import com.example.aptechstudentcaredserver.service.SubjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +31,7 @@ public class CourseServiceImpl implements CourseService {
     private final SubjectRepository subjectRepository;
     private final CourseSubjectRepository courseSubjectRepository;
     private final SemesterService semesterService;
+    private final SubjectService subjectService;
 
     @Override
     public List<CourseResponse> getAllCourses() {

@@ -3,7 +3,11 @@ package com.example.aptechstudentcaredserver.controller;
 import com.example.aptechstudentcaredserver.bean.request.AssignTeacherRequest;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.*;
+import com.example.aptechstudentcaredserver.entity.Class;
+import com.example.aptechstudentcaredserver.entity.User;
+import com.example.aptechstudentcaredserver.repository.UserRepository;
 import com.example.aptechstudentcaredserver.service.ClassService;
+import com.example.aptechstudentcaredserver.service.impl.ClassServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,12 +17,15 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/classes")
 public class ClassController {
     private final ClassService classService;
+    private final ClassServiceImpl classServiceImpl;
+    private final UserRepository userRepository;
 
     @GetMapping
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
@@ -91,4 +98,10 @@ public class ClassController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+    @GetMapping("/user/{userId}")
+        public List<ClassResponse> getClassesByUser(@PathVariable int userId) {
+            User user = new User();  // Load user theo userId (có thể lấy từ UserService hoặc repository)
+            user.setId(userId);      // Đặt user ID
+            return classServiceImpl.getAllClassesByUser(user);
+        }
 }
