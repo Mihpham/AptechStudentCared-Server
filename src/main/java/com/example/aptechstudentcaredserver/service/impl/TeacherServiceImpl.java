@@ -2,13 +2,13 @@ package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.TeacherRequest;
 import com.example.aptechstudentcaredserver.bean.response.TeacherResponse;
+import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.Role;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.entity.UserDetail;
+import com.example.aptechstudentcaredserver.entity.UserSubject;
 import com.example.aptechstudentcaredserver.enums.Status;
-import com.example.aptechstudentcaredserver.repository.RoleRepository;
-import com.example.aptechstudentcaredserver.repository.UserDetailRepository;
-import com.example.aptechstudentcaredserver.repository.UserRepository;
+import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
 import com.example.aptechstudentcaredserver.service.TeacherService;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +30,8 @@ public class TeacherServiceImpl implements TeacherService {
     private final PasswordEncoder passwordEncoder;
     private final EmailGeneratorService emailGeneratorService;
     private final RoleRepository roleRepository;
+    private final ClassRepository classRepository;
+    private final UserSubjectRepository userSubjectRepository;
 
     @Override
     public List<TeacherResponse> findAllTeachers() {
@@ -165,6 +167,25 @@ public class TeacherServiceImpl implements TeacherService {
             user.setStatus(Status.valueOf(teacherRq.getStatus()));
         }
     }
+    public List<TeacherResponse> findTeachersByClassId(int classId) {
+        Class existingClass = classRepository.findById(classId)
+                .orElseThrow(() -> new RuntimeException("Class not found with id: " + classId));
+
+        // Find all user subjects related to this class
+        List<UserSubject> userSubjects = userSubjectRepository.findByClassroom(existingClass);
+
+        // Filter for Users with role "TEACHER" and convert to TeacherResponse
+        List<TeacherResponse> teachers = userSubjects.stream()
+                .map(UserSubject::getUser) // Get User from UserSubject
+                .filter(user -> user.getRole().getRoleName().equals("TEACHER")) // Filter for TEACHER role
+                .map(this::convertToTeacherResponse) // Convert each User to TeacherResponse
+                .collect(Collectors.toList()); // Collect to a List<TeacherResponse>
+
+        return teachers;
+    }
+
+
+
 
 
     private TeacherResponse convertToTeacherResponse(User user) {

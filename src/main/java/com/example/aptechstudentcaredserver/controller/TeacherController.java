@@ -3,6 +3,7 @@ package com.example.aptechstudentcaredserver.controller;
 import com.example.aptechstudentcaredserver.bean.request.TeacherRequest;
 import com.example.aptechstudentcaredserver.bean.response.TeacherResponse;
 import com.example.aptechstudentcaredserver.service.TeacherService;
+import com.example.aptechstudentcaredserver.service.impl.TeacherServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -33,6 +34,15 @@ public class TeacherController {
     public ResponseEntity<List<TeacherResponse>> getAllTeachers() {
         try {
             List<TeacherResponse> teachers = teacherService.findAllTeachers();
+            return new ResponseEntity<>(teachers, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+    @GetMapping("/class/{classId}")
+    public ResponseEntity<List<TeacherResponse>> getTeachersByClassId(@PathVariable("classId") int classId) {
+        try {
+            List<TeacherResponse> teachers = teacherService.findTeachersByClassId(classId);
             return new ResponseEntity<>(teachers, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
