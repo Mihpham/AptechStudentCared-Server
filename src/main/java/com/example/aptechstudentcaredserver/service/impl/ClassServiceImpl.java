@@ -129,6 +129,12 @@ public class ClassServiceImpl implements ClassService {
                             List<Attendance> filteredAttendances = attendances.stream()
                                     .filter(a -> a.getSchedule().getClasses().getId() == classId && a.getSchedule().getSubject().getId() == cs.getSubject().getId())
                                     .toList();
+                            Optional<User> user = userRepository.findById(userId);
+                            if(user.isPresent()){
+                                response.setStudentName(user.get().getUserDetail().getFullName());
+                            }else{
+                                response.setStudentName("Unknown studentName");
+                            }
 
                             long totalClasses = filteredAttendances.size();
                             int presentCount = (int) filteredAttendances.stream().filter(a -> "P".equals(a.getAttendance1())).count() +
