@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,24 +25,18 @@ public class StudentController {
     private final StudentService studentService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
-
     public ResponseEntity<List<StudentResponse>> getAllStudents() {
         List<StudentResponse> students = studentService.findAllStudent();
         return ResponseEntity.ok(students);
     }
 
     @GetMapping("/status/{status}")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
-
     public ResponseEntity<List<StudentResponse>> getStudentsByStatus(@PathVariable("status") ClassMemberStatus status) {
         List<StudentResponse> students = studentService.findStudentsByStatus(status);
         return ResponseEntity.ok(students);
     }
 
     @PostMapping("/add")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
-
     public ResponseEntity<String> addStudent(@RequestBody StudentRequest studentRq) {
         try {
             studentService.createStudent(studentRq);
@@ -55,8 +48,6 @@ public class StudentController {
     }
 
     @PostMapping("/import")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
-
     public ResponseEntity<String> importStudents(@ModelAttribute("file") MultipartFile file) {
         try {
             List<ImportResponse> importResults = ExcelUtils.parseStudentExcelFile(file,studentService);
@@ -89,16 +80,12 @@ public class StudentController {
     }
 
     @GetMapping("/{studentId}")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
-
     public ResponseEntity<StudentResponse> getStudentInfo(@PathVariable("studentId") int studentId) {
         StudentResponse studentResponse = studentService.findStudentById(studentId);
         return ResponseEntity.ok(studentResponse);
     }
 
     @PutMapping("/{studentId}")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
-
     public ResponseEntity<StudentResponse> updateStudent(
             @PathVariable int studentId,
             @RequestBody StudentRequest studentRequest) {
@@ -107,8 +94,6 @@ public class StudentController {
     }
 
     @DeleteMapping("/{studentId}")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
-
     public ResponseEntity<String> deleteStudent(@PathVariable("studentId") int studentId) {
         studentService.deleteStudent(studentId);
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, "application/json")
