@@ -1,7 +1,6 @@
 package com.example.aptechstudentcaredserver.service.impl;
 
 import com.example.aptechstudentcaredserver.bean.request.CourseRequest;
-import com.example.aptechstudentcaredserver.bean.request.SubjectRequest;
 import com.example.aptechstudentcaredserver.bean.response.CourseResponse;
 import com.example.aptechstudentcaredserver.entity.Course;
 import com.example.aptechstudentcaredserver.entity.CourseSubject;
@@ -15,12 +14,14 @@ import com.example.aptechstudentcaredserver.repository.SemesterRepository;
 import com.example.aptechstudentcaredserver.repository.SubjectRepository;
 import com.example.aptechstudentcaredserver.service.CourseService;
 import com.example.aptechstudentcaredserver.service.SemesterService;
-import com.example.aptechstudentcaredserver.service.SubjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,7 +32,6 @@ public class CourseServiceImpl implements CourseService {
     private final SubjectRepository subjectRepository;
     private final CourseSubjectRepository courseSubjectRepository;
     private final SemesterService semesterService;
-    private final SubjectService subjectService;
 
     @Override
     public List<CourseResponse> getAllCourses() {
@@ -193,42 +193,6 @@ public class CourseServiceImpl implements CourseService {
 
 
     private void saveCourseSubjects(CourseRequest request, Course course) {
-        String[] projectNames = {
-                "Project Semester 1",
-                "Project Semester 2",
-                "Project Semester 3",
-                "Project Semester 4"
-        };
-
-        String[] projectCodes = {
-                "PROJECT_SEM1",
-                "PROJECT_SEM2",
-                "PROJECT_SEM3",
-                "PROJECT_SEM4"
-        };
-
-        for (int i = 0; i < projectNames.length; i++) {
-            Optional<Subject> projectSubjectOpt = subjectRepository.findBySubjectCode(projectCodes[i]);
-
-            if (projectSubjectOpt.isEmpty()) {
-                SubjectRequest projectRequest = new SubjectRequest();
-                projectRequest.setSubjectName(projectNames[i]); // Tên môn học theo kỳ
-                projectRequest.setSubjectCode(projectCodes[i]); // Mã môn học theo kỳ
-                projectRequest.setTotalHours(60); // Tổng số giờ học cho môn này
-                subjectService.createSubject(projectRequest);
-                System.out.println("Created new subject: " + projectRequest.getSubjectName());
-            } else {
-                System.out.println("Subject already exists: " + projectSubjectOpt.get().getSubjectName());
-            }
-        }
-
-        request.getSemesters().forEach((semesterName, subjects) -> {
-            boolean hasProjectSubject = subjects.stream()
-                    .anyMatch(subject -> subject.equalsIgnoreCase("PROJECT_" + semesterName));
-            if (!hasProjectSubject) {
-                subjects.add("PROJECT_" + semesterName);
-            }
-        });
         List<CourseSubject> courseSubjectsToSave = new ArrayList<>();
         try {
             processSemestersAndSubjects(request, course, courseSubjectsToSave, false);
