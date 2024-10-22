@@ -297,6 +297,7 @@ public class StudentServiceImpl implements StudentService {
 
         return new StudentResponse(
                 user.getId(),
+                studentClass.getId(),
                 user.getUserDetail() != null ? user.getUserDetail().getImage() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : null,
                 user.getUserDetail() != null ? user.getUserDetail().getFullName() : null,

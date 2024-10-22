@@ -370,6 +370,7 @@ public class ClassServiceImpl implements ClassService {
 
                     return new StudentResponse(
                             user.getId(),
+                            classEntity.getId(),
                             user.getUserDetail() != null ? user.getUserDetail().getImage() : null,
                             user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : null,
                             user.getUserDetail() != null ? user.getUserDetail().getFullName() : null,

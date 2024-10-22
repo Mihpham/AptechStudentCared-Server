@@ -14,6 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 public class StudentResponse {
     private int userId;
+    private int classId;
     private String image;
     private String rollNumber;
     private String fullName;
