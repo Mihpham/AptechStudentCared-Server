@@ -28,28 +28,28 @@ public class ClassController {
     private final UserRepository userRepository;
 
     @GetMapping
-    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
     public ResponseEntity<List<ClassResponse>> findAllClass() {
         List<ClassResponse> classResponses = classService.findAllClass();
         return new ResponseEntity<>(classResponses, HttpStatus.OK);
     }
 
     @GetMapping("/class/{classId}")
-    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
     public ResponseEntity<CourseWithClassesResponse> findClassWithSubjectByClassId(@PathVariable int classId) {
         CourseWithClassesResponse classDetails = classService.findClassWithSubjectByClassId(classId);
         return new ResponseEntity<>(classDetails, HttpStatus.OK);
     }
 
     @GetMapping("/{classId}")
-    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
     public ResponseEntity<ClassResponse> findClassById(@PathVariable int classId) {
         ClassResponse classResponse = classService.findClassById(classId);
         return new ResponseEntity<>(classResponse, HttpStatus.OK);
     }
 
     @PostMapping("/add")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
     public ResponseEntity<ResponseMessage> addClass(@Valid @RequestBody ClassRequest classRequest) {
         try {
             classService.addClass(classRequest);
@@ -60,21 +60,21 @@ public class ClassController {
     }
 
     @PutMapping("/{classId}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
     public ResponseEntity<ClassResponse> updateClass(@RequestBody ClassRequest classRequest, @PathVariable int classId) {
         ClassResponse updateClass = classService.updateClass(classId, classRequest);
         return new ResponseEntity<>(updateClass, HttpStatus.ACCEPTED);
     }
 
     @DeleteMapping("/{classId}")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
     public ResponseEntity<ResponseMessage> deleteClass(@PathVariable int classId) {
         classService.deleteClass(classId);
         return new ResponseEntity<>(new ResponseMessage("Class deleted successfully"), HttpStatus.ACCEPTED);
     }
 
     @GetMapping("/{classId}/user/{userId}/subjects")
-    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
     public ResponseEntity<?> getAllSubjectsBySemester(
             @PathVariable int classId,
             @PathVariable int userId,
@@ -87,7 +87,7 @@ public class ClassController {
         }
     }
 
-    @PutMapping("/{classId}/assign-teacher")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
     public ResponseEntity<String> assignTeacherToSubject(
             @PathVariable int classId,
             @RequestBody AssignTeacherRequest request) {
@@ -99,7 +99,8 @@ public class ClassController {
         }
     }
     @GetMapping("/user/{userId}")
-        public List<ClassResponse> getClassesByUser(@PathVariable int userId) {
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
+    public List<ClassResponse> getClassesByUser(@PathVariable int userId) {
             User user = new User();  // Load user theo userId (có thể lấy từ UserService hoặc repository)
             user.setId(userId);      // Đặt user ID
             return classServiceImpl.getAllClassesByUser(user);
