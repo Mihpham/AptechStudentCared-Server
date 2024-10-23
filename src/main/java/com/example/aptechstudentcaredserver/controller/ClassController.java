@@ -86,7 +86,8 @@ public class ClassController {
             return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.NOT_FOUND);
         }
     }
-
+    
+    @PutMapping("/{classId}/assign-teacher")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
     public ResponseEntity<String> assignTeacherToSubject(
             @PathVariable int classId,
