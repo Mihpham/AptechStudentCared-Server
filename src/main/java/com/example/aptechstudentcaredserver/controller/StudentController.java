@@ -92,7 +92,7 @@ public class StudentController {
     }
 
     @PutMapping("/{studentId}")
-    @PreAuthorize("or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
     public ResponseEntity<StudentResponse> updateStudent(
             @PathVariable int studentId,
             @RequestBody StudentRequest studentRequest) {
