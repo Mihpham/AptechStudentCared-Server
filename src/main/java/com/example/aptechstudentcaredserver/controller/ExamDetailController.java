@@ -21,7 +21,7 @@ public class ExamDetailController {
     private final ExamDetailService examDetailService;
 
     @GetMapping("/{classId}")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_STUDENT')")
     public ResponseEntity<List<StudentExamScoreResponse>> getExamScoresByClass(@PathVariable int classId) {
         List<StudentExamScoreResponse> examScores = examDetailService.getExamScoresByClass(classId);
         return ResponseEntity.ok(examScores);
