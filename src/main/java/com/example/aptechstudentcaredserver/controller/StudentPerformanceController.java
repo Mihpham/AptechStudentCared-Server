@@ -1,6 +1,6 @@
 package com.example.aptechstudentcaredserver.controller;
 
-import com.example.aptechstudentcaredserver.bean.response.StudentPerformanceResponse;
+import com.example.aptechstudentcaredserver.bean.response.SubjectPerformance;
 import com.example.aptechstudentcaredserver.service.StudentPerformanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +16,12 @@ public class StudentPerformanceController {
     private final StudentPerformanceService saveStudentPerformance;
 
     @GetMapping("/class/{classId}/user/{userId}/subject/{subjectId}")
-    public ResponseEntity<StudentPerformanceResponse> saveStudentPerformance(
+    public ResponseEntity<SubjectPerformance> saveStudentPerformance(
             @PathVariable int userId,
             @PathVariable int subjectId,
             @PathVariable int classId) {
 
-        StudentPerformanceResponse response = saveStudentPerformance.saveStudentPerformance(userId, subjectId, classId);
+        SubjectPerformance response = saveStudentPerformance.saveStudentPerformance(userId, subjectId, classId);
         return ResponseEntity.ok(response);
     }
 }

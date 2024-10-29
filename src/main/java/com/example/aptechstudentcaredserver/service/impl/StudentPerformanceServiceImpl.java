@@ -1,6 +1,6 @@
 package com.example.aptechstudentcaredserver.service.impl;
 
-import com.example.aptechstudentcaredserver.bean.response.StudentPerformanceResponse;
+import com.example.aptechstudentcaredserver.bean.response.SubjectPerformance;
 import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.*;
 import com.example.aptechstudentcaredserver.enums.MarkType;
@@ -28,7 +28,7 @@ public class StudentPerformanceServiceImpl implements StudentPerformanceService 
     private final SubjectRepository subjectRepository;
 
     @Override
-    public StudentPerformanceResponse saveStudentPerformance(int userId, int subjectId, int classId) {
+    public SubjectPerformance saveStudentPerformance(int userId, int subjectId, int classId) {
         User student = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Student not found with id " + userId));
 
@@ -116,7 +116,7 @@ public class StudentPerformanceServiceImpl implements StudentPerformanceService 
         studentPerformanceRepository.save(performance);
 
         // Tạo response
-        StudentPerformanceResponse response = new StudentPerformanceResponse();
+        SubjectPerformance response = new SubjectPerformance();
         response.setStudentName(student.getUserDetail().getFullName());
         response.setSubjectCode(performance.getSubject().getSubjectCode());
         response.setTheoreticalScore(theoreticalScore);

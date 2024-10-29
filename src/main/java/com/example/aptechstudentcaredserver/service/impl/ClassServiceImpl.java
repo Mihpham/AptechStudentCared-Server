@@ -17,10 +17,10 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +39,7 @@ public class ClassServiceImpl implements ClassService {
 
     private final UserSubjectRepository userSubjectRepository;
     private final StudentPerformanceRepository studentPerformanceRepository;
+    private final ScheduleRepository scheduleRepository;
 
     @Override
     public List<ClassResponse> findAllClass() {
@@ -96,7 +97,7 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public Map<String, List<StudentPerformanceResponse>> getAllSubjectsBySemester(int classId, String semesterName, int userId) {
+    public StudentPerformanceResponse getAllSubjectsBySemester(int classId, String semesterName, int userId) {
         Class existingClass = classRepository.findById(classId)
                 .orElseThrow(() -> new NotFoundException("Class not found with id " + classId));
 
@@ -116,93 +117,107 @@ public class ClassServiceImpl implements ClassService {
             }
         }
 
-        Map<String, List<StudentPerformanceResponse>> semesterSubjects = courseSubjects.stream()
-                .collect(Collectors.groupingBy(
-                        cs -> cs.getSemester().getName().toUpperCase(),
-                        Collectors.mapping(cs -> {
-                            StudentPerformanceResponse response = new StudentPerformanceResponse();
-                            response.setId(cs.getSubject().getId());
-                            response.setSubjectCode(cs.getSubject().getSubjectCode());
+        List<SubjectPerformance> performances = new ArrayList<>();
 
-                            // Fetching attendance for the user
-                            List<Attendance> attendances = attendanceRepository.findByUserId(userId);
-                            List<Attendance> filteredAttendances = attendances.stream()
-                                    .filter(a -> a.getSchedule().getClasses().getId() == classId && a.getSchedule().getSubject().getId() == cs.getSubject().getId())
-                                    .toList();
-                            Optional<User> user = userRepository.findById(userId);
-                            if(user.isPresent()){
-                                response.setStudentName(user.get().getUserDetail().getFullName());
-                            }else{
-                                response.setStudentName("Unknown studentName");
-                            }
+        LocalDate firstSubjectSchedule = null;
+        LocalDate lastSubjectSchedule = null;
 
-                            long totalClasses = filteredAttendances.size();
-                            int presentCount = (int) filteredAttendances.stream().filter(a -> "P".equals(a.getAttendance1())).count() +
-                                    (int) filteredAttendances.stream().filter(a -> "P".equals(a.getAttendance2())).count();
-                            int presentWithPermissionCount = (int) filteredAttendances.stream().filter(a -> "PA".equals(a.getAttendance1())).count() +
-                                    (int) filteredAttendances.stream().filter(a -> "PA".equals(a.getAttendance2())).count();
-                            int absentCount = (int) filteredAttendances.stream().filter(a -> "A".equals(a.getAttendance1())).count() +
-                                    (int) filteredAttendances.stream().filter(a -> "A".equals(a.getAttendance2())).count();
+        for (CourseSubject cs : courseSubjects) {
+            SubjectPerformance response = new SubjectPerformance();
+            response.setId(cs.getSubject().getId());
+            response.setSubjectCode(cs.getSubject().getSubjectCode());
 
-                            BigDecimal attendancePercentage = totalClasses > 0
-                                    ? BigDecimal.valueOf((double) (totalClasses - absentCount) / totalClasses * 100).setScale(2, RoundingMode.HALF_UP)
-                                    : BigDecimal.ZERO;
+            // Fetching attendance for the user
+            List<Attendance> attendances = attendanceRepository.findByUserId(userId);
+            List<Attendance> filteredAttendances = attendances.stream()
+                    .filter(a -> a.getSchedule().getClasses().getId() == classId && a.getSchedule().getSubject().getId() == cs.getSubject().getId())
+                    .toList();
 
-                            // Fetching performance data
-                            Optional<StudentPerformance> performanceOpt = studentPerformanceRepository.findByUserIdAndSubjectId(userId, cs.getSubject().getId());
-                            BigDecimal theoreticalPercentage = BigDecimal.ZERO;
-                            BigDecimal practicalPercentage = BigDecimal.ZERO;
-                            BigDecimal theoreticalScore = BigDecimal.ZERO;
-                            BigDecimal practicalScore = BigDecimal.ZERO;
+            Optional<User> user = userRepository.findById(userId);
+            response.setStudentName(user.map(u -> u.getUserDetail().getFullName()).orElse("Unknown studentName"));
 
-                            if (performanceOpt.isPresent()) {
-                                StudentPerformance performance = performanceOpt.get();
-                                theoreticalPercentage = performance.getTheoreticalPercentage();
-                                practicalPercentage = performance.getPracticalPercentage();
-                                theoreticalScore = performance.getTheoryExamScore();
-                                practicalScore = performance.getPracticalExamScore();
-                            } else {
-                                // Fetch scores from ExamDetail if performance data not available
-                                Optional<ExamDetail> theoreticalExamDetail = examDetailRepository.findByUserIdAndExamTypeAndSubjectId(userId, MarkType.THEORETICAL, cs.getSubject().getId());
-                                Optional<ExamDetail> practicalExamDetail = examDetailRepository.findByUserIdAndExamTypeAndSubjectId(userId, MarkType.PRACTICAL, cs.getSubject().getId());
+            long totalClasses = filteredAttendances.size();
+            int presentCount = (int) filteredAttendances.stream().filter(a -> "P".equals(a.getAttendance1())).count() +
+                    (int) filteredAttendances.stream().filter(a -> "P".equals(a.getAttendance2())).count();
+            int presentWithPermissionCount = (int) filteredAttendances.stream().filter(a -> "PA".equals(a.getAttendance1())).count() +
+                    (int) filteredAttendances.stream().filter(a -> "PA".equals(a.getAttendance2())).count();
+            int absentCount = (int) filteredAttendances.stream().filter(a -> "A".equals(a.getAttendance1())).count() +
+                    (int) filteredAttendances.stream().filter(a -> "A".equals(a.getAttendance2())).count();
 
-                                theoreticalScore = theoreticalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
-                                practicalScore = practicalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
+            BigDecimal attendancePercentage = totalClasses > 0
+                    ? BigDecimal.valueOf((double) (totalClasses - absentCount) / totalClasses * 100).setScale(2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
 
-                                // Calculate percentages
-                                BigDecimal theoreticalMaxScore = new BigDecimal("20");
-                                BigDecimal practicalMaxScore = new BigDecimal("100");
+            // Fetching performance data
+            Optional<StudentPerformance> performanceOpt = studentPerformanceRepository.findByUserIdAndSubjectId(userId, cs.getSubject().getId());
+            BigDecimal theoreticalPercentage = BigDecimal.ZERO;
+            BigDecimal practicalPercentage = BigDecimal.ZERO;
+            BigDecimal theoreticalScore = BigDecimal.ZERO;
+            BigDecimal practicalScore = BigDecimal.ZERO;
 
-                                // Calculate theoretical percentage
-                                theoreticalPercentage = theoreticalScore.compareTo(BigDecimal.ZERO) > 0
-                                        ? theoreticalScore.divide(theoreticalMaxScore, 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
-                                        : BigDecimal.ZERO;
+            if (performanceOpt.isPresent()) {
+                StudentPerformance performance = performanceOpt.get();
+                theoreticalPercentage = performance.getTheoreticalPercentage();
+                practicalPercentage = performance.getPracticalPercentage();
+                theoreticalScore = performance.getTheoryExamScore();
+                practicalScore = performance.getPracticalExamScore();
+            } else {
+                // Fetch scores from ExamDetail if performance data not available
+                Optional<ExamDetail> theoreticalExamDetail = examDetailRepository.findByUserIdAndExamTypeAndSubjectId(userId, MarkType.THEORETICAL, cs.getSubject().getId());
+                Optional<ExamDetail> practicalExamDetail = examDetailRepository.findByUserIdAndExamTypeAndSubjectId(userId, MarkType.PRACTICAL, cs.getSubject().getId());
 
-                                // Calculate practical percentage
-                                if (practicalScore.compareTo(BigDecimal.valueOf(20)) <= 0) {
-                                    practicalPercentage = practicalScore.divide(new BigDecimal("20"), 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
-                                } else if (practicalScore.compareTo(BigDecimal.valueOf(21)) >= 0 && practicalScore.compareTo(practicalMaxScore) <= 0) {
-                                    practicalPercentage = practicalScore;
-                                } else {
-                                    practicalPercentage = BigDecimal.ZERO;
-                                }
-                            }
+                theoreticalScore = theoreticalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
+                practicalScore = practicalExamDetail.map(ExamDetail::getScore).orElse(BigDecimal.ZERO);
 
-                            // Set response fields
-                            response.setTheoreticalPercentage(theoreticalPercentage);
-                            response.setPracticalPercentage(practicalPercentage);
-                            response.setTheoreticalScore(theoreticalScore);
-                            response.setPracticalScore(practicalScore);
-                            response.setPresentCount(presentCount);
-                            response.setPresentWithPermissionCount(presentWithPermissionCount);
-                            response.setAbsentCount(absentCount);
-                            response.setAttendancePercentage(attendancePercentage);
+                // Calculate percentages
+                BigDecimal theoreticalMaxScore = new BigDecimal("20");
+                BigDecimal practicalMaxScore = new BigDecimal("100");
 
-                            return response;
-                        }, Collectors.toList())
-                ));
+                theoreticalPercentage = theoreticalScore.compareTo(BigDecimal.ZERO) > 0
+                        ? theoreticalScore.divide(theoreticalMaxScore, 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
+                        : BigDecimal.ZERO;
 
-        return semesterSubjects;
+                if (practicalScore.compareTo(BigDecimal.valueOf(20)) <= 0) {
+                    practicalPercentage = practicalScore.divide(new BigDecimal("20"), 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+                } else if (practicalScore.compareTo(BigDecimal.valueOf(21)) >= 0 && practicalScore.compareTo(practicalMaxScore) <= 0) {
+                    practicalPercentage = practicalScore;
+                } else {
+                    practicalPercentage = BigDecimal.ZERO;
+                }
+            }
+
+            // Set response fields
+            response.setTheoreticalPercentage(theoreticalPercentage);
+            response.setPracticalPercentage(practicalPercentage);
+            response.setTheoreticalScore(theoreticalScore);
+            response.setPracticalScore(practicalScore);
+            response.setPresentCount(presentCount);
+            response.setPresentWithPermissionCount(presentWithPermissionCount);
+            response.setAbsentCount(absentCount);
+            response.setAttendancePercentage(attendancePercentage);
+
+            performances.add(response);
+
+            // Update the first and last subject schedules
+            List<Schedule> schedules = scheduleRepository.findBySubjectId(cs.getSubject().getId());
+            if (!schedules.isEmpty()) {
+                LocalDate firstSchedule = schedules.get(0).getStartDate();
+                LocalDate lastSchedule = schedules.get(schedules.size() - 1).getEndDate();
+                if (firstSubjectSchedule == null || firstSchedule.isBefore(firstSubjectSchedule)) {
+                    firstSubjectSchedule = firstSchedule;
+                }
+                if (lastSubjectSchedule == null || lastSchedule.isAfter(lastSubjectSchedule)) {
+                    lastSubjectSchedule = lastSchedule;
+                }
+            }
+        }
+
+        StudentPerformanceResponse response = new StudentPerformanceResponse();
+        response.setFirstSubjectSchedules(firstSubjectSchedule != null ? firstSubjectSchedule.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")) : null);
+        response.setLastSubjectSchedules(lastSubjectSchedule != null ? lastSubjectSchedule.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")) : null);
+        response.setSubjectPerformances(performances);
+
+        return response;
     }
 
     @Override

@@ -10,6 +10,7 @@ import java.util.List;
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
     List<Schedule> findByClassesId(int classId);
+    List<Schedule> findBySubjectId(int subjectId);
 
     List<Schedule> findByClassesIdAndSubjectId(int classId, int subjectId);
 

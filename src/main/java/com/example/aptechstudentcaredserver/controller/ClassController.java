@@ -3,7 +3,6 @@ package com.example.aptechstudentcaredserver.controller;
 import com.example.aptechstudentcaredserver.bean.request.AssignTeacherRequest;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.*;
-import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.User;
 import com.example.aptechstudentcaredserver.repository.UserRepository;
 import com.example.aptechstudentcaredserver.service.ClassService;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,7 +23,6 @@ import java.util.Optional;
 public class ClassController {
     private final ClassService classService;
     private final ClassServiceImpl classServiceImpl;
-    private final UserRepository userRepository;
 
     @GetMapping
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
@@ -80,13 +77,13 @@ public class ClassController {
             @PathVariable int userId,
             @RequestParam(required = false) String semesterName) {
         try {
-            Map<String, List<StudentPerformanceResponse>> semesterSubjects = classService.getAllSubjectsBySemester(classId, semesterName, userId);
+            StudentPerformanceResponse semesterSubjects = classService.getAllSubjectsBySemester(classId, semesterName, userId);
             return new ResponseEntity<>(semesterSubjects, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.NOT_FOUND);
         }
     }
-    
+
     @PutMapping("/{classId}/assign-teacher")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
     public ResponseEntity<String> assignTeacherToSubject(
