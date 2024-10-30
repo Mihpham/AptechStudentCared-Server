@@ -46,7 +46,7 @@ public class ClassController {
     }
 
     @PostMapping("/add")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
     public ResponseEntity<ResponseMessage> addClass(@Valid @RequestBody ClassRequest classRequest) {
         try {
             classService.addClass(classRequest);
@@ -57,14 +57,14 @@ public class ClassController {
     }
 
     @PutMapping("/{classId}")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
     public ResponseEntity<ClassResponse> updateClass(@RequestBody ClassRequest classRequest, @PathVariable int classId) {
         ClassResponse updateClass = classService.updateClass(classId, classRequest);
         return new ResponseEntity<>(updateClass, HttpStatus.ACCEPTED);
     }
 
     @DeleteMapping("/{classId}")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
     public ResponseEntity<ResponseMessage> deleteClass(@PathVariable int classId) {
         classService.deleteClass(classId);
         return new ResponseEntity<>(new ResponseMessage("Class deleted successfully"), HttpStatus.ACCEPTED);
