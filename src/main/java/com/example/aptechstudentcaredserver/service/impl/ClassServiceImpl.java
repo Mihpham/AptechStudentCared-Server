@@ -416,7 +416,8 @@ public class ClassServiceImpl implements ClassService {
                             teacher.getId(),
                             subject.getSubjectCode(),
                             teacher.getUserDetail().getFullName(),
-                            userSubject.getStatus().name()
+                            userSubject.getStatus().name(),
+                            userSubject.getNumberOfSessions()
                     );
                 })
                 .collect(Collectors.toList());

@@ -13,4 +13,5 @@ public class SubjectTeacherResponse {
     private String subjectCode;
     private String teacherName;
     private String status;
+    private int numberOfSessions;
 }
