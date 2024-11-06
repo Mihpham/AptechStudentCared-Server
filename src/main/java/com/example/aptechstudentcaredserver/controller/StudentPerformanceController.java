@@ -1,13 +1,14 @@
 package com.example.aptechstudentcaredserver.controller;
 
+import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
+import com.example.aptechstudentcaredserver.bean.response.StudentPerformanceResponse;
 import com.example.aptechstudentcaredserver.bean.response.SubjectPerformance;
 import com.example.aptechstudentcaredserver.service.StudentPerformanceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,5 +24,18 @@ public class StudentPerformanceController {
 
         SubjectPerformance response = saveStudentPerformance.saveStudentPerformance(userId, subjectId, classId);
         return ResponseEntity.ok(response);
+    }
+    @GetMapping("class/{classId}/user/{userId}/subjects")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
+    public ResponseEntity<?> getAllSubjectsBySemester(
+            @PathVariable int classId,
+            @PathVariable int userId,
+            @RequestParam(required = false) String semesterName) {
+        try {
+            StudentPerformanceResponse semesterSubjects = saveStudentPerformance.getAllSubjectsBySemester(classId, semesterName, userId);
+            return new ResponseEntity<>(semesterSubjects, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.NOT_FOUND);
+        }
     }
 }

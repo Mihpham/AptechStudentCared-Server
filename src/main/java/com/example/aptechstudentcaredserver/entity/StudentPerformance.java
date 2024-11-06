@@ -47,4 +47,7 @@ public class StudentPerformance {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    private String firstSubjectSchedules;
+    private String lastSubjectSchedules;
 }

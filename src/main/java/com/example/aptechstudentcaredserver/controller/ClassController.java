@@ -70,20 +70,6 @@ public class ClassController {
         return new ResponseEntity<>(new ResponseMessage("Class deleted successfully"), HttpStatus.ACCEPTED);
     }
 
-    @GetMapping("/{classId}/user/{userId}/subjects")
-    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
-    public ResponseEntity<?> getAllSubjectsBySemester(
-            @PathVariable int classId,
-            @PathVariable int userId,
-            @RequestParam(required = false) String semesterName) {
-        try {
-            StudentPerformanceResponse semesterSubjects = classService.getAllSubjectsBySemester(classId, semesterName, userId);
-            return new ResponseEntity<>(semesterSubjects, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.NOT_FOUND);
-        }
-    }
-
     @PutMapping("/{classId}/assign-teacher")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO')")
     public ResponseEntity<String> assignTeacherToSubject(

@@ -15,9 +15,6 @@ public interface ClassService {
     public List<ClassResponse> findAllClass();
 
     public CourseWithClassesResponse findClassWithSubjectByClassId(int classId);
-
-    StudentPerformanceResponse getAllSubjectsBySemester(int classId, String semesterName, int userId);
-
     public ClassResponse findClassById(int classId);
 
     public void addClass(ClassRequest classRequest);
