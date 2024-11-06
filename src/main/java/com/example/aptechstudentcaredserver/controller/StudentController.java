@@ -9,6 +9,8 @@ import com.example.aptechstudentcaredserver.enums.ClassMemberStatus;
 import com.example.aptechstudentcaredserver.service.StudentService;
 import com.example.aptechstudentcaredserver.util.ExcelUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,8 +29,12 @@ public class StudentController {
 
     @GetMapping
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
-    public ResponseEntity<List<StudentResponse>> getAllStudents() {
-        List<StudentResponse> students = studentService.findAllStudent();
+    public ResponseEntity<List<StudentResponse>> getAllStudents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "2") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        List<StudentResponse> students = studentService.findAllStudent(pageable);
         return ResponseEntity.ok(students);
     }
 

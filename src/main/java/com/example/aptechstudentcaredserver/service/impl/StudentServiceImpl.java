@@ -12,6 +12,8 @@ import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
 import com.example.aptechstudentcaredserver.service.StudentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -37,13 +39,15 @@ public class StudentServiceImpl implements StudentService {
     private final EmailGeneratorService emailGeneratorService;
 
     @Override
-    public List<StudentResponse> findAllStudent() {
-        List<User> users = userRepository.findByRoleRoleName("STUDENT");
+    public List<StudentResponse> findAllStudent(Pageable pageable) {
+        // Pass pageable to the repository to fetch a paginated list of users with the role "STUDENT"
+        Page<User> users = (Page<User>) userRepository.findByRoleRoleName("STUDENT", pageable);
 
-        if (users.isEmpty()) {
+        if (!users.hasContent()) {  // Use hasContent() to check if the page has any records
             throw new EmptyListException("No students found.");
         }
 
+        // Map the paginated list of users to a list of StudentResponse objects
         return users.stream()
                 .map(user -> convertToStudentResponse(user, findGroupClassByUserId(user.getId())))
                 .collect(Collectors.toList());

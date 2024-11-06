@@ -11,6 +11,9 @@ import com.example.aptechstudentcaredserver.service.CloudinaryService;
 import com.example.aptechstudentcaredserver.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,10 +45,16 @@ public class UserController {
     }
 
     @GetMapping("/role/{roleName}")
-    public ResponseEntity<List<UserResponse>> getUsersByRoleName(@PathVariable String roleName) {
-        List<UserResponse> users = userService.findUsersByRoleName(roleName);
+    public ResponseEntity<Page<UserResponse>> getUsersByRoleName(
+            @PathVariable String roleName,
+            @RequestParam(defaultValue = "0") int page,   // Default to page 0 if not provided
+            @RequestParam(defaultValue = "10") int size    // Default to 10 items per page if not provided
+    ) {
+        Pageable pageable = PageRequest.of(page, size);  // Create Pageable from request parameters
+        Page<UserResponse> users = userService.findUsersByRoleName(roleName, pageable);
         return ResponseEntity.ok(users);
     }
+
 
     @PutMapping("/{id}/status")
     public ResponseEntity<UpdateUserStatusResponse> updateUserStatus(@PathVariable int id) {

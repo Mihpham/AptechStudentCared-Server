@@ -15,6 +15,8 @@ import com.example.aptechstudentcaredserver.repository.SubjectRepository;
 import com.example.aptechstudentcaredserver.service.CourseService;
 import com.example.aptechstudentcaredserver.service.SemesterService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -34,8 +36,8 @@ public class CourseServiceImpl implements CourseService {
     private final SemesterService semesterService;
 
     @Override
-    public List<CourseResponse> getAllCourses() {
-        List<Course> courses = courseRepository.findAll();
+    public List<CourseResponse> getAllCourses(Pageable pageable) {
+       Page<Course> courses = courseRepository.findAll(pageable);
         return courses.stream()
                 .map(this::convertToCourseResponse)
                 .collect(Collectors.toList());

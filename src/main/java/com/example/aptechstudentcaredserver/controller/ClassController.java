@@ -2,20 +2,22 @@ package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.AssignTeacherRequest;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
-import com.example.aptechstudentcaredserver.bean.response.*;
+import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
+import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
+import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
 import com.example.aptechstudentcaredserver.entity.User;
-import com.example.aptechstudentcaredserver.repository.UserRepository;
 import com.example.aptechstudentcaredserver.service.ClassService;
 import com.example.aptechstudentcaredserver.service.impl.ClassServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,10 +28,19 @@ public class ClassController {
 
     @GetMapping
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
-    public ResponseEntity<List<ClassResponse>> findAllClass() {
-        List<ClassResponse> classResponses = classService.findAllClass();
-        return new ResponseEntity<>(classResponses, HttpStatus.OK);
+    public ResponseEntity<List<ClassResponse>> findAllClass(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        // Create a Pageable object with the page number and page size
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Fetch the paginated class responses from the service
+        List<ClassResponse> classResponses = classService.findAllClass(pageable);
+
+        return ResponseEntity.ok(classResponses);
     }
+
 
     @GetMapping("/class/{classId}")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER') or hasRole('ROLE_STUDENT')")

@@ -3,12 +3,13 @@ package com.example.aptechstudentcaredserver.controller;
 import com.example.aptechstudentcaredserver.bean.request.SubjectRequest;
 import com.example.aptechstudentcaredserver.bean.response.ImportResponse;
 import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
-import com.example.aptechstudentcaredserver.bean.response.SubjectResponse;
 import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.service.SubjectService;
 import com.example.aptechstudentcaredserver.util.ExcelUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,8 +27,11 @@ public class SubjectController {
     private final SubjectService subjectService;
 
     @GetMapping
-    public ResponseEntity<List<SubjectResponse>> getAllSubjects() {
-        List<SubjectResponse> subjects = subjectService.findAllSubject();
+    public ResponseEntity<List<SubjectResponse>> getAllSubjects(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        List<SubjectResponse> subjects = subjectService.findAllSubject(pageable);
         return ResponseEntity.ok(subjects);
     }
 

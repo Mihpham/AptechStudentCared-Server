@@ -5,7 +5,6 @@ import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.*;
 import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.*;
-import com.example.aptechstudentcaredserver.enums.MarkType;
 import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.EmptyListException;
@@ -13,14 +12,14 @@ import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.ClassService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,16 +37,18 @@ public class ClassServiceImpl implements ClassService {
     private final UserSubjectRepository userSubjectRepository;
 
     @Override
-    public List<ClassResponse> findAllClass() {
-        List<Class> listClass = classRepository.findAll();
-        if (listClass.isEmpty()) {
+    public List<ClassResponse> findAllClass(Pageable pageable) {
+        // Sử dụng Pageable để phân trang
+        Page<Class> classes = classRepository.findAll(pageable);
+        if (classes.isEmpty()) {
             throw new EmptyListException("No classes found.");
         }
-        return listClass.stream()
+
+        // Chuyển đổi danh sách class thành List<ClassResponse>
+        return classes.getContent().stream()
                 .map(this::convertToClassResponse)
                 .collect(Collectors.toList());
     }
-
 
     public List<ClassResponse> getAllClassesByUser(User user) {
         List<Class> classes = groupClassRepository.findClassesByUser(user);

@@ -2,6 +2,8 @@ package com.example.aptechstudentcaredserver.repository;
 
 import com.example.aptechstudentcaredserver.entity.Role;
 import com.example.aptechstudentcaredserver.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,7 +14,7 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Integer> {
 
     //    User findByUsername(String username);
-    List<User> findByRoleRoleName(String roleName);
+    Page<User> findByRoleRoleName(String roleName, Pageable pageable);
 
     List<User> findByRole(Role role);
 
@@ -20,5 +22,5 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     User findByEmail(String email);
     List<User> findByGroupClassesClassesId(int classId);
-    long count();
+    long countByRoleRoleName(String roleName);
 }

@@ -14,6 +14,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -28,9 +30,9 @@ public class SubjectServiceImpl implements SubjectService {
     private final CourseSubjectRepository courseSubjectRepository;
 
     @Override
-    public List<SubjectResponse> findAllSubject() {
+    public List<SubjectResponse> findAllSubject(Pageable pageable) {
         try {
-            List<Subject> subjects = subjectRepository.findAll();
+            Page<Subject> subjects = subjectRepository.findAll(pageable);
             if (subjects.isEmpty()) {
                 throw new EmptyListException("No subjects found.");
             }

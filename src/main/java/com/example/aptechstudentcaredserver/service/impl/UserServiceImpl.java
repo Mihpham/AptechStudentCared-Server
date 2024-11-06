@@ -15,6 +15,8 @@ import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
 import com.example.aptechstudentcaredserver.service.UserService;
 import com.example.aptechstudentcaredserver.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -47,25 +49,22 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserResponse> findUsersByRoleName(String roleName) {
-        List<User> users = userRepository.findByRoleRoleName(roleName);
+    public Page<UserResponse> findUsersByRoleName(String roleName, Pageable pageable) {
+        // Fetch paginated users by role name
+        Page<User> users = userRepository.findByRoleRoleName(roleName, pageable);
 
-        if (users.isEmpty()) {
+        if (!users.hasContent()) {
             throw new EmptyListException("No users found with role: " + roleName);
         }
 
-        return users.stream()
-                .map(this::convertUserToUserResponse)
-                .collect(Collectors.toList());
+        // Map users to UserResponse and return as Page
+        return users.map(this::convertUserToUserResponse);
     }
+
 
     @Override
     public long countUsersByRoleName(String roleName) {
-        List<User> users = userRepository.findByRoleRoleName(roleName);
-        if (users.isEmpty()) {
-            return userRepository.count();
-        }
-        return users.size();
+        return userRepository.countByRoleRoleName(roleName);
     }
 
     @Override
