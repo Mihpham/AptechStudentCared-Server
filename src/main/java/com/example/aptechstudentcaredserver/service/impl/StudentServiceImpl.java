@@ -39,18 +39,18 @@ public class StudentServiceImpl implements StudentService {
     private final EmailGeneratorService emailGeneratorService;
 
     @Override
-    public List<StudentResponse> findAllStudent(Pageable pageable) {
-        // Pass pageable to the repository to fetch a paginated list of users with the role "STUDENT"
-        Page<User> users = (Page<User>) userRepository.findByRoleRoleName("STUDENT", pageable);
+    public Page<StudentResponse> findAllStudent(Pageable pageable) {
+        Page<User> users = userRepository.findByRoleRoleName("STUDENT", pageable);
 
-        if (!users.hasContent()) {  // Use hasContent() to check if the page has any records
-            throw new EmptyListException("No students found.");
+        if (!users.hasContent()) {
+            return Page.empty();
         }
 
-        // Map the paginated list of users to a list of StudentResponse objects
-        return users.stream()
-                .map(user -> convertToStudentResponse(user, findGroupClassByUserId(user.getId())))
-                .collect(Collectors.toList());
+        Page<StudentResponse> studentResponses = users.map(user ->
+                convertToStudentResponse(user, findGroupClassByUserId(user.getId()))
+        );
+
+        return studentResponses;
     }
 
     @Override
