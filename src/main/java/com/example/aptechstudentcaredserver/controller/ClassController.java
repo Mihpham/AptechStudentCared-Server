@@ -10,6 +10,7 @@ import com.example.aptechstudentcaredserver.service.ClassService;
 import com.example.aptechstudentcaredserver.service.impl.ClassServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -28,15 +29,15 @@ public class ClassController {
 
     @GetMapping
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
-    public ResponseEntity<List<ClassResponse>> findAllClass(
-            @RequestParam(defaultValue = "0") int page,
+    public ResponseEntity<Page<ClassResponse>> findAllClass(
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         // Create a Pageable object with the page number and page size
         Pageable pageable = PageRequest.of(page, size);
 
         // Fetch the paginated class responses from the service
-        List<ClassResponse> classResponses = classService.findAllClass(pageable);
+        Page<ClassResponse> classResponses = classService.findAllClass(pageable);
 
         return ResponseEntity.ok(classResponses);
     }

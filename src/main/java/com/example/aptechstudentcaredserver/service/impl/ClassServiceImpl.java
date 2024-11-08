@@ -37,17 +37,19 @@ public class ClassServiceImpl implements ClassService {
     private final UserSubjectRepository userSubjectRepository;
 
     @Override
-    public List<ClassResponse> findAllClass(Pageable pageable) {
-        // Sử dụng Pageable để phân trang
+    public Page<ClassResponse> findAllClass(Pageable pageable) {
+        // Sử dụng Pageable để phân trang và lấy danh sách các lớp
         Page<Class> classes = classRepository.findAll(pageable);
-        if (classes.isEmpty()) {
-            throw new EmptyListException("No classes found.");
+
+        // Kiểm tra nếu không có lớp nào
+        if (!classes.hasContent()) {
+            return Page.empty();
         }
 
-        // Chuyển đổi danh sách class thành List<ClassResponse>
-        return classes.getContent().stream()
-                .map(this::convertToClassResponse)
-                .collect(Collectors.toList());
+        // Chuyển đổi danh sách các lớp thành danh sách ClassResponse
+        Page<ClassResponse> classResponses = classes.map(this::convertToClassResponse);
+
+        return classResponses;
     }
 
     public List<ClassResponse> getAllClassesByUser(User user) {

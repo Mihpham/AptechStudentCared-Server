@@ -4,13 +4,14 @@ import com.example.aptechstudentcaredserver.bean.request.AssignTeacherRequest;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
 public interface ClassService {
 //    List<Class> getClassesByUser(Optional<User> user);
-    public List<ClassResponse> findAllClass(Pageable pageable);
+    public Page<ClassResponse> findAllClass(Pageable pageable);
 
     public CourseWithClassesResponse findClassWithSubjectByClassId(int classId);
     public ClassResponse findClassById(int classId);
