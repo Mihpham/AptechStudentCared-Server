@@ -34,9 +34,23 @@ public class StudentController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page-1, size);
         Page<StudentResponse> students = studentService.findAllStudent(pageable);
         return ResponseEntity.ok(students);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<StudentResponse>> searchStudents(
+            @RequestParam(required = false) String rollNumber,
+            @RequestParam(required = false) String fullName,
+            @RequestParam(required = false) String email,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<StudentResponse> studentResponses = studentService.searchStudents(rollNumber, fullName, email, pageable);
+
+        return ResponseEntity.ok(studentResponses);
     }
 
 

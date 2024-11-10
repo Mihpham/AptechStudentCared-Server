@@ -6,14 +6,15 @@ import com.example.aptechstudentcaredserver.entity.Class;
 import com.example.aptechstudentcaredserver.entity.*;
 import com.example.aptechstudentcaredserver.enums.ClassMemberStatus;
 import com.example.aptechstudentcaredserver.enums.Status;
-import com.example.aptechstudentcaredserver.exception.EmptyListException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.EmailGeneratorService;
 import com.example.aptechstudentcaredserver.service.StudentService;
+import com.example.aptechstudentcaredserver.util.UserSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -51,6 +52,22 @@ public class StudentServiceImpl implements StudentService {
         );
 
         return studentResponses;
+    }
+
+    @Override
+    public Page<StudentResponse> searchStudents(String rollNumber, String fullName, String email, Pageable pageable) {
+        Specification<User> specification = UserSpecification.searchStudents(rollNumber, fullName, email);
+
+        Specification<User> roleSpecification = (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("role").get("roleName"), "STUDENT");
+
+        Specification<User> combinedSpecification = Specification.where(specification).and(roleSpecification);
+
+        Page<User> users = userRepository.findAll(combinedSpecification, pageable);
+
+        return users.map(user -> {
+            GroupClass groupClass = findGroupClassByUserId(user.getId());
+            return convertToStudentResponse(user, groupClass);
+        });
     }
 
     @Override
@@ -165,8 +182,9 @@ public class StudentServiceImpl implements StudentService {
 
     private GroupClass findGroupClassByUserId(int studentId) {
         return groupClassRepository.findByUserId(studentId)
-                .orElseThrow(() -> new NotFoundException("Group class not found for user id " + studentId));
+                .orElse(null);  // Trả về null thay vì ném ngoại lệ khi không tìm thấy GroupClass
     }
+
 
     private Role findOrCreateRole(String roleName) {
         return Optional.ofNullable(roleRepository.findByRoleName(roleName))

@@ -13,7 +13,8 @@ import java.util.List;
 public interface StudentService {
 
     public Page<StudentResponse> findAllStudent(Pageable pageable) ;
-    public void createStudent(StudentRequest studentRq);
+    public Page<StudentResponse> searchStudents(String rollNumber, String fullName, String email, Pageable pageable) ;
+        public void createStudent(StudentRequest studentRq);
     public List<StudentResponse> findStudentsByStatus(ClassMemberStatus status);
     public StudentResponse findStudentById(int studentId);
     public StudentResponse updateStudent(int studentId, StudentRequest studentRq);

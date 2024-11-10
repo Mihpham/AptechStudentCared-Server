@@ -33,10 +33,8 @@ public class ClassController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        // Create a Pageable object with the page number and page size
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page-1, size);
 
-        // Fetch the paginated class responses from the service
         Page<ClassResponse> classResponses = classService.findAllClass(pageable);
 
         return ResponseEntity.ok(classResponses);
