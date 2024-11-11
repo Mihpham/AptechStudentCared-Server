@@ -71,14 +71,13 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    public List<StudentResponse> findStudentsByStatus(ClassMemberStatus status) {
-        List<GroupClass> groupClasses = groupClassRepository.findByStatus(status);
-        return groupClasses.stream()
-                .map(groupClass -> {
-                    User user = groupClass.getUser();
-                    return convertToStudentResponse(user, groupClass);
-                })
-                .collect(Collectors.toList());
+    public Page<StudentResponse>  findStudentsByStatus(ClassMemberStatus status,Pageable pageable) {
+        Page<GroupClass> groupClassesPage = groupClassRepository.findByStatus(status, pageable);
+
+        return groupClassesPage.map(groupClass -> {
+            User user = groupClass.getUser();
+            return convertToStudentResponse(user, groupClass);
+        });
     }
 
     @Override

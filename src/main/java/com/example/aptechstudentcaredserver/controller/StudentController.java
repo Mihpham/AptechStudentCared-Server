@@ -53,11 +53,13 @@ public class StudentController {
         return ResponseEntity.ok(studentResponses);
     }
 
-
     @GetMapping("/status/{status}")
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
-    public ResponseEntity<List<StudentResponse>> getStudentsByStatus(@PathVariable("status") ClassMemberStatus status) {
-        List<StudentResponse> students = studentService.findStudentsByStatus(status);
+    public ResponseEntity<Page<StudentResponse>> getStudentsByStatus(@PathVariable("status") ClassMemberStatus status
+            ,@RequestParam(defaultValue = "1") int page,@RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page-1, size);
+
+        Page<StudentResponse> students = studentService.findStudentsByStatus(status,pageable);
         return ResponseEntity.ok(students);
     }
 

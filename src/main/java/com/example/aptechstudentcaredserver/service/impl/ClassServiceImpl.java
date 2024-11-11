@@ -87,11 +87,82 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
-    public ClassResponse findClassById(int classId) {
+    public ClassDetailResponse findClassById(int classId, Pageable pageable) {
+        // Tìm lớp học theo ID
         Class existingClass = classRepository.findById(classId)
                 .orElseThrow(() -> new NotFoundException("Class not found with id: " + classId));
 
-        return convertToClassResponse(existingClass);
+        // Lấy danh sách các nhóm lớp (sinh viên) với phân trang
+        Page<GroupClass> groupClassesPage = groupClassRepository.findByClassesId(classId, pageable);
+
+        // Chuyển đổi nhóm lớp thành danh sách sinh viên response
+        List<StudentResponse> studentResponses = groupClassesPage.getContent().stream()
+                .map(groupClass -> {
+                    User user = groupClass.getUser();
+                    List<String> courses = userCourseRepository.findByUserId(user.getId()).stream()
+                            .map(userCourse -> userCourse.getCourse().getCourseName())
+                            .collect(Collectors.toList());
+
+                    UserDetail userDetail = user.getUserDetail();
+
+                    return new StudentResponse(
+                            user.getId(),
+                            existingClass.getId(),
+                            userDetail != null ? userDetail.getImage() : null,
+                            userDetail != null ? userDetail.getRollNumber() : null,
+                            userDetail != null ? userDetail.getFullName() : null,
+                            user.getEmail(),
+                            userDetail != null ? userDetail.getAddress() : null,
+                            existingClass.getClassName(),
+                            userDetail != null ? userDetail.getGender() : null,
+                            userDetail != null ? userDetail.getDob() : null,
+                            userDetail != null ? userDetail.getPhone() : null,
+                            courses,
+                            groupClass.getStatus() != null ? groupClass.getStatus().name() : null,
+                            userDetail != null && userDetail.getParent() != null ? userDetail.getParent().getFullName() : null,
+                            userDetail != null && userDetail.getParent() != null ? userDetail.getParent().getStudentRelation() : null,
+                            userDetail != null && userDetail.getParent() != null ? userDetail.getParent().getPhone() : null,
+                            userDetail != null && userDetail.getParent() != null ? userDetail.getParent().getGender() : null
+                    );
+                })
+                .collect(Collectors.toList());
+
+        // Tạo ClassDetailResponse với các thông tin cần thiết
+        ClassDetailResponse classDetailResponse = new ClassDetailResponse();
+        classDetailResponse.setId(existingClass.getId());
+        classDetailResponse.setClassName(existingClass.getClassName());
+        classDetailResponse.setCenter(existingClass.getCenter());
+        classDetailResponse.setStartHour(existingClass.getStartHour());
+        classDetailResponse.setEndHour(existingClass.getEndHour());
+        classDetailResponse.setDays(existingClass.getDays());
+        classDetailResponse.setStatus(existingClass.getStatus().name());
+        classDetailResponse.setSemesterName(existingClass.getSemester() != null ? existingClass.getSemester().getName() : null);
+
+        // Thêm thông tin CourseResponse nếu có
+        Course course = existingClass.getCourse();
+        if (course != null) {
+            CourseResponse courseResponse = new CourseResponse(
+                    course.getId(),
+                    course.getCourseName(),
+                    course.getCourseCode(),
+                    course.getCourseCompTime(),
+                    courseSubjectRepository.findByCourseId(course.getId()).stream()
+                            .collect(Collectors.groupingBy(
+                                    cs -> cs.getSemester().getName(),
+                                    Collectors.mapping(cs -> cs.getSubject().getSubjectCode(), Collectors.toList())
+                            ))
+            );
+            classDetailResponse.setCourse(courseResponse);
+        }
+
+        // Thiết lập danh sách sinh viên và phân trang
+        classDetailResponse.setStudents(studentResponses);
+        classDetailResponse.setTotalPages(groupClassesPage.getTotalPages());
+        classDetailResponse.setTotalElements(groupClassesPage.getTotalElements());
+        classDetailResponse.setCurrentPage(groupClassesPage.getNumber());
+        classDetailResponse.setPageSize(groupClassesPage.getSize());
+
+        return classDetailResponse;
     }
 
     @Override

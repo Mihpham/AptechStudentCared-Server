@@ -2,6 +2,7 @@ package com.example.aptechstudentcaredserver.controller;
 
 import com.example.aptechstudentcaredserver.bean.request.AssignTeacherRequest;
 import com.example.aptechstudentcaredserver.bean.request.ClassRequest;
+import com.example.aptechstudentcaredserver.bean.response.ClassDetailResponse;
 import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
 import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
@@ -33,7 +34,7 @@ public class ClassController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        Pageable pageable = PageRequest.of(page-1, size);
+        Pageable pageable = PageRequest.of(page - 1, size);
 
         Page<ClassResponse> classResponses = classService.findAllClass(pageable);
 
@@ -50,8 +51,12 @@ public class ClassController {
 
     @GetMapping("/{classId}")
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
-    public ResponseEntity<ClassResponse> findClassById(@PathVariable int classId) {
-        ClassResponse classResponse = classService.findClassById(classId);
+    public ResponseEntity<ClassDetailResponse> findClassById(
+            @PathVariable int classId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        ClassDetailResponse classResponse = classService.findClassById(classId,pageable);
         return new ResponseEntity<>(classResponse, HttpStatus.OK);
     }
 
@@ -92,11 +97,12 @@ public class ClassController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
     public List<ClassResponse> getClassesByUser(@PathVariable int userId) {
-            User user = new User();  // Load user theo userId (có thể lấy từ UserService hoặc repository)
-            user.setId(userId);      // Đặt user ID
-            return classServiceImpl.getAllClassesByUser(user);
-        }
+        User user = new User();  // Load user theo userId (có thể lấy từ UserService hoặc repository)
+        user.setId(userId);      // Đặt user ID
+        return classServiceImpl.getAllClassesByUser(user);
+    }
 }

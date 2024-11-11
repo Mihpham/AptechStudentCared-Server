@@ -15,7 +15,7 @@ public interface StudentService {
     public Page<StudentResponse> findAllStudent(Pageable pageable) ;
     public Page<StudentResponse> searchStudents(String rollNumber, String fullName, String email, Pageable pageable) ;
         public void createStudent(StudentRequest studentRq);
-    public List<StudentResponse> findStudentsByStatus(ClassMemberStatus status);
+    Page<StudentResponse>  findStudentsByStatus(ClassMemberStatus status,Pageable pageable);
     public StudentResponse findStudentById(int studentId);
     public StudentResponse updateStudent(int studentId, StudentRequest studentRq);
     public void deleteStudent(int studentId);
