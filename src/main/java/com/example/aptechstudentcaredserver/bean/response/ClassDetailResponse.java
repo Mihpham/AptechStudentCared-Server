@@ -22,6 +22,7 @@ public class ClassDetailResponse {
     private String semesterName;
     private CourseResponse course;
     private List<StudentResponse> students;
+    private List<SubjectTeacherResponse> subjectTeachers;
     private int totalPages;
     private long totalElements;
     private int currentPage;

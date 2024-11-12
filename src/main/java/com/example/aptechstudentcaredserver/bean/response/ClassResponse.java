@@ -24,7 +24,6 @@ public class ClassResponse {
     private String status;
     private String sem;
     private CourseResponse course;
-    private List<StudentResponse> students;
     private List<SubjectTeacherResponse> subjectTeachers;
     
 }

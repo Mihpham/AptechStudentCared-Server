@@ -94,6 +94,22 @@ public class ClassServiceImpl implements ClassService {
 
         // Lấy danh sách các nhóm lớp (sinh viên) với phân trang
         Page<GroupClass> groupClassesPage = groupClassRepository.findByClassesId(classId, pageable);
+        List<UserSubject> userSubjects = userSubjectRepository.findByClassroom(existingClass);
+
+        List<SubjectTeacherResponse> subjectTeacherResponses = userSubjects.stream()
+                .map(userSubject -> {
+                    Subject subject = userSubject.getSubject();
+                    User teacher = userSubject.getUser();
+                    return new SubjectTeacherResponse(
+                            subject.getId(),
+                            teacher.getId(),
+                            subject.getSubjectCode(),
+                            teacher.getUserDetail().getFullName(),
+                            userSubject.getStatus().name(),
+                            userSubject.getNumberOfSessions()
+                    );
+                })
+                .collect(Collectors.toList());
 
         // Chuyển đổi nhóm lớp thành danh sách sinh viên response
         List<StudentResponse> studentResponses = groupClassesPage.getContent().stream()
@@ -136,6 +152,7 @@ public class ClassServiceImpl implements ClassService {
         classDetailResponse.setEndHour(existingClass.getEndHour());
         classDetailResponse.setDays(existingClass.getDays());
         classDetailResponse.setStatus(existingClass.getStatus().name());
+        classDetailResponse.setSubjectTeachers(subjectTeacherResponses);
         classDetailResponse.setSemesterName(existingClass.getSemester() != null ? existingClass.getSemester().getName() : null);
 
         // Thêm thông tin CourseResponse nếu có
@@ -294,7 +311,7 @@ public class ClassServiceImpl implements ClassService {
 
 
     private ClassResponse convertToClassResponse(Class classEntity) {
-        List<GroupClass> groupClasses = groupClassRepository.findByClassesId(classEntity.getId());
+//        List<GroupClass> groupClasses = groupClassRepository.findByClassesId(classEntity.getId());
         Course course = classEntity.getCourse();
         CourseResponse courseResponse = null;
 
@@ -321,34 +338,34 @@ public class ClassServiceImpl implements ClassService {
 
         String semesterName = classEntity.getSemester() != null ? classEntity.getSemester().getName() : null;
 
-        List<StudentResponse> studentResponses = groupClasses.stream()
-                .map(groupClass -> {
-                    User user = groupClass.getUser();
-                    List<String> courses = userCourseRepository.findByUserId(user.getId()).stream()
-                            .map(userCourse -> userCourse.getCourse().getCourseName())
-                            .collect(Collectors.toList());
-
-                    return new StudentResponse(
-                            user.getId(),
-                            classEntity.getId(),
-                            user.getUserDetail() != null ? user.getUserDetail().getImage() : null,
-                            user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : null,
-                            user.getUserDetail() != null ? user.getUserDetail().getFullName() : null,
-                            user.getEmail(),
-                            user.getUserDetail() != null ? user.getUserDetail().getAddress() : null,
-                            classEntity.getClassName(),
-                            user.getUserDetail() != null ? user.getUserDetail().getGender() : null,
-                            user.getUserDetail() != null ? user.getUserDetail().getDob() : null,
-                            user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
-                            courses,
-                            groupClass.getStatus() != null ? groupClass.getStatus().name() : null,
-                            user.getUserDetail() != null ? user.getUserDetail().getParent().getFullName() : null,
-                            user.getUserDetail() != null ? user.getUserDetail().getParent().getStudentRelation() : null,
-                            user.getUserDetail() != null ? user.getUserDetail().getParent().getPhone() : null,
-                            user.getUserDetail() != null ? user.getUserDetail().getParent().getGender() : null
-                    );
-                })
-                .collect(Collectors.toList());
+//        List<StudentResponse> studentResponses = groupClasses.stream()
+//                .map(groupClass -> {
+//                    User user = groupClass.getUser();
+//                    List<String> courses = userCourseRepository.findByUserId(user.getId()).stream()
+//                            .map(userCourse -> userCourse.getCourse().getCourseName())
+//                            .collect(Collectors.toList());
+//
+//                    return new StudentResponse(
+//                            user.getId(),
+//                            classEntity.getId(),
+//                            user.getUserDetail() != null ? user.getUserDetail().getImage() : null,
+//                            user.getUserDetail() != null ? user.getUserDetail().getRollNumber() : null,
+//                            user.getUserDetail() != null ? user.getUserDetail().getFullName() : null,
+//                            user.getEmail(),
+//                            user.getUserDetail() != null ? user.getUserDetail().getAddress() : null,
+//                            classEntity.getClassName(),
+//                            user.getUserDetail() != null ? user.getUserDetail().getGender() : null,
+//                            user.getUserDetail() != null ? user.getUserDetail().getDob() : null,
+//                            user.getUserDetail() != null ? user.getUserDetail().getPhone() : null,
+//                            courses,
+//                            groupClass.getStatus() != null ? groupClass.getStatus().name() : null,
+//                            user.getUserDetail() != null ? user.getUserDetail().getParent().getFullName() : null,
+//                            user.getUserDetail() != null ? user.getUserDetail().getParent().getStudentRelation() : null,
+//                            user.getUserDetail() != null ? user.getUserDetail().getParent().getPhone() : null,
+//                            user.getUserDetail() != null ? user.getUserDetail().getParent().getGender() : null
+//                    );
+//                })
+//                .collect(Collectors.toList());
 
         List<UserSubject> userSubjects = userSubjectRepository.findByClassroom(classEntity);
 
@@ -378,7 +395,6 @@ public class ClassServiceImpl implements ClassService {
                 classEntity.getStatus().name(),
                 semesterName,
                 courseResponse,
-                studentResponses,
                 subjectTeacherResponses
         );
     }
