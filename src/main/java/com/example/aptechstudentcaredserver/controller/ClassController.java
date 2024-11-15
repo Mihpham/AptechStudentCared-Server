@@ -7,6 +7,7 @@ import com.example.aptechstudentcaredserver.bean.response.ClassResponse;
 import com.example.aptechstudentcaredserver.bean.response.CourseWithClassesResponse;
 import com.example.aptechstudentcaredserver.bean.response.ResponseMessage;
 import com.example.aptechstudentcaredserver.entity.User;
+import com.example.aptechstudentcaredserver.enums.Status;
 import com.example.aptechstudentcaredserver.service.ClassService;
 import com.example.aptechstudentcaredserver.service.impl.ClassServiceImpl;
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -41,6 +43,27 @@ public class ClassController {
         return ResponseEntity.ok(classResponses);
     }
 
+    @GetMapping("/semester")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
+    public ResponseEntity<Map<String, Long>> getClassBySemester() {
+        // Gọi service để lấy số lượng lớp theo học kỳ
+        Map<String, Long> classCountBySemester = classService.findClassCountBySemester();
+
+        // Trả về kết quả
+        return ResponseEntity.ok(classCountBySemester);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<ClassResponse>> searchClass(
+            @RequestParam(required = false) String className,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<ClassResponse> classResponses = classService.searchClass(className, pageable);
+
+        return ResponseEntity.ok(classResponses);
+    }
 
     @GetMapping("/class/{classId}")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER') or hasRole('ROLE_STUDENT')")
@@ -56,8 +79,19 @@ public class ClassController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
-        ClassDetailResponse classResponse = classService.findClassById(classId,pageable);
+        ClassDetailResponse classResponse = classService.findClassById(classId, pageable);
         return new ResponseEntity<>(classResponse, HttpStatus.OK);
+    }
+
+    @GetMapping("/status/{status}")
+    @PreAuthorize("hasRole('ROLE_STUDENT') or hasRole('ROLE_ADMIN') or hasRole('ROLE_SRO') or hasRole('ROLE_TEACHER')")
+    public ResponseEntity<Page<ClassResponse>> findClassByStatus(
+            @PathVariable("status") Status status,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<ClassResponse> classResponse = classService.findClassByStatus(status, pageable);
+        return ResponseEntity.ok(classResponse);
     }
 
     @PostMapping("/add")

@@ -10,15 +10,15 @@ import com.example.aptechstudentcaredserver.exception.DuplicateException;
 import com.example.aptechstudentcaredserver.exception.NotFoundException;
 import com.example.aptechstudentcaredserver.repository.*;
 import com.example.aptechstudentcaredserver.service.ClassService;
+import com.example.aptechstudentcaredserver.util.ClassSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -51,11 +51,41 @@ public class ClassServiceImpl implements ClassService {
         return classResponses;
     }
 
+    @Override
+    public Map<String, Long> findClassCountBySemester() {
+        List<Class> classes = classRepository.findAll();
+
+        Map<String, Long> result = classes.stream()
+                .collect(Collectors.groupingBy(
+                        cls -> cls.getSemester().getName(),
+                        Collectors.counting()
+                ));
+
+        List<String> semesterOrder = Arrays.asList("Sem1", "Sem2", "Sem3", "Sem4");
+
+        return semesterOrder.stream()
+                .collect(Collectors.toMap(
+                        semester -> semester,
+                        semester -> result.getOrDefault(semester, 0L),
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new
+                ));
+    }
+
+    @Override
+    public Page<ClassResponse> searchClass(String className, Pageable pageable) {
+        Specification<Class> specification = ClassSpecification.searchClass(className);
+
+        Page<Class> classes = classRepository.findAll(specification, pageable);
+
+        return classes.map(this::convertToClassResponse);
+    }
+
     public List<ClassResponse> getAllClassesByUser(User user) {
         List<Class> classes = groupClassRepository.findClassesByUser(user);
         return classes.stream()
-                .map(this::convertToClassResponse)  // Gọi hàm convertToClassResponse
-                .collect(Collectors.toList());      // Thu thập kết quả vào List
+                .map(this::convertToClassResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -183,6 +213,14 @@ public class ClassServiceImpl implements ClassService {
     }
 
     @Override
+    public Page<ClassResponse> findClassByStatus(Status status, Pageable pageable) {
+        Page<Class> classesPage = classRepository.findByStatus(status, pageable);
+
+        // Convert each Class entity to ClassResponse and return as a Page
+        return classesPage.map(this::convertToClassResponse);
+    }
+
+    @Override
     public void addClass(ClassRequest classRequest) {
         Class existingClass = classRepository.findByClassName(classRequest.getClassName());
 
@@ -275,7 +313,7 @@ public class ClassServiceImpl implements ClassService {
 
         // Lấy số giờ học từ lớp và môn học
         int totalClassHours = existingClass.getEndHour().getHour() - existingClass.getStartHour().getHour();
-        int totalSubjectHours = filteredCourseSubjects.get(0).getSubject().getTotalHours(); 
+        int totalSubjectHours = filteredCourseSubjects.get(0).getSubject().getTotalHours();
 
         int numberOfSessions = (int) Math.ceil((double) totalSubjectHours / totalClassHours);
 
